@@ -1,0 +1,30 @@
+{
+  "generated_at": "2026-08-27",
+  "historical_migration_source_of_truth": "incomplete",
+  "runtime_rebuild_path": "present",
+  "included_migrations": [
+    "20260818000000_create_am_account_portal_runtime_base_v1.sql",
+    "20260819081044_harden_am_account_portal_security_and_ownership_v2.sql",
+    "20260819095328_finalize_security_and_rpc_hardening.sql",
+    "20260821013921_remove_duplicate_am_generated_accounts_trigger.sql",
+    "20260821040000_owner_runtime_contract_v1.sql",
+    "20260821050000_production_parity_v1.sql",
+    "20260821060000_complete_runtime_contract_v1.sql",
+    "20260822231636_fix_generation_idempotency_claim_v2.sql",
+    "20260822231743_fix_provider_quota_column_ambiguity_v3.sql",
+    "20260823100000_idempotency_and_provider_quota_v1.sql",
+    "20260823210000_add_email_verification_state.sql",
+    "20260823223000_magic_link_delivery_quota.sql",
+    "20260824003000_add_magic_link_request_timestamp.sql",
+    "20260824163033_harden_owner_function_search_path_20260824.sql",
+    "20260825000000_add_generation_idempotency_account_id_index.sql",
+    "20260826034000_split_magic_verification_from_premium_activation.sql",
+    "20260826040000_magic_link_delivery_state_v1.sql",
+    "20260826043000_fix_magic_link_quota_usage_date_ambiguity_v1.sql",
+    "20260827000000_harden_premium_activation_claim.sql"
+  ],
+  "included_migration_count": 19,
+  "status": "CLEAN_PACKAGE_SNAPSHOT_HARDENED",
+  "warning": "The package preserves the migration files available in this snapshot. It is not a byte-for-byte reconstruction of any missing historical production migrations.",
+  "policy": "Do not infer production-applied state from this manifest alone; verify the live database before deployment."
+}

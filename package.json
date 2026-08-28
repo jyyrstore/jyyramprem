@@ -1,0 +1,29 @@
+{
+  "name": "am-account-portal",
+  "version": "4.2.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch server.js",
+    "start": "node server.js",
+    "verify": "node scripts/verify-runtime.mjs",
+    "test": "npm run test:provider && npm run test:provider-diagnostic && npm run test:flow && npm run test:regression && npm run test:runtime-contract && npm run test:owner-ui && npm run verify && npm run test:portal-token",
+    "broadcast:worker": "node scripts/run-due-broadcasts.mjs",
+    "test:provider": "node --test test/provider-contract.test.mjs",
+    "test:provider-diagnostic": "node --test test/provider-diagnostic.test.mjs",
+    "test:flow": "node --test test/final-magic-flow.test.mjs test/magic-link-quota.test.mjs test/auto-chain-local-contract.test.mjs test/idempotency-quota-local-contract.test.mjs test/home-browser-regression.test.mjs test/provider-delivery-webhook.test.mjs",
+    "test:regression": "node tests/final-flow-regression.mjs",
+    "test:runtime-contract": "node --test test/runtime-contract.test.mjs",
+    "test:owner-ui": "node --test test/owner-ui-feature-contract.test.mjs",
+    "test:portal-token": "node --test test/portal-token-gate.test.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.112.3",
+    "dotenv": "16.6.1",
+    "express": "5.2.1",
+    "express-rate-limit": "7.5.1"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

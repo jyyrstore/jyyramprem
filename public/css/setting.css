@@ -1,0 +1,557 @@
+.profile-card{text-align:center}.avatar-large{width:94px;height:94px;margin:0 auto 12px;border-radius:50%;overflow:hidden;background:#30283c;border:2px solid rgba(157,92,255,.42);box-shadow:0 0 30px rgba(157,92,255,.18)}.avatar-large img{width:100%;height:100%;object-fit:cover}.profile-card h2{margin:0;font-size:19px}.profile-card>p{margin:5px 0 15px;color:var(--muted);font-size:11px}.profile-meta{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:13px 0;gap:8px}.profile-meta div{display:grid;gap:4px}.profile-meta span{font-size:9px;color:var(--muted)}.profile-meta strong{font-size:11px}.profile-actions{display:flex;justify-content:center;gap:8px;margin-top:14px}.filters{display:grid;grid-template-columns:1fr 180px;gap:10px;margin-bottom:12px}.pagination{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:12px;color:var(--muted);font-size:10px}.pagination>div{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}.pagination .btn{min-height:31px;padding:6px 9px;font-size:9px}@media(max-width:520px){.profile-meta{grid-template-columns:1fr 1fr 1fr}.filters{grid-template-columns:1fr}.pagination{align-items:flex-start;flex-direction:column}}
+
+/* Target B mobile edge-case polish */
+@media (max-width: 430px) {
+  .profile-card,
+  .profile-meta,
+  .filters,
+  .pagination {
+    min-width: 0;
+  }
+
+  .profile-meta strong,
+  .profile-meta span {
+    overflow-wrap: anywhere;
+  }
+
+  .pagination > div {
+    flex-wrap: wrap;
+  }
+}
+
+/* Navigation sync: Setting uses the exact same rail geometry as Home and Dashboard. */
+body[data-page="setting"] .bottom-nav,
+body[data-page="setting"] .nav-item { box-sizing:border-box; }
+body[data-page="setting"] .bottom-nav { height:66px; min-height:66px; background:#1a191f; border-top:2px solid rgba(185,108,255,.58); }
+body[data-page="setting"] .nav-item { height:70px; min-height:70px; }
+body[data-page="setting"] .nav-item .asset-ui-icon { width:38px; height:38px; flex-basis:38px; }
+body[data-page="setting"] .nav-item.active .asset-ui-icon { transform:translateY(-8px) scale(1.01); }
+body[data-page="setting"] .nav-item:not(.active) .asset-ui-icon { transform:translateY(5px); }
+@media(max-width:520px){
+  body[data-page="setting"] .bottom-nav { height:70px; min-height:70px; }
+  body[data-page="setting"] .nav-item { height:70px; min-height:70px; }
+  body[data-page="setting"] .nav-item .asset-ui-icon { width:38px; height:38px; flex-basis:38px; }
+}
+@media(max-width:360px){
+  body[data-page="setting"] .bottom-nav { height:70px; min-height:70px; }
+  body[data-page="setting"] .nav-item { height:66px; min-height:66px; }
+  body[data-page="setting"] .nav-item .asset-ui-icon { width:36px; height:36px; flex-basis:36px; }
+}
+/* Navigation interaction fix: keep navigation icons stationary on press.
+   Active styling (color/filter) remains unchanged. */
+.bottom-nav .nav-item .asset-ui-icon,
+.bottom-nav .nav-item.active .asset-ui-icon,
+.bottom-nav .nav-item:not(.active) .asset-ui-icon,
+.bottom-nav .nav-item:active .asset-ui-icon,
+.bottom-nav .nav-item:not(.active):active .asset-ui-icon {
+  transform:none !important;
+}
+
+
+/* ============================================================
+   SETTING — NEON AURORA CARD SYNC
+   Presentation-only: aligns Account/Setting cards with the
+   Dashboard visual language. HTML, IDs, JS and API contracts
+   remain untouched.
+   ============================================================ */
+
+body[data-page="setting"] .app-shell > .card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+  border-color: rgba(255,255,255,.075);
+  background:
+    radial-gradient(circle at 92% 0%, rgba(157,92,255,.085), transparent 34%),
+    linear-gradient(180deg, #19171e 0%, #15141a 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.025),
+    0 18px 44px rgba(0,0,0,.28);
+}
+
+body[data-page="setting"] .app-shell > .card::before {
+  content:"";
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:0;
+  height:2px;
+  pointer-events:none;
+  background:linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(185,108,255,.18) 12%,
+    rgba(185,108,255,.78) 50%,
+    rgba(95,225,255,.20) 88%,
+    transparent 100%
+  );
+  opacity:.82;
+}
+
+body[data-page="setting"] .app-shell > .card:hover {
+  border-color:rgba(185,108,255,.20);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.028),
+    0 20px 46px rgba(0,0,0,.30),
+    0 0 26px rgba(157,92,255,.055);
+}
+
+/* Profile card: same premium panel treatment, with a restrained aurora. */
+body[data-page="setting"] .profile-card {
+  background:
+    radial-gradient(circle at 50% -12%, rgba(185,108,255,.14), transparent 38%),
+    linear-gradient(180deg, #1b1821 0%, #15141a 100%);
+}
+
+body[data-page="setting"] .profile-card .avatar-large {
+  background:
+    radial-gradient(circle at 35% 28%, rgba(208,143,255,.22), transparent 42%),
+    #211b2b;
+  border-color:rgba(185,108,255,.48);
+  box-shadow:
+    0 0 0 5px rgba(157,92,255,.035),
+    0 0 30px rgba(157,92,255,.20);
+}
+
+body[data-page="setting"] .profile-card h2 {
+  color:#f0ebf6;
+  font-weight:820;
+  letter-spacing:-.02em;
+}
+
+body[data-page="setting"] .profile-card > p {
+  color:#a9a1b1;
+}
+
+body[data-page="setting"] .profile-meta {
+  border-top-color:rgba(255,255,255,.065);
+  border-bottom-color:rgba(255,255,255,.065);
+  background:linear-gradient(180deg,rgba(255,255,255,.012),rgba(255,255,255,0));
+}
+
+body[data-page="setting"] .profile-meta span {
+  color:#85808c;
+  letter-spacing:.04em;
+}
+
+body[data-page="setting"] .profile-meta strong {
+  color:#e4ddea;
+  font-weight:760;
+}
+
+/* Quota + Statistik: use the same rounded metric language as Dashboard. */
+body[data-page="setting"] .metric {
+  position:relative;
+  overflow:hidden;
+  min-height:112px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  padding:15px;
+  border-radius:16px;
+  border-color:rgba(255,255,255,.075);
+  background:linear-gradient(180deg,#1d1a22 0%,#17151b 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.018),
+    0 8px 24px rgba(0,0,0,.12);
+}
+
+body[data-page="setting"] .metric::after {
+  content:"";
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:0;
+  height:2px;
+  pointer-events:none;
+  background:linear-gradient(90deg,transparent,rgba(173,115,255,.52),transparent);
+}
+
+body[data-page="setting"] .metric:hover {
+  border-color:rgba(185,108,255,.24);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.025),
+    0 12px 28px rgba(0,0,0,.18),
+    0 0 22px rgba(157,92,255,.08);
+  transform:translateY(-1px);
+}
+
+body[data-page="setting"] .metric-label {
+  color:#8f8996;
+  font-size:9px;
+  letter-spacing:.08em;
+  font-weight:760;
+}
+
+body[data-page="setting"] .metric-value {
+  color:#e8e1ef;
+  font-size:27px;
+  font-weight:750;
+  letter-spacing:-.035em;
+}
+
+body[data-page="setting"] .metric-note {
+  color:#716b77;
+}
+
+/* Quota/status values get a quiet semantic neon tint. */
+body[data-page="setting"] #activeQuota,
+body[data-page="setting"] #success {
+  color:#b9ecce;
+}
+
+body[data-page="setting"] #limitedQuota,
+body[data-page="setting"] #failed {
+  color:#ff9eac;
+}
+
+/* History controls + table follow the same dark glass surface. */
+body[data-page="setting"] .filters .input,
+body[data-page="setting"] .filters .select {
+  background:linear-gradient(180deg,#17141c,#120f16);
+  border-color:rgba(255,255,255,.075);
+  border-radius:13px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.018);
+}
+
+body[data-page="setting"] .filters .input:focus,
+body[data-page="setting"] .filters .select:focus {
+  border-color:rgba(185,108,255,.42);
+  box-shadow:
+    0 0 0 3px rgba(157,92,255,.08),
+    0 0 20px rgba(157,92,255,.08);
+}
+
+body[data-page="setting"] .table-wrap {
+  border-color:rgba(255,255,255,.075);
+  border-radius:16px;
+  background:rgba(9,7,12,.34);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.018);
+}
+
+body[data-page="setting"] .table th {
+  background:linear-gradient(180deg,#1b1721,#17141c);
+  color:#cfc7d9;
+}
+
+body[data-page="setting"] .table td {
+  border-bottom-color:rgba(255,255,255,.05);
+}
+
+body[data-page="setting"] .table tbody tr:hover td {
+  background:rgba(157,92,255,.035);
+}
+
+/* Pagination: compact rounded controls, matching Dashboard's neon edge. */
+body[data-page="setting"] .pagination {
+  position:relative;
+  z-index:2;
+}
+
+body[data-page="setting"] .pagination > div {
+  gap:7px;
+}
+
+body[data-page="setting"] .pagination .btn {
+  position:relative;
+  min-width:34px;
+  min-height:34px;
+  padding:7px 10px;
+  border-radius:7px;
+  background:linear-gradient(180deg,#1d1a22 0%,#17151b 100%);
+  border-color:rgba(255,255,255,.075);
+  color:#bdb5c7;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.018),
+    0 6px 16px rgba(0,0,0,.16);
+}
+
+body[data-page="setting"] .pagination .btn::after {
+  content:"";
+  position:absolute;
+  left:4px;
+  right:4px;
+  bottom:-1px;
+  height:2px;
+  pointer-events:none;
+  background:linear-gradient(90deg,transparent,rgba(173,115,255,.48),transparent);
+}
+
+body[data-page="setting"] .pagination .btn:hover:not(:disabled) {
+  border-color:rgba(185,108,255,.28);
+  color:#e8e1ef;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.025),
+    0 9px 20px rgba(0,0,0,.20),
+    0 0 18px rgba(157,92,255,.07);
+}
+
+/* Responsive polish: preserve the visual hierarchy on narrow screens. */
+@media (max-width:520px) {
+  body[data-page="setting"] .app-shell > .card {
+    border-radius:17px;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.022),
+      0 14px 34px rgba(0,0,0,.25);
+  }
+
+  body[data-page="setting"] .metric {
+    min-height:94px;
+    padding:12px;
+    border-radius:14px;
+  }
+
+  body[data-page="setting"] .metric-value {
+    font-size:24px;
+  }
+
+  body[data-page="setting"] .pagination > div {
+    gap:6px;
+    width:100%;
+    justify-content:flex-start;
+  }
+
+  body[data-page="setting"] .pagination .btn {
+    min-width:33px;
+    min-height:33px;
+    padding:7px 9px;
+    border-radius:7px;
+  }
+}
+
+@media (max-width:380px) {
+  body[data-page="setting"] .app-shell > .card {
+    border-radius:15px;
+  }
+
+  body[data-page="setting"] .metric {
+    min-height:88px;
+    padding:10px;
+    border-radius:13px;
+  }
+
+  body[data-page="setting"] .metric-value {
+    font-size:22px;
+  }
+
+  body[data-page="setting"] .pagination .btn {
+    min-width:31px;
+    min-height:31px;
+    padding:6px 8px;
+    font-size:9px;
+    border-radius:6px;
+  }
+}
+
+/* ============================================================
+   SETTING — DASHBOARD HEADER + HORIZONTAL METRIC LAYOUT
+   Presentation/layout only. Existing routes and data contracts stay intact.
+   ============================================================ */
+body[data-page="setting"] .topbar {
+  position: relative;
+  align-items: center;
+  gap: 22px;
+  margin-bottom: 20px;
+  padding: 10px 4px 18px;
+  min-height: 84px;
+  border-bottom: 1px solid rgba(255,255,255,.07);
+}
+
+body[data-page="setting"] .topbar::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(183,115,255,.75) 34%, rgba(99,167,255,.26) 68%, transparent);
+  opacity: .78;
+  pointer-events: none;
+}
+
+body[data-page="setting"] .topbar::after {
+  content: "";
+  position: absolute;
+  left: -8px;
+  top: -16px;
+  width: 260px;
+  height: 118px;
+  background: radial-gradient(circle at 25% 50%, rgba(157,92,255,.13), transparent 68%);
+  pointer-events: none;
+}
+
+body[data-page="setting"] .topbar > div:first-child {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+
+body[data-page="setting"] .topbar .eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 24px;
+  padding: 5px 10px;
+  margin-bottom: 2px;
+  border: 1px solid rgba(181,124,255,.18);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(157,92,255,.11), rgba(157,92,255,.045));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.025), 0 6px 18px rgba(0,0,0,.12);
+  color: #c994ff;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .22em;
+}
+
+body[data-page="setting"] .topbar .eyebrow::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #bd7dff;
+  box-shadow: 0 0 10px rgba(189,125,255,.68);
+  flex: 0 0 auto;
+}
+
+body[data-page="setting"] .topbar .title {
+  margin: 7px 0 0;
+  font-size: clamp(31px, 5.2vw, 42px);
+  line-height: 1.02;
+  letter-spacing: -.045em;
+  font-weight: 850;
+  text-wrap: balance;
+  background: linear-gradient(180deg, #ffffff 0%, #f1eaf8 58%, #cfbee1 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 10px 34px rgba(0,0,0,.24);
+}
+
+body[data-page="setting"] .topbar .subtitle {
+  max-width: 650px;
+  margin: 9px 0 0;
+  color: #b4acbc;
+  font-size: 13px;
+  line-height: 1.65;
+  font-weight: 520;
+  letter-spacing: .005em;
+}
+
+body[data-page="setting"] .topbar .top-actions {
+  position: relative;
+  z-index: 2;
+  gap: 10px;
+}
+
+body[data-page="setting"] .topbar .top-actions .badge.green {
+  min-height: 42px;
+  padding: 0 13px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(17,52,33,.96), rgba(13,39,25,.96));
+  border-color: rgba(56,157,101,.55);
+  color: #9ef4bb;
+  font-size: 10px;
+  font-weight: 800;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.025), 0 8px 22px rgba(18,84,49,.12);
+}
+
+body[data-page="setting"] .topbar .top-actions .round-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #211d26, #18161c);
+  border-color: rgba(255,255,255,.085);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.025), 0 10px 24px rgba(0,0,0,.20);
+}
+
+body[data-page="setting"] .topbar .top-actions .round-btn:hover {
+  border-color: rgba(185,108,255,.34);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.03), 0 12px 28px rgba(0,0,0,.22), 0 0 24px rgba(157,92,255,.12);
+}
+
+body[data-page="setting"] .quota-grid {
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  gap: 12px;
+}
+
+body[data-page="setting"] .quota-grid .metric,
+body[data-page="setting"] .grid-3 .metric {
+  min-width: 0;
+}
+
+body[data-page="setting"] .grid-3 {
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  gap: 12px;
+}
+
+body[data-page="setting"] .profile-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  width: min(100%, 390px);
+  margin-inline: auto;
+  gap: 10px;
+}
+
+body[data-page="setting"] .profile-actions .btn {
+  min-width: 0;
+  width: 100%;
+}
+
+body[data-page="setting"] #usedQuota {
+  color: #c9b8dc;
+}
+
+@media (max-width: 700px) {
+  body[data-page="setting"] .topbar {
+    align-items: flex-start;
+    gap: 14px;
+    padding: 8px 2px 16px;
+    min-height: 78px;
+  }
+  body[data-page="setting"] .topbar .title { font-size: clamp(28px, 7.8vw, 35px); }
+  body[data-page="setting"] .topbar .subtitle { font-size: 12px; line-height: 1.58; }
+  body[data-page="setting"] .topbar .top-actions .badge.green { min-height: 40px; padding: 0 11px; border-radius: 11px; }
+  body[data-page="setting"] .topbar .top-actions .round-btn { width: 44px; height: 44px; border-radius: 13px; }
+}
+
+@media (max-width: 520px) {
+  body[data-page="setting"] .topbar { gap: 10px; margin-bottom: 17px; }
+  body[data-page="setting"] .topbar .eyebrow { min-height: 22px; padding: 4px 8px; font-size: 8px; letter-spacing: .2em; }
+  body[data-page="setting"] .topbar .title { margin-top: 6px; font-size: clamp(27px, 8.5vw, 34px); }
+  body[data-page="setting"] .topbar .subtitle { max-width: 100%; margin-top: 8px; font-size: 11.5px; line-height: 1.55; }
+  body[data-page="setting"] .topbar .top-actions { gap: 6px; }
+  body[data-page="setting"] .topbar .top-actions .badge.green { max-width: 122px; min-height: 38px; padding: 0 9px; font-size: 9px; overflow: hidden; }
+  body[data-page="setting"] .topbar .top-actions .round-btn { width: 40px; height: 40px; border-radius: 11px; }
+
+  body[data-page="setting"] .quota-grid,
+  body[data-page="setting"] .grid-3 { grid-template-columns: repeat(3, minmax(0,1fr)); gap: 7px; }
+  body[data-page="setting"] .quota-grid .metric,
+  body[data-page="setting"] .grid-3 .metric { min-height: 92px; padding: 10px 9px; border-radius: 13px; }
+  body[data-page="setting"] .quota-grid .metric-label,
+  body[data-page="setting"] .grid-3 .metric-label { font-size: 8px; letter-spacing: .045em; }
+  body[data-page="setting"] .quota-grid .metric-value,
+  body[data-page="setting"] .grid-3 .metric-value { margin-top: 6px; font-size: 21px; }
+}
+
+@media (max-width: 430px) {
+  body[data-page="setting"] .topbar .subtitle { max-width: 235px; }
+  body[data-page="setting"] .topbar .top-actions .badge.green { max-width: 108px; }
+  body[data-page="setting"] .profile-actions { width: 100%; gap: 8px; }
+  body[data-page="setting"] .profile-actions .btn { min-height: 41px; padding: 9px 10px; font-size: 10px; }
+  body[data-page="setting"] .quota-grid,
+  body[data-page="setting"] .grid-3 { gap: 6px; }
+  body[data-page="setting"] .quota-grid .metric,
+  body[data-page="setting"] .grid-3 .metric { padding: 9px 7px; min-height: 88px; }
+}
+
+@media (max-width: 360px) {
+  body[data-page="setting"] .topbar .title { font-size: 25px; }
+  body[data-page="setting"] .topbar .subtitle { font-size: 10.5px; line-height: 1.5; }
+  body[data-page="setting"] .topbar .top-actions .badge.green { max-width: 94px; font-size: 8px; }
+  body[data-page="setting"] .topbar .top-actions .round-btn { width: 38px; height: 38px; border-radius: 10px; }
+  body[data-page="setting"] .quota-grid .metric,
+  body[data-page="setting"] .grid-3 .metric { min-height: 84px; padding: 8px 6px; border-radius: 11px; }
+  body[data-page="setting"] .quota-grid .metric-label,
+  body[data-page="setting"] .grid-3 .metric-label { font-size: 7.5px; }
+  body[data-page="setting"] .quota-grid .metric-value,
+  body[data-page="setting"] .grid-3 .metric-value { font-size: 19px; }
+}

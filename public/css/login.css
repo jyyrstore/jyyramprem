@@ -1,0 +1,1160 @@
+/* =========================================================
+   JYY'R AMPREM — LOGIN
+   Reference: 1080 × 2406
+   ========================================================= */
+
+
+/* =========================================================
+   1. RESET / BOX MODEL
+   ========================================================= */
+
+body.auth-page *,
+body.auth-page *::before,
+body.auth-page *::after {
+  box-sizing: border-box;
+}
+
+
+/* =========================================================
+   2. CUSTOM FONTS
+   ========================================================= */
+
+@font-face {
+  font-family: "JyyRBrand";
+  src: url("/assets/Font/jyyramprem.ttf") format("truetype");
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  font-synthesis: none;
+}
+
+@font-face {
+  font-family: "JyyRMasuk";
+  src: url("/assets/Font/masukjyyr.ttf") format("truetype");
+  font-display: swap;
+  font-weight: 100 900;
+}
+
+@font-face {
+  font-family: "JyyRButton";
+  src: url("/assets/Font/login-daftar.otf") format("opentype");
+  font-display: swap;
+  font-weight: 100 900;
+}
+
+
+/* =========================================================
+   3. PAGE
+   ========================================================= */
+
+html {
+  min-height: 100%;
+}
+
+body.auth-page {
+  min-width: 0;
+  min-height: 100vh;
+  min-height: 100svh;
+
+  margin: 0;
+  padding: 0;
+
+  overflow-x: hidden;
+
+  color: #fff;
+
+  background:
+    linear-gradient(
+      135deg,
+      #0b0918 0%,
+      #0d0b18 47%,
+      #141211 100%
+    ) !important;
+}
+
+body.auth-page::before {
+  content: "";
+
+  position: fixed;
+  inset: 0;
+
+  z-index: 0;
+
+  pointer-events: none;
+
+  background:
+    linear-gradient(
+      120deg,
+      transparent 0%,
+      rgba(195, 57, 235, 0.02) 48%,
+      transparent 100%
+    );
+}
+
+
+/* =========================================================
+   4. AUTH SHELL
+   ========================================================= */
+
+.auth-shell {
+  position: relative;
+  z-index: 1;
+
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100svh;
+
+  margin: 0 auto;
+  padding: 29.2vw 0 9vw;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+
+/* =========================================================
+   5. BRAND
+   ========================================================= */
+
+.auth-brand {
+  width: 100%;
+
+  margin: 0 0 9.4vw;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.brand-photo-wrap {
+  width: 20vw;
+  height: 20vw;
+
+  min-width: 130px;
+  min-height: 130px;
+
+  max-width: 356px;
+  max-height: 356px;
+
+  padding: 3px;
+
+  border-radius: 50%;
+
+  background:
+    linear-gradient(
+      135deg,
+      #dd38dd 0%,
+      #9b6cf5 52%,
+      #3bbef0 100%
+    );
+
+  box-shadow:
+    0 0 16px rgba(207, 52, 223, 0.14);
+}
+
+.brand-photo {
+  display: block;
+
+  width: 100%;
+  height: 100%;
+
+  border: 3px solid #11101a;
+  border-radius: 50%;
+
+  object-fit: cover;
+
+  background: #12101a;
+}
+
+.brand-wordmark {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+
+  margin-top: 4.5vw;
+  padding: 4px 10px 8px;
+
+  overflow: visible;
+
+  white-space: nowrap;
+  text-align: center;
+
+  font-family: "JyyRBrand", sans-serif !important;
+  font-size: clamp(33px, 9.2vw, 123px);
+  font-weight: 400;
+  font-style: normal;
+  line-height: 1.5;
+
+  letter-spacing: 0;
+  font-synthesis: none;
+  text-rendering: geometricPrecision;
+  -webkit-font-smoothing: antialiased;
+
+  background: none;
+  color: #21dcff;
+}
+
+/* =========================================================
+   5A. LOGIN BRAND — SAME WAVE MODEL AS HOME
+========================================================= */
+
+.brand-char {
+  display: inline-block;
+  position: relative;
+  flex: 0 0 auto;
+
+  opacity: 0;
+
+  color: #21dcff;
+  -webkit-text-fill-color: #21dcff;
+
+  animation:
+    loginBrandCharWave
+    1.15s
+    cubic-bezier(0.22, 0.61, 0.36, 1)
+    both;
+
+  animation-delay: calc(var(--i) * 0.075s);
+
+  will-change: transform, opacity;
+  transform: translate3d(0, 7px, 0);
+  backface-visibility: hidden;
+}
+
+.brand-space {
+  display: inline-block;
+  width: 0.30em;
+}
+
+@keyframes loginBrandCharWave {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 7px, 0);
+  }
+
+  25% {
+    opacity: 1;
+    transform: translate3d(0, -5px, 0);
+  }
+
+  50% {
+    opacity: 1;
+    transform: translate3d(0, 2px, 0);
+  }
+
+  72% {
+    opacity: 1;
+    transform: translate3d(0, -1px, 0);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* Neon gradient is painted by auth.js per letter, just like Home. */
+
+
+/* =========================================================
+   6. AUTH CARD
+   ========================================================= */
+
+.auth-card {
+  position: relative;
+
+  width: 75vw;
+  max-width: 694px;
+
+  padding: 3px;
+
+  border-radius: 6vw;
+
+  background:
+    linear-gradient(
+      135deg,
+      #d33ddd 0%,
+      #a16ef0 52%,
+      #34c9ee 100%
+    );
+}
+
+.auth-card-inner {
+  width: 100%;
+  min-height: 99.2vw;
+
+  padding: 7vw 5vw 5vw;
+
+  border-radius: 5.6vw;
+
+  background: #454547;
+}
+
+
+/* =========================================================
+   7. HEADING
+   ========================================================= */
+
+.auth-heading {
+  width: 100%;
+
+  margin: 0 0 5.2vw;
+
+  text-align: center;
+}
+
+.auth-heading h1 {
+  margin: 0;
+
+  font-family:
+    "JyyRMasuk",
+    Impact,
+    "Arial Black",
+    sans-serif;
+
+  font-size: 6vw;
+  font-weight: 900;
+  line-height: 1.12;
+
+  letter-spacing: 0.01em;
+
+  color: #05c8d4;
+
+  text-shadow:
+    0 0 8px rgba(0, 218, 255, 0.25);
+}
+
+.auth-heading::after {
+  content: "";
+
+  display: block;
+
+  width: 53vw;
+  max-width: 572px;
+  height: 2px;
+
+  margin: 3.2vw auto 0;
+
+  border-radius: 99px;
+
+  background: #242226;
+}
+
+
+/* =========================================================
+   8. FORM
+   ========================================================= */
+
+.auth-form {
+  width: 100%;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.field {
+  position: relative;
+
+  width: 100%;
+
+  display: grid;
+  gap: 6px;
+
+  text-align: left;
+}
+
+.field.hidden,
+.hidden {
+  display: none !important;
+}
+
+.field label {
+  font-size: 10.5px;
+  font-weight: 650;
+
+  color: #d5d0d8;
+}
+
+
+/* =========================================================
+   9. EMAIL
+   ========================================================= */
+
+.auth-email-field {
+  margin-bottom: 11.4vw;
+}
+
+
+/* =========================================================
+   10. INPUT
+   ========================================================= */
+
+.input {
+  display: block;
+
+  width: 100%;
+  height: 10.4vw;
+
+  min-height: 66px;
+  max-height: 84px;
+
+  padding: 0 12vw 0 4vw;
+
+  border: 2px solid transparent !important;
+  border-radius: 999px;
+
+  outline: none;
+
+  background:
+    linear-gradient(#171619, #171619) padding-box,
+    linear-gradient(
+      135deg,
+      #b73edc 0%,
+      #8e5be6 48%,
+      #36c4ee 100%
+    ) border-box !important;
+
+  color: #eae7ec !important;
+
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
+
+  font-size: 2.7vw;
+  font-weight: 700;
+  line-height: 1;
+
+  box-shadow: none !important;
+
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.input::placeholder {
+  color: #77727b !important;
+  opacity: 1;
+}
+
+.input:focus {
+  border-color: #a45cf0 !important;
+
+  box-shadow:
+    0 0 0 3px rgba(173, 85, 236, 0.12) !important;
+}
+
+
+/* =========================================================
+   11. INPUT ICONS
+   ========================================================= */
+
+/*
+ * Shared right-side icon geometry for all text inputs.
+ * The icon is centered against the field itself, so the position
+ * remains stable when register-only fields are shown/hidden.
+ */
+.field-icon {
+  position: absolute;
+
+  top: 50%;
+  right: 2.6vw;
+
+  width: 5.5vw;
+  height: 5.5vw;
+
+  min-width: 34px;
+  min-height: 34px;
+
+  max-width: 60px;
+  max-height: 60px;
+
+  display: grid;
+  place-items: center;
+
+  transform: translateY(-50%);
+
+  opacity: 0.5;
+
+  pointer-events: none;
+}
+
+.field-icon img {
+  display: block;
+
+  width: 100%;
+  height: 100%;
+
+  object-fit: contain;
+}
+
+
+/* =========================================================
+   12. PASSWORD
+   ========================================================= */
+
+.password-row {
+  position: relative;
+
+  width: 100%;
+  height: 10.4vw;
+
+  min-height: 66px;
+  max-height: 84px;
+}
+
+.password-row .input {
+  height: 100%;
+
+  padding-right: 12vw;
+}
+
+
+/* =========================================================
+   13. PASSWORD TOGGLE
+   ========================================================= */
+
+.icon-btn {
+  position: absolute;
+
+  top: 50%;
+  right: 2.2vw;
+
+  z-index: 3;
+
+  width: 5.7vw;
+  height: 5.7vw;
+
+  min-width: 36px;
+  min-height: 36px;
+
+  max-width: 62px;
+  max-height: 62px;
+
+  margin: 0;
+  padding: 0;
+
+  display: grid;
+  place-items: center;
+
+  transform: translateY(-50%);
+
+  border: 0 !important;
+  border-radius: 50%;
+
+  outline: none !important;
+
+  background: transparent !important;
+
+  color: #fff;
+
+  opacity: 0.5;
+
+  box-shadow: none !important;
+
+  cursor: pointer;
+}
+
+.icon-btn img {
+  display: block;
+
+  width: 100%;
+  height: 100%;
+
+  object-fit: contain;
+}
+
+.icon-btn:hover,
+.icon-btn:active,
+.icon-btn:focus,
+.icon-btn:focus-visible {
+  transform: translateY(-50%);
+
+  outline: none !important;
+
+  box-shadow: none !important;
+}
+
+
+/* =========================================================
+   14. AUTH LINKS
+   ========================================================= */
+
+.auth-links {
+  width: 100%;
+  min-height: 24px;
+
+  margin: 8.3vw 0 5vw;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-links button {
+  margin: 0;
+  padding: 0;
+
+  border: 0 !important;
+
+  background: transparent !important;
+
+  color: #d4b8f0;
+
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
+
+  font-size: 2.4vw;
+  font-weight: 800;
+  line-height: 1;
+
+  letter-spacing: 0.01em;
+
+  text-align: center;
+
+  box-shadow: none !important;
+
+  cursor: pointer;
+}
+
+.auth-links button:hover {
+  color: #ecd9ff;
+}
+
+#resendCode {
+  font-size: 11px;
+}
+
+
+/* =========================================================
+   15. AUTH BUTTONS
+   ========================================================= */
+
+.auth-action {
+  position: relative;
+
+  width: 100%;
+  height: 7vw;
+
+  min-height: 58px;
+  max-height: 76px;
+
+  margin: 0 0 3.2vw;
+  padding: 0 12px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 2px solid transparent !important;
+  border-radius: 999px;
+
+  background:
+    linear-gradient(#171619, #171619) padding-box,
+    linear-gradient(
+      135deg,
+      #c53cdd 0%,
+      #8d5ae8 48%,
+      #31c6ee 100%
+    ) border-box !important;
+
+  color: #d68bf0 !important;
+
+  font-family:
+    "JyyRButton",
+    Impact,
+    "Arial Black",
+    sans-serif;
+
+  font-size: 4vw;
+  font-weight: 900;
+  line-height: 1.12;
+
+  letter-spacing: 0.02em;
+
+  text-align: center;
+
+  text-shadow:
+    0 0 5px rgba(214, 80, 225, 0.16);
+
+  box-shadow: none;
+
+  overflow: visible;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.auth-action:hover {
+  transform: translateY(-1px);
+
+  box-shadow:
+    0 0 14px rgba(190, 66, 222, 0.13);
+}
+
+.auth-action:active {
+  transform: scale(0.985);
+}
+
+
+/* Login */
+
+#submitBtn {
+  order: 10;
+}
+
+
+/* Register */
+
+#registerTab {
+  order: 20;
+}
+
+.auth-action.auth-register-tab.active {
+  color: #efb0ff !important;
+}
+
+
+/* =========================================================
+   17. REGISTER STATE
+   ========================================================= */
+
+#usernameField:not(.hidden) {
+  margin-bottom: 28px;
+}
+
+#registerCodeField:not(.hidden) {
+  margin-top: 14px;
+  margin-bottom: 28px;
+}
+
+#usernameField:not(.hidden) + .auth-email-field {
+  margin-bottom: 14px;
+}
+
+
+/* =========================================================
+   18. COPYRIGHT
+   ========================================================= */
+
+.copyright {
+  width: 100%;
+
+  margin: 25.5vw 0 0;
+  padding: 0;
+
+  color: #77727b;
+
+  font-family:
+    Inter,
+    Arial,
+    sans-serif;
+
+  font-size: 2.2vw;
+  font-weight: 600;
+  line-height: 1;
+
+  letter-spacing: 0.01em;
+
+  text-align: center;
+}
+
+
+/* =========================================================
+   19. ACCESSIBILITY
+   ========================================================= */
+
+.sr-only {
+  position: absolute !important;
+
+  width: 1px !important;
+  height: 1px !important;
+
+  padding: 0 !important;
+  margin: -1px !important;
+
+  overflow: hidden !important;
+
+  clip: rect(0, 0, 0, 0) !important;
+
+  white-space: nowrap !important;
+
+  border: 0 !important;
+}
+
+
+/* =========================================================
+   20. MOBILE
+   ========================================================= */
+
+@media (max-width: 520px) {
+
+  .auth-shell {
+    padding-top: 15vw;
+  }
+
+  .auth-brand {
+    margin-bottom: 8vw;
+  }
+
+  .brand-photo-wrap {
+    width: 30vw;
+    height: 30vw;
+
+    min-width: 130px;
+    min-height: 130px;
+
+    max-width: 180px;
+    max-height: 180px;
+  }
+
+  .brand-wordmark {
+    margin-top: 4vw;
+    font-size: 9.2vw;
+    padding: 4px 12px 9px;
+    transform: none;
+  }
+}
+
+  .auth-card {
+    width: 86vw;
+
+    border-radius: 7vw;
+  }
+
+  .auth-card-inner {
+    min-height: 118vw;
+
+    padding: 8vw 5vw 6vw;
+
+    border-radius: 6.5vw;
+  }
+
+  .auth-heading {
+    margin-bottom: 6vw;
+  }
+
+  .auth-heading h1 {
+    font-size: 7vw;
+  }
+
+  .auth-heading::after {
+    width: 60vw;
+
+    margin-top: 3.5vw;
+  }
+
+  .auth-email-field {
+    margin-bottom: 8vw;
+  }
+
+  .input {
+    font-size: 13px;
+  }
+
+  .auth-links {
+    margin-top: 7vw;
+    margin-bottom: 5vw;
+  }
+
+  .auth-links button {
+    font-size: 12px;
+  }
+
+  .auth-action {
+    font-size: 16px;
+  }
+
+  .copyright {
+    margin-top: 14vw;
+
+    font-size: 10px;
+  }
+
+
+/* =========================================================
+   21. VERY SMALL DEVICES
+   ========================================================= */
+
+@media (max-width: 360px) {
+
+  .auth-shell {
+    padding-top: 10vw;
+  }
+
+  .brand-photo-wrap {
+    width: 32vw;
+    height: 32vw;
+
+    min-width: 115px;
+    min-height: 115px;
+  }
+
+  .brand-wordmark {
+    font-size: 9.8vw;
+    padding-left: 12px;
+    padding-right: 12px;
+    transform: none;
+  }
+}
+
+  .auth-card {
+    width: 90vw;
+  }
+
+  .auth-card-inner {
+    padding-left: 5vw;
+    padding-right: 5vw;
+  }
+
+  .input {
+    min-height: 58px;
+  }
+
+  .password-row {
+    min-height: 58px;
+  }
+
+  .auth-action {
+    min-height: 54px;
+  }
+
+/* =========================================================
+   22. MODERN SLIM INPUTS
+   Keep the neon identity while reducing visual weight.
+   ========================================================= */
+
+body.auth-page .field {
+  gap: 5px;
+}
+
+body.auth-page .input,
+body.auth-page .password-row {
+  height: clamp(54px, 8vw, 62px);
+  min-height: 54px;
+  max-height: 62px;
+}
+
+body.auth-page .input {
+  padding: 0 52px 0 18px;
+  border-width: 1.5px !important;
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(20, 19, 23, 0.96), rgba(15, 14, 18, 0.96)) padding-box,
+    linear-gradient(135deg, rgba(193, 61, 224, 0.92), rgba(105, 96, 224, 0.88) 52%, rgba(49, 192, 235, 0.92)) border-box !important;
+  font-size: clamp(13px, 2.15vw, 15px);
+  font-weight: 650;
+  letter-spacing: 0.005em;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.025) !important;
+  transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+
+body.auth-page .input:hover {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.035), 0 0 0 1px rgba(151, 89, 238, 0.05) !important;
+}
+
+body.auth-page .input:focus {
+  border-width: 1.5px !important;
+  box-shadow:
+    0 0 0 3px rgba(173, 85, 236, 0.09),
+    0 0 18px rgba(70, 178, 238, 0.07),
+    inset 0 1px 0 rgba(255,255,255,0.035) !important;
+  transform: translateY(-1px);
+}
+
+body.auth-page .input::placeholder {
+  color: #85808a !important;
+  font-weight: 550;
+}
+
+body.auth-page .password-row .input {
+  height: 100%;
+  padding-right: 54px;
+}
+
+body.auth-page .field-icon {
+  right: 17px;
+  width: 25px;
+  height: 25px;
+  min-width: 25px;
+  min-height: 25px;
+  max-width: 30px;
+  max-height: 30px;
+  opacity: 0.42;
+}
+
+body.auth-page .icon-btn {
+  right: 14px;
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  min-height: 30px;
+  max-width: 34px;
+  max-height: 34px;
+  opacity: 0.42;
+}
+
+body.auth-page .auth-email-field {
+  margin-bottom: 24px;
+}
+
+body.auth-page .auth-links {
+  margin-top: 28px;
+  margin-bottom: 20px;
+}
+
+body.auth-page #usernameField:not(.hidden) {
+  margin-bottom: 18px;
+}
+
+body.auth-page #registerCodeField:not(.hidden) {
+  margin-top: 12px;
+  margin-bottom: 20px;
+}
+
+body.auth-page #usernameField:not(.hidden) + .auth-email-field {
+  margin-bottom: 18px;
+}
+
+@media (max-width: 520px) {
+  body.auth-page .input,
+  body.auth-page .password-row {
+    height: 54px;
+    min-height: 54px;
+    max-height: 54px;
+  }
+
+  body.auth-page .input {
+    padding-left: 17px;
+    padding-right: 50px;
+    border-radius: 17px;
+    font-size: 13px;
+  }
+
+  body.auth-page .password-row .input {
+    padding-right: 51px;
+  }
+
+  body.auth-page .field-icon {
+    right: 15px;
+    width: 24px;
+    height: 24px;
+  }
+
+  body.auth-page .icon-btn {
+    right: 13px;
+    width: 29px;
+    height: 29px;
+  }
+
+  body.auth-page .auth-email-field {
+    margin-bottom: 20px;
+  }
+
+  body.auth-page .auth-links {
+    margin-top: 24px;
+    margin-bottom: 18px;
+  }
+}
+
+
+/* =========================================================
+   PORTAL ACCESS TOKEN GATE
+========================================================= */
+.token-gate[hidden] { display: none !important; }
+.token-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+.token-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(4, 3, 10, .78);
+  backdrop-filter: blur(12px);
+}
+.token-modal {
+  position: relative;
+  z-index: 1;
+  width: min(92vw, 430px);
+  padding: 24px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 24px;
+  background: linear-gradient(145deg, rgba(25,20,38,.98), rgba(12,10,20,.98));
+  box-shadow: 0 24px 80px rgba(0,0,0,.5);
+}
+.token-kicker {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .16em;
+  line-height: 1.2;
+  text-align: center;
+  opacity: .68;
+}
+.token-modal h2 {
+  margin: 0 0 10px;
+  font-size: 28px;
+  line-height: 1.15;
+  text-align: center;
+}
+.token-description {
+  max-width: 35ch;
+  margin: 0 auto 20px;
+  color: rgba(255,255,255,.72);
+  line-height: 1.6;
+  text-align: center;
+}
+.token-field { margin-bottom: 12px; }
+.token-field .input { text-align: center; letter-spacing: .12em; font-weight: 800; text-transform: uppercase; }
+.token-status { min-height: 22px; margin: 8px 0 10px; font-size: 13px; text-align: center; color: rgba(255,255,255,.72); }
+.token-status.error { color: #ff8f9f; }
+.token-status.success { color: #80e6ae; }
+.token-actions { display: grid; gap: 10px; }
+.token-hint { margin: 13px 0 0; font-size: 12px; line-height: 1.5; text-align: center; color: rgba(255,255,255,.5); }
+.token-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 50%;
+  background: rgba(255,255,255,.07);
+  color: #fff;
+  font-size: 23px;
+  font-weight: 400;
+  line-height: 1;
+  cursor: pointer;
+  opacity: .88;
+  transition: background .18s ease, border-color .18s ease, transform .18s ease, opacity .18s ease;
+}
+.token-close:hover {
+  background: rgba(255,255,255,.12);
+  border-color: rgba(255,255,255,.18);
+  opacity: 1;
+}
+.token-close:active { transform: scale(.94); }
+.token-close:focus-visible {
+  outline: 2px solid rgba(164,92,240,.9);
+  outline-offset: 2px;
+}

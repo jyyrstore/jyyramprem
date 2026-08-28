@@ -1,0 +1,777 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  >
+
+  <title>Jyy'R Amprem • Owner</title>
+
+  <link rel="stylesheet" href="/css/common.css"><link rel="stylesheet" href="/css/uiux-final.css">
+  <link rel="stylesheet" href="/css/owner.css">
+</head>
+
+<body data-page="owner">
+
+<main class="app-shell">
+
+  <!-- =====================================================
+       TOPBAR
+  ====================================================== -->
+  <header class="topbar">
+
+    <div class="brand">
+
+      <div class="avatar">
+        <span id="ownerAvatar"></span>
+      </div>
+
+      <div>
+        <div class="eyebrow">
+          OWNER CONTROL
+        </div>
+
+        <h1 class="title">
+          Jyy'R Amprem
+        </h1>
+
+        <p class="subtitle">
+          Konsol Manajemen Owner
+        </p>
+      </div>
+
+    </div>
+
+
+    <div class="top-actions">
+
+      <button
+        id="refreshPage"
+        class="round-btn"
+        type="button"
+        aria-label="Refresh"
+      >
+        <span id="refreshIcon"></span>
+      </button>
+
+      <button
+        id="logoutBtnTop"
+        class="round-btn"
+        type="button"
+        aria-label="Logout"
+      >
+        <span id="logoutIconTop"></span>
+      </button>
+
+    </div>
+
+  </header>
+
+
+  <!-- =====================================================
+       OWNER PROFILE
+  ====================================================== -->
+  <section class="card owner-profile">
+
+    <div class="avatar-large">
+      <span id="ownerAvatarLarge"></span>
+    </div>
+
+    <h2 data-user-name>
+      Owner
+    </h2>
+
+    <p data-user-email>
+      —
+    </p>
+
+
+    <div class="profile-meta">
+
+      <div>
+        <span>Status</span>
+        <strong>Owner</strong>
+      </div>
+
+      <div>
+        <span>Terdaftar Sejak</span>
+        <strong id="registeredAt">—</strong>
+      </div>
+
+      <div>
+        <span>Login Terakhir</span>
+        <strong id="lastLogin">—</strong>
+      </div>
+
+    </div>
+
+
+    <div class="profile-actions">
+
+      <a
+        class="btn"
+        href="/home.html"
+      >
+        <span id="homeIcon"></span>
+        Home
+      </a>
+
+      <button
+        id="logoutBtn"
+        class="btn danger"
+        type="button"
+      >
+        <span id="logoutIcon"></span>
+        Logout
+      </button>
+
+    </div>
+
+  </section>
+
+
+  <!-- =====================================================
+       OWNER TABS
+  ====================================================== -->
+  <section class="card">
+
+    <div
+      class="chips"
+      id="ownerTabs"
+    >
+
+      <button
+        class="chip active"
+        type="button"
+        data-section="statistik"
+      >
+        Statistik
+      </button>
+
+      <button
+        class="chip"
+        type="button"
+        data-section="member"
+      >
+        Member
+      </button>
+
+      <button
+        class="chip"
+        type="button"
+        data-section="broadcast"
+      >
+        Broadcast
+      </button>
+
+      <button
+        class="chip"
+        type="button"
+        data-section="notifikasi"
+      >
+        Notifikasi
+      </button>
+
+      <button
+        class="chip"
+        type="button"
+        data-section="token"
+      >
+        Token
+      </button>
+
+      <button
+        class="chip"
+        type="button"
+        data-section="security"
+      >
+        Security
+      </button>
+
+      <button
+        class="chip"
+        type="button"
+        data-section="sistem"
+      >
+        Sistem
+      </button>
+
+    </div>
+
+  </section>
+
+
+  <!-- =====================================================
+       STATISTIK
+  ====================================================== -->
+  <section
+    id="statistik"
+    class="owner-section active"
+  >
+
+    <div class="card">
+
+      <div class="section-head">
+
+        <div>
+
+          <h2 class="section-title">
+            Grafik Account 7 Day
+          </h2>
+
+          <p class="section-note">
+            Akun baru per hari berdasarkan
+            created_at yang dapat dibaca akun ini.
+          </p>
+
+        </div>
+
+        <span class="badge blue">
+          7 Hari
+        </span>
+
+      </div>
+
+
+      <div
+        id="ownerChart"
+        class="bar-chart"
+      ></div>
+
+
+      <div class="grid grid-3 compare">
+
+        <div class="metric">
+
+          <span class="metric-label">
+            Hari ini
+          </span>
+
+          <strong
+            id="todayCount"
+            class="metric-value"
+          >
+            0
+          </strong>
+
+        </div>
+
+
+        <div class="metric">
+
+          <span class="metric-label">
+            Seminggu
+          </span>
+
+          <strong
+            id="weekCount"
+            class="metric-value"
+          >
+            0
+          </strong>
+
+        </div>
+
+
+        <div class="metric">
+
+          <span class="metric-label">
+            Sebulan
+          </span>
+
+          <strong
+            id="monthCount"
+            class="metric-value"
+          >
+            0
+          </strong>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- =====================================================
+       MEMBER
+  ====================================================== -->
+  <section id="member" class="owner-section">
+    <div class="card">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">Member Management</h2>
+          <p class="section-note">Kelola status, profil dasar, catatan internal, pencarian, dan pagination member.</p>
+        </div>
+        <span class="badge green">Backend terhubung</span>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="field">
+          <label for="memberSearch">Search</label>
+          <input id="memberSearch" class="input" type="search" autocomplete="off" placeholder="Cari nama atau email member">
+        </div>
+        <div class="field">
+          <label for="memberStatusFilter">Status</label>
+          <select id="memberStatusFilter" class="input">
+            <option value="">Semua status</option>
+            <option value="active">Active</option>
+            <option value="suspended">Suspended</option>
+            <option value="banned">Banned</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="memberList" class="member-list">
+        <div class="member-row"><div><strong>Memuat member...</strong><small>Mohon tunggu</small></div></div>
+      </div>
+
+      <div id="memberEditor" class="owner-editor" hidden>
+        <div class="section-head">
+          <div>
+            <h3 class="section-title">Edit Member</h3>
+            <p id="memberEditorMeta" class="section-note">—</p>
+          </div>
+          <button id="memberEditorClose" class="btn" type="button">Tutup</button>
+        </div>
+        <div class="grid grid-2">
+          <div class="field">
+            <label for="memberDisplayName">Display Name</label>
+            <input id="memberDisplayName" class="input" type="text" maxlength="100">
+          </div>
+          <div class="field">
+            <label for="memberNotes">Notes</label>
+            <textarea id="memberNotes" class="textarea" maxlength="2000" rows="5"></textarea>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button id="memberEditorSave" class="btn primary" type="button">Simpan Profil</button>
+        </div>
+        <small id="memberEditorStatus" class="section-note"></small>
+      </div>
+
+      <div class="pagination">
+        <span id="memberTotal">Total Member : —</span>
+        <div class="btn-row">
+          <button id="memberPrev" class="btn" type="button">‹</button>
+          <span id="memberPageLabel" class="pagination-label">1 / 1</span>
+          <button id="memberNext" class="btn" type="button">›</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =====================================================
+       BROADCAST
+  ====================================================== -->
+  <section id="broadcast" class="owner-section">
+    <div class="grid grid-2">
+      <article class="card">
+        <h2 class="section-title">Broadcast</h2>
+        <p class="section-note">Buat draft, jadwalkan, edit, hapus draft, atau jalankan broadcast yang sudah waktunya.</p>
+        <div class="grid">
+          <div class="field">
+            <label for="broadcastTitle">Judul</label>
+            <input id="broadcastTitle" class="input" type="text" maxlength="160" placeholder="Judul broadcast">
+          </div>
+          <div class="field">
+            <label for="broadcastMessage">Pesan</label>
+            <textarea id="broadcastMessage" class="textarea" maxlength="10000" placeholder="Isi pesan broadcast"></textarea>
+          </div>
+          <div class="grid grid-2">
+            <div class="field">
+              <label for="broadcastStatus">Status</label>
+              <select id="broadcastStatus" class="input">
+                <option value="draft">Draft</option>
+                <option value="scheduled">Scheduled</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="broadcastFilter">Penerima</label>
+              <select id="broadcastFilter" class="input">
+                <option value="all">Semua member</option>
+                <option value="active">Member aktif</option>
+                <option value="suspended">Member suspended</option>
+                <option value="banned">Member banned</option>
+              </select>
+            </div>
+          </div>
+          <div class="field" id="broadcastScheduleWrap" hidden>
+            <label for="broadcastScheduledAt">Jadwal</label>
+            <input id="broadcastScheduledAt" class="input" type="datetime-local">
+          </div>
+          <div class="btn-row">
+            <button id="broadcastSave" class="btn primary" type="button">
+              <span id="broadcastIcon"></span>
+              Simpan Broadcast
+            </button>
+            <button id="broadcastCancelEdit" class="btn" type="button" hidden>Batal Edit</button>
+          </div>
+          <small id="broadcastFormStatus" class="section-note"></small>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="section-head">
+          <div>
+            <h2 class="section-title">Riwayat Broadcast</h2>
+            <p class="section-note">Draft dan jadwal dapat diedit. Broadcast yang sudah sent tidak dapat diubah atau dihapus.</p>
+          </div>
+          <span id="broadcastTotal" class="section-note">Total: 0</span>
+        </div>
+        <div id="broadcastList" class="broadcast-list">
+          <div class="broadcast-card"><strong>Memuat broadcast…</strong></div>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- =====================================================
+       NOTIFIKASI
+  ====================================================== -->
+  <section
+    id="notifikasi"
+    class="owner-section"
+  >
+
+    <div class="card">
+
+      <div class="section-head">
+
+        <div>
+
+          <h2 class="section-title">
+            Member Message
+          </h2>
+
+          <p class="section-note">
+            Messaging Owner ↔ Member aktif dan terhubung langsung ke backend.
+          </p>
+
+        </div>
+
+        <span id="messageIcon"></span>
+
+      </div>
+
+
+      <div class="grid grid-2">
+        <div class="field">
+          <label for="messageMemberId">Member UUID</label>
+          <input id="messageMemberId" class="input" type="text" maxlength="36" placeholder="UUID member">
+        </div>
+        <div class="field">
+          <label>&nbsp;</label>
+          <button id="messageStart" class="btn" type="button"><span id="bellIcon"></span> Mulai Percakapan</button>
+        </div>
+      </div>
+
+      <div id="conversationList" class="member-list">
+        <div class="member-row"><strong>Memuat percakapan…</strong></div>
+      </div>
+      <div id="messageThread" class="message-thread" hidden>
+        <div id="messageThreadHead" class="section-note"></div>
+        <div id="messageThreadList" class="message-thread-list"></div>
+        <div class="field">
+          <label for="messageBody">Balasan</label>
+          <textarea id="messageBody" class="textarea" maxlength="10000" placeholder="Tulis pesan…"></textarea>
+        </div>
+        <button id="messageSend" class="btn" type="button">Kirim Pesan</button>
+      </div>
+
+      <div id="messageStatus" class="status info message-status">Messaging aktif. Pengiriman hanya dilakukan ke percakapan yang dipilih.</div>
+
+    </div>
+
+
+    <div class="grid grid-2">
+
+      <article class="card">
+        <div class="section-head">
+          <div>
+            <h2 class="section-title">FAQ</h2>
+            <p class="section-note">CRUD penuh dari RPC Owner: create, update, delete, publish, category, sort.</p>
+          </div>
+        </div>
+        <div class="field">
+          <label for="faqQuestion">Question</label>
+          <input id="faqQuestion" class="input" type="text" maxlength="500">
+        </div>
+        <div class="field">
+          <label for="faqAnswer">Answer</label>
+          <textarea id="faqAnswer" class="textarea" maxlength="10000"></textarea>
+        </div>
+        <div class="grid grid-3">
+          <div class="field"><label for="faqCategory">Category</label><input id="faqCategory" class="input" type="text" maxlength="100"></div>
+          <div class="field"><label for="faqSortOrder">Urutan</label><input id="faqSortOrder" class="input" type="number" min="0" max="100000" value="0"></div>
+          <label class="toggle-field"><input id="faqPublished" type="checkbox" checked><span>Published</span></label>
+        </div>
+        <div class="btn-row">
+          <button id="faqSave" class="btn primary" type="button"><span id="plusIcon"></span>Tambah FAQ</button>
+          <button id="faqCancelEdit" class="btn" type="button" hidden>Batal Edit</button>
+        </div>
+        <small id="faqStatus" class="section-note"></small>
+        <div id="faqList" class="login-list"></div>
+      </article>
+
+      <article class="card">
+        <div class="section-head">
+          <div>
+            <h2 class="section-title">Help Center</h2>
+            <p class="section-note">CRUD penuh artikel Owner dengan slug, category, sort order, dan publish state.</p>
+          </div>
+        </div>
+        <div class="field">
+          <label for="helpTitle">Title</label>
+          <input id="helpTitle" class="input" type="text" maxlength="200">
+        </div>
+        <div class="field">
+          <label for="helpContent">Content</label>
+          <textarea id="helpContent" class="textarea" maxlength="20000"></textarea>
+        </div>
+        <div class="grid grid-3">
+          <div class="field"><label for="helpCategory">Category</label><input id="helpCategory" class="input" type="text" maxlength="100"></div>
+          <div class="field"><label for="helpSortOrder">Urutan</label><input id="helpSortOrder" class="input" type="number" min="0" max="100000" value="0"></div>
+          <label class="toggle-field"><input id="helpPublished" type="checkbox" checked><span>Published</span></label>
+        </div>
+        <div class="btn-row">
+          <button id="helpSave" class="btn primary" type="button"><span id="plusIcon2"></span>Tambah Artikel</button>
+          <button id="helpCancelEdit" class="btn" type="button" hidden>Batal Edit</button>
+        </div>
+        <small id="helpStatus" class="section-note"></small>
+        <div id="helpList" class="login-list"></div>
+      </article>
+
+    </div>
+
+  </section>
+
+
+  <section id="token" class="owner-section">
+    <div class="grid grid-2">
+      <article class="card">
+        <div class="section-head">
+          <div>
+            <h2 class="section-title">Portal Access Token</h2>
+            <p class="section-note">Token disimpan sebagai hash di database. Plaintext hanya ditampilkan sekali saat dibuat.</p>
+          </div>
+          <span class="badge blue">Server-side</span>
+        </div>
+        <div id="ownerTokenStatus" class="status info">Memuat status token…</div>
+        <div class="btn-row">
+          <button id="generatePortalToken" class="btn primary" type="button">Generate Token</button>
+          <button id="revokePortalToken" class="btn danger" type="button" disabled>Revoke Token</button>
+        </div>
+        <div id="generatedPortalToken" class="status success" hidden></div>
+      </article>
+      <article class="card">
+        <div class="section-head">
+          <div>
+            <h2 class="section-title">Token Requests</h2>
+            <p class="section-note">Request dari user setelah Auth berhasil.</p>
+          </div>
+          <span id="tokenRequestPending" class="badge yellow">0 pending</span>
+        </div>
+        <div id="tokenRequestList" class="login-list"><div>Memuat request…</div></div>
+      </article>
+    </div>
+  </section>
+
+  <!-- =====================================================
+       SECURITY
+  ====================================================== -->
+  <section
+    id="security"
+    class="owner-section"
+  >
+
+    <div class="grid grid-2">
+
+      <article class="card">
+
+        <div class="section-head">
+
+          <div>
+
+            <h2 class="section-title">
+              Security Owner
+            </h2>
+
+            <p class="section-note">
+              Daftar Admin & Owner.
+            </p>
+
+          </div>
+
+          <span id="shieldIcon"></span>
+
+        </div>
+
+
+        <div class="security-row">
+          <div><strong id="securityOwnerName">Owner</strong><small id="securityOwnerEmail">—</small></div>
+          <span class="badge green">Owner</span>
+        </div>
+        <div class="security-row">
+          <div><strong>Authorization</strong><small>Ditentukan server melalui is_owner()/requireOwner(), bukan metadata browser.</small></div>
+          <span id="authorizationStatus" class="badge blue">Verified</span>
+        </div>
+
+      </article>
+
+
+      <article class="card">
+
+        <div class="section-head">
+
+          <div>
+
+            <h2 class="section-title">
+              Login Activity
+            </h2>
+
+            <p class="section-note">
+              Audit login activity terhubung ke backend Owner.
+            </p>
+
+          </div>
+
+          <span id="lockIcon"></span>
+
+        </div>
+
+
+        <div id="loginActivityList" class="login-list"><div>Memuat…</div></div>
+
+
+        <div class="pagination">
+          <span id="loginActivityTotal">Total Login : —</span>
+          <div class="btn-row">
+            <button id="loginPrev" class="btn" type="button">‹</button>
+            <span id="loginPageLabel" class="pagination-label">1 / 1</span>
+            <button id="loginNext" class="btn" type="button">›</button>
+          </div>
+        </div>
+
+      </article>
+
+    </div>
+
+  </section>
+
+
+  <!-- =====================================================
+       SISTEM
+  ====================================================== -->
+  <section
+    id="sistem"
+    class="owner-section"
+  >
+
+    <div class="card">
+
+      <div class="section-head">
+
+        <div>
+
+          <h2 class="section-title">
+            Sistem Management
+          </h2>
+
+          <p class="section-note">
+            Control Web, maintenance mode,
+            dan health.
+          </p>
+
+        </div>
+
+        <span id="settingsIcon"></span>
+
+      </div>
+
+
+      <div class="system-row">
+
+        <span>
+          Open Web
+        </span>
+
+        <span class="badge green">
+          Current backend
+        </span>
+
+      </div>
+
+
+      <div class="system-row">
+
+        <span>
+          Maintenance Mode
+        </span>
+
+        <button id="maintenanceToggle" class="btn" type="button"><span id="checkIcon"></span> Maintenance</button>
+
+      </div>
+
+
+      <div class="status info maintenance">
+
+        <span id="refreshIcon2"></span>
+
+        Jyy'R Amprem Sedang Maintenance
+
+      </div>
+
+
+      <h3 class="section-title health-title">
+        Health
+      </h3>
+
+
+      <div class="health-grid health-grid-status">
+        <span id="healthSupabase">Supabase · Checking</span>
+        <span id="healthAuth">Auth · Verified</span>
+        <span id="healthStorage">Storage · Not tested</span>
+        <span id="healthDatabase">Database · Checking</span>
+        <span id="healthApiKey">API Key · Server only</span>
+      </div>
+
+
+      <div
+        class="status success"
+        id="ownerHealth"
+      >
+        Checking backend...
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- =====================================================
+       FOOTER
+  ====================================================== -->
+  <footer class="footer">
+    © 2026 Jyy'R Amprem. All Rights Reserved
+  </footer>
+
+</main>
+
+
+<!-- =====================================================
+     SCRIPTS
+====================================================== -->
+
+<script src="/js/auth-client.js"></script>
+<script src="/js/icons.js"></script><script src="/js/ui-icons-assets.js"></script>
+<script src="/js/nav.js"></script>
+<script src="/js/notifications.js"></script><script src="/js/owner.js"></script>
+
+<script src="/js/ui-protection.js"></script>
+</body>
+</html>

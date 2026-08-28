@@ -1,0 +1,345 @@
+/* JYY'R AMPREM — OWNER UI */
+body[data-page="owner"] .owner-profile .avatar-large{margin-bottom:12px}
+body[data-page="owner"] .owner-profile h2{margin:0;font-size:19px}
+body[data-page="owner"] .owner-profile p{margin:5px 0 15px;color:var(--muted);font-size:11px}
+body[data-page="owner"] .owner-profile .profile-actions{display:flex;justify-content:center;gap:8px;margin-top:14px}
+body[data-page="owner"] .owner-section{display:none}
+body[data-page="owner"] .owner-section.active{display:block}
+body[data-page="owner"] .compare{margin-top:14px}
+body[data-page="owner"] .member-list{display:grid;gap:8px;margin-top:12px}
+body[data-page="owner"] .member-row,body[data-page="owner"] .security-row,body[data-page="owner"] .system-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.035);font-size:11px}
+body[data-page="owner"] .member-row small,body[data-page="owner"] .security-row small,body[data-page="owner"] .system-row small,body[data-page="owner"] .login-list small{display:block;color:var(--muted);margin-top:3px}
+body[data-page="owner"] .member-row > div,body[data-page="owner"] .security-row > div,body[data-page="owner"] .system-row > div{min-width:0}
+body[data-page="owner"] .btn-row{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+body[data-page="owner"] .btn-row .btn{min-height:30px;padding:5px 8px;font-size:9px}
+body[data-page="owner"] .pagination{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:12px;color:var(--muted);font-size:10px}
+body[data-page="owner"] .pagination-label{min-width:48px;text-align:center;line-height:30px}
+body[data-page="owner"] .broadcast-card{position:relative;min-height:160px;padding:15px;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.025)}
+body[data-page="owner"] .broadcast-card p{color:var(--muted);font-size:10px;line-height:1.5;max-width:80%}
+body[data-page="owner"] .broadcast-actions{position:absolute;right:10px;bottom:10px;display:flex;gap:5px}
+body[data-page="owner"] .broadcast-actions .round-btn{position:static}
+body[data-page="owner"] .login-list{display:grid;gap:8px;margin-top:10px}
+body[data-page="owner"] .login-list>div{padding:10px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.035);font-size:10px}
+body[data-page="owner"] .owner-editor{margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.02)}
+body[data-page="owner"] .owner-editor[hidden]{display:none}
+body[data-page="owner"] .owner-crud-row{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:12px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.035)}
+body[data-page="owner"] .owner-crud-row p{margin:7px 0 0;color:var(--muted);font-size:10px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
+body[data-page="owner"] .toggle-field{display:flex;align-items:center;gap:7px;min-height:42px;padding:0 10px;border:1px solid var(--line);border-radius:10px;font-size:10px}
+body[data-page="owner"] .toggle-field input{accent-color:currentColor}
+body[data-page="owner"] .health-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:10px}
+body[data-page="owner"] .health-grid span{padding:9px 5px;text-align:center;border:1px solid var(--line);border-radius:9px;font-size:9px;color:var(--muted)}
+body[data-page="owner"] .health-title{margin:18px 0 10px}
+body[data-page="owner"] .maintenance{display:flex;align-items:center;gap:8px}
+body[data-page="owner"] .maintenance .ui-icon{width:17px}
+body[data-page="owner"] .section-head>span[id$="Icon"]{display:flex;align-items:center}
+body[data-page="owner"] .section-head>span[id$="Icon"] .asset-ui-icon{width:20px;height:20px}
+body[data-page="owner"] .btn .asset-ui-icon{width:15px;height:15px}
+body[data-page="owner"] .owner-profile .avatar-large{width:68px;height:68px;border-radius:50%;display:grid;place-items:center;margin-inline:auto;background:rgba(255,255,255,.06);border:1px solid var(--line)}
+body[data-page="owner"] .topbar .avatar{display:grid;place-items:center}
+@media(max-width:620px){
+  body[data-page="owner"] .health-grid{grid-template-columns:repeat(2,1fr)}
+  body[data-page="owner"] .pagination{flex-direction:column;align-items:flex-start}
+  body[data-page="owner"] .owner-crud-row{flex-direction:column}
+  body[data-page="owner"] .broadcast-card p{max-width:100%;padding-right:56px}
+}
+
+/* ============================================================
+   OWNER — NEON AURORA UI SYNC
+   Presentation-only: aligns Owner with Dashboard visual language.
+   Existing HTML / IDs / JS / API contracts remain untouched.
+   ============================================================ */
+body[data-page="owner"] {
+  background:
+    radial-gradient(circle at 50% -10%, rgba(139,82,210,.13), transparent 34%),
+    linear-gradient(180deg,#0e0d12 0%,#121016 48%,#0d0c11 100%);
+}
+
+body[data-page="owner"] .topbar {
+  position:relative;
+  min-height:66px;
+  margin-bottom:18px;
+  padding:12px 14px;
+  border:1px solid rgba(255,255,255,.075);
+  border-radius:18px;
+  background:linear-gradient(135deg,rgba(30,27,37,.98),rgba(19,17,24,.98));
+  box-shadow:0 14px 36px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.025);
+  overflow:hidden;
+}
+body[data-page="owner"] .topbar::before {
+  content:"";
+  position:absolute;
+  left:0; right:0; top:0;
+  height:2px;
+  background:linear-gradient(90deg,transparent,rgba(185,108,255,.9),rgba(95,225,255,.28),transparent);
+  pointer-events:none;
+}
+body[data-page="owner"] .topbar::after {
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  background:linear-gradient(120deg,rgba(255,255,255,.025),transparent 34%,transparent 68%,rgba(157,92,255,.025));
+  pointer-events:none;
+}
+body[data-page="owner"] .topbar > * { position:relative; z-index:1; }
+body[data-page="owner"] .topbar .eyebrow {
+  color:#c7a9ec;
+  font-weight:800;
+  letter-spacing:.11em;
+}
+body[data-page="owner"] .topbar .title {
+  font-size:25px;
+  line-height:1.08;
+  letter-spacing:-.035em;
+  color:#f0ebf5;
+  text-shadow:0 0 18px rgba(185,108,255,.08);
+}
+body[data-page="owner"] .topbar .subtitle {
+  color:#9b94a5;
+  font-size:11px;
+  font-weight:600;
+  line-height:1.45;
+}
+body[data-page="owner"] .topbar .avatar {
+  width:46px;
+  height:46px;
+  border:1px solid rgba(185,108,255,.22);
+  background:linear-gradient(145deg,rgba(185,108,255,.13),rgba(255,255,255,.035));
+  box-shadow:0 0 20px rgba(157,92,255,.09), inset 0 1px 0 rgba(255,255,255,.035);
+}
+body[data-page="owner"] .top-actions { gap:7px; }
+body[data-page="owner"] .top-actions .round-btn {
+  border-color:rgba(255,255,255,.075);
+  background:linear-gradient(180deg,#211e27,#18161d);
+  box-shadow:0 8px 18px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.025);
+}
+body[data-page="owner"] .top-actions .round-btn:hover {
+  border-color:rgba(185,108,255,.30);
+  box-shadow:0 0 20px rgba(157,92,255,.10),0 10px 20px rgba(0,0,0,.20);
+}
+
+body[data-page="owner"] .app-shell > .card,
+body[data-page="owner"] .owner-section > .card,
+body[data-page="owner"] .owner-section > .grid.grid-2 > .card {
+  position:relative;
+  overflow:hidden;
+  background:linear-gradient(180deg,#1d1a22 0%,#17151b 100%);
+  border:1px solid rgba(255,255,255,.075);
+  border-radius:16px;
+  box-shadow:0 14px 38px rgba(0,0,0,.30),inset 0 1px 0 rgba(255,255,255,.018);
+}
+body[data-page="owner"] .app-shell > .card::before,
+body[data-page="owner"] .owner-section > .card::before,
+body[data-page="owner"] .owner-section > .grid.grid-2 > .card::before {
+  content:"";
+  position:absolute;
+  left:0;right:0;bottom:0;height:2px;
+  background:linear-gradient(90deg,transparent,rgba(173,115,255,.52),transparent);
+  pointer-events:none;
+}
+body[data-page="owner"] .app-shell > .card::after,
+body[data-page="owner"] .owner-section > .card::after,
+body[data-page="owner"] .owner-section > .grid.grid-2 > .card::after {
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  background:linear-gradient(120deg,rgba(255,255,255,.025),transparent 32%,transparent 68%,rgba(157,92,255,.018));
+  pointer-events:none;
+}
+body[data-page="owner"] .app-shell > .card > *,
+body[data-page="owner"] .owner-section > .card > *,
+body[data-page="owner"] .owner-section > .grid.grid-2 > .card > * { position:relative; z-index:1; }
+
+/* Owner profile: clean horizontal meta metrics. */
+body[data-page="owner"] .owner-profile {
+  text-align:center;
+  background:linear-gradient(180deg,#1b1820,#151319)!important;
+  border-color:rgba(166,108,255,.20)!important;
+}
+body[data-page="owner"] .owner-profile .avatar-large {
+  width:76px;height:76px;
+  margin-bottom:13px;
+  background:linear-gradient(145deg,rgba(185,108,255,.13),rgba(255,255,255,.035));
+  border:1px solid rgba(185,108,255,.25);
+  box-shadow:0 0 26px rgba(157,92,255,.11),inset 0 1px 0 rgba(255,255,255,.035);
+}
+body[data-page="owner"] .owner-profile h2 { font-size:20px; color:#eee8f3; }
+body[data-page="owner"] .owner-profile p { font-size:11px; color:#96909d; }
+body[data-page="owner"] .profile-meta {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+  margin-top:15px;
+}
+body[data-page="owner"] .profile-meta > div {
+  position:relative;
+  min-width:0;
+  padding:13px 11px;
+  border:1px solid rgba(255,255,255,.075);
+  border-radius:13px;
+  background:linear-gradient(180deg,#1d1a22,#17151b);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.018);
+  overflow:hidden;
+}
+body[data-page="owner"] .profile-meta > div::after {
+  content:"";
+  position:absolute;left:0;right:0;bottom:0;height:2px;
+  background:linear-gradient(90deg,transparent,rgba(173,115,255,.45),transparent);
+}
+body[data-page="owner"] .profile-meta span {
+  display:block;
+  font-size:9px;
+  letter-spacing:.06em;
+  color:#8f8996;
+  font-weight:760;
+}
+body[data-page="owner"] .profile-meta strong {
+  display:block;
+  margin-top:6px;
+  color:#e8e1ef;
+  font-size:13px;
+  line-height:1.2;
+  overflow-wrap:anywhere;
+}
+body[data-page="owner"] .profile-actions {
+  flex-direction:row;
+  justify-content:center;
+  flex-wrap:wrap;
+  margin-top:14px;
+}
+body[data-page="owner"] .profile-actions .btn { min-width:108px; }
+
+/* All owner metric groups stay horizontal on normal screens. */
+body[data-page="owner"] .grid.grid-3 {
+  grid-template-columns:repeat(3,minmax(0,1fr));
+}
+body[data-page="owner"] .metric {
+  position:relative;
+  overflow:hidden;
+  min-height:104px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  background:linear-gradient(180deg,#1d1a22,#17151b);
+  border:1px solid rgba(255,255,255,.075);
+  border-radius:13px;
+  box-shadow:none;
+}
+body[data-page="owner"] .metric::after {
+  content:"";
+  position:absolute;left:0;right:0;bottom:0;height:2px;
+  background:linear-gradient(90deg,transparent,rgba(173,115,255,.45),transparent);
+}
+body[data-page="owner"] .metric-label { font-size:9px;color:#8f8996;font-weight:760;letter-spacing:.07em; }
+body[data-page="owner"] .metric-value { font-size:25px;color:#e8e1ef; }
+
+/* Tabs/chips get the same polished surface. */
+body[data-page="owner"] #ownerTabs { position:relative;z-index:1;gap:8px; }
+body[data-page="owner"] #ownerTabs .chip {
+  border-color:rgba(255,255,255,.07);
+  background:linear-gradient(180deg,#211e27,#18161d);
+  color:#aaa3b0;
+  border-radius:999px;
+  font-weight:700;
+}
+body[data-page="owner"] #ownerTabs .chip.active {
+  color:#f0e8f6;
+  border-color:rgba(185,108,255,.30);
+  background:linear-gradient(180deg,rgba(122,69,166,.34),rgba(57,38,70,.38));
+  box-shadow:0 0 18px rgba(157,92,255,.08),inset 0 1px 0 rgba(255,255,255,.035);
+}
+
+/* Inner rows/cards follow the same dark gradient and accent. */
+body[data-page="owner"] .member-row,
+body[data-page="owner"] .security-row,
+body[data-page="owner"] .system-row,
+body[data-page="owner"] .login-list>div,
+body[data-page="owner"] .owner-crud-row,
+body[data-page="owner"] .broadcast-card,
+body[data-page="owner"] .owner-editor {
+  position:relative;
+  overflow:hidden;
+  background:linear-gradient(180deg,#1d1a22,#17151b);
+  border-color:rgba(255,255,255,.075);
+  border-radius:12px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.018);
+}
+body[data-page="owner"] .member-row::after,
+body[data-page="owner"] .security-row::after,
+body[data-page="owner"] .system-row::after,
+body[data-page="owner"] .login-list>div::after,
+body[data-page="owner"] .owner-crud-row::after,
+body[data-page="owner"] .broadcast-card::after,
+body[data-page="owner"] .owner-editor::after {
+  content:"";
+  position:absolute;left:0;right:0;bottom:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(173,115,255,.30),transparent);
+  pointer-events:none;
+}
+body[data-page="owner"] .section-title { color:#ece7f0;font-weight:780; }
+body[data-page="owner"] .section-note { color:#96909d; }
+body[data-page="owner"] label { color:#b9b2c0;font-weight:700; }
+body[data-page="owner"] .input,
+body[data-page="owner"] .textarea,
+body[data-page="owner"] select.input {
+  background:#141218;
+  border-color:rgba(255,255,255,.075);
+  color:#e9e3ec;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.018);
+}
+body[data-page="owner"] .input:focus,
+body[data-page="owner"] .textarea:focus { border-color:rgba(185,108,255,.42);box-shadow:0 0 0 3px rgba(157,92,255,.08); }
+
+/* Health indicators as compact horizontal tiles. */
+body[data-page="owner"] .health-grid {
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:8px;
+}
+body[data-page="owner"] .health-grid span {
+  min-width:0;
+  padding:10px 7px;
+  border-color:rgba(255,255,255,.075);
+  border-radius:11px;
+  background:linear-gradient(180deg,#1d1a22,#17151b);
+  color:#9d96a5;
+  line-height:1.3;
+  overflow-wrap:anywhere;
+}
+
+@media(max-width:760px){
+  body[data-page="owner"] .profile-meta { grid-template-columns:repeat(3,minmax(0,1fr));gap:7px; }
+  body[data-page="owner"] .profile-meta > div { padding:11px 8px; }
+  body[data-page="owner"] .profile-meta strong { font-size:12px; }
+  body[data-page="owner"] .health-grid { grid-template-columns:repeat(5,minmax(105px,1fr));overflow-x:auto;padding-bottom:3px; }
+}
+
+@media(max-width:520px){
+  body[data-page="owner"] .topbar { padding:10px 11px;border-radius:15px; }
+  body[data-page="owner"] .topbar .title { font-size:21px; }
+  body[data-page="owner"] .topbar .subtitle { font-size:10px; }
+  body[data-page="owner"] .topbar .avatar { width:42px;height:42px; }
+  body[data-page="owner"] .app-shell > .card,
+  body[data-page="owner"] .owner-section > .card,
+  body[data-page="owner"] .owner-section > .grid.grid-2 > .card { border-radius:14px; }
+  body[data-page="owner"] .profile-meta { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  body[data-page="owner"] .profile-meta > div { padding:10px 6px; }
+  body[data-page="owner"] .profile-meta span { font-size:8px; }
+  body[data-page="owner"] .profile-meta strong { font-size:11px; }
+  body[data-page="owner"] .grid.grid-3 { grid-template-columns:repeat(3,minmax(0,1fr));gap:7px; }
+  body[data-page="owner"] .metric { min-height:88px;padding:10px 8px;border-radius:11px; }
+  body[data-page="owner"] .metric-value { font-size:21px; }
+  body[data-page="owner"] .metric-label { font-size:8px; }
+}
+
+@media(max-width:380px){
+  body[data-page="owner"] .topbar .subtitle { display:none; }
+  body[data-page="owner"] .profile-meta { gap:5px; }
+  body[data-page="owner"] .profile-meta > div { padding:9px 4px; }
+  body[data-page="owner"] .profile-meta span { font-size:7.5px;letter-spacing:.025em; }
+  body[data-page="owner"] .profile-meta strong { font-size:10px; }
+  body[data-page="owner"] .metric { min-height:82px;padding:9px 6px; }
+  body[data-page="owner"] .metric-value { font-size:19px; }
+}
+
+#generatedPortalToken { word-break: break-all; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }

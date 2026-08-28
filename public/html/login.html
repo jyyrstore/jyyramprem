@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  >
+
+  <meta
+    name="theme-color"
+    content="#100d1c"
+  >
+
+  <title>Jyy'r Amprem • Login</title>
+
+  <link
+    rel="stylesheet"
+    href="/css/common.css"
+  >
+
+  <link
+    rel="stylesheet"
+    href="/css/login.css?v=20260827-wordmark-v6"
+  >
+</head>
+
+<body class="auth-page">
+
+  <main class="auth-shell">
+
+    <!-- =====================================================
+         BRAND
+    ====================================================== -->
+
+    <header
+      class="auth-brand"
+      aria-label="Jyy'r Amprem"
+    >
+
+      <div class="brand-photo-wrap">
+        <img
+          class="brand-photo"
+          src="/assets/Foto/Jyy'R_PROFIL.png"
+          alt="Foto profil Jyy'R Amprem"
+          onerror="this.style.visibility='hidden'"
+        >
+      </div>
+
+      <div
+  class="brand-wordmark"
+  id="brandWordmark"
+  aria-label="Jyy'r Amprem"
+></div>
+
+    </header>
+
+
+    <!-- =====================================================
+         AUTH CARD
+    ====================================================== -->
+
+    <section
+      class="auth-card"
+      aria-labelledby="modeTitle"
+    >
+
+      <div class="auth-card-inner">
+
+        <!-- Heading -->
+
+        <div class="auth-heading">
+
+          <h1 id="modeTitle">
+            Masuk
+          </h1>
+
+          <p
+            id="modeDescription"
+            class="sr-only"
+          >
+            Masuk untuk mengakses portal.
+          </p>
+
+        </div>
+
+
+        <!-- =================================================
+             AUTH FORM
+        ================================================== -->
+
+        <form
+          id="authForm"
+          class="auth-form"
+          novalidate
+        >
+
+          <!-- Username -->
+
+          <div
+            id="usernameField"
+            class="field hidden"
+          >
+
+            <input
+              id="username"
+              class="input"
+              type="text"
+              maxlength="32"
+              autocomplete="username"
+              placeholder="Username"
+            >
+
+            <span
+              class="field-icon"
+              aria-hidden="true"
+            >
+              <img
+                src="/assets/Icon/Login-User.png"
+                alt=""
+              >
+            </span>
+
+          </div>
+
+
+          <!-- Email -->
+
+          <div
+            id="emailField"
+            class="field auth-email-field"
+          >
+
+            <label
+              id="emailLabel"
+              for="email"
+              class="sr-only"
+            >
+              Username / Email
+            </label>
+
+            <input
+              id="email"
+              class="input"
+              type="email"
+              autocomplete="email"
+              placeholder="Username/Email"
+              required
+            >
+
+            <span
+              class="field-icon"
+              aria-hidden="true"
+            >
+              <img
+                src="/assets/Icon/e-mail.png"
+                alt=""
+              >
+            </span>
+
+          </div>
+
+
+          <!-- Password -->
+
+          <div class="field auth-password-field">
+
+            <label
+              for="password"
+              class="sr-only"
+            >
+              Password
+            </label>
+
+            <div class="password-row">
+
+              <input
+                id="password"
+                class="input"
+                type="password"
+                minlength="8"
+                autocomplete="current-password"
+                placeholder="Password..."
+                required
+              >
+
+              <button
+                id="togglePassword"
+                class="icon-btn"
+                type="button"
+                aria-label="Lihat password"
+              >
+                <img
+                  src="/assets/Icon/tutup-sandi.png"
+                  alt=""
+                >
+              </button>
+
+            </div>
+
+          </div>
+
+
+          <!-- Register Code -->
+
+          <div
+            id="registerCodeField"
+            class="field hidden"
+          >
+
+            <input
+              id="code"
+              class="input"
+              type="text"
+              inputmode="numeric"
+              autocomplete="one-time-code"
+              placeholder="6 digit code"
+              maxlength="6"
+            >
+
+            <span
+              class="field-icon"
+              aria-hidden="true"
+            >
+              <img
+                src="/assets/Icon/Verifikasi.png"
+                alt=""
+              >
+            </span>
+
+          </div>
+
+
+          <!-- Authentication Links -->
+
+          <div class="auth-links">
+
+            <button
+              id="forgotPassword"
+              type="button"
+            >
+              Lupa Password?
+            </button>
+
+            <button
+              id="resendCode"
+              class="hidden"
+              type="button"
+            >
+              Kirim ulang code
+            </button>
+
+          </div>
+
+
+          <!-- Login -->
+
+          <button
+            id="submitBtn"
+            class="auth-action auth-login"
+            type="submit"
+          >
+            LOGIN
+          </button>
+
+
+
+          <!-- Register -->
+
+          <button
+            id="registerTab"
+            class="auth-action auth-register-tab"
+            type="button"
+          >
+            DAFTAR
+          </button>
+
+
+        </form>
+
+      </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         COPYRIGHT
+    ====================================================== -->
+
+    <p class="copyright">
+      © 2026 Jyy'R Amprem. All Rights Reserved
+    </p>
+
+  </main>
+
+
+  <!-- =======================================================
+       JAVASCRIPT
+  ======================================================== -->
+
+  <div id="tokenGate" class="token-gate" hidden aria-hidden="true">
+    <div class="token-backdrop"></div>
+    <section class="token-modal" role="dialog" aria-modal="true" aria-labelledby="tokenGateTitle">
+      <button id="tokenGateClose" class="token-close" type="button" aria-label="Tutup" title="Tutup">×</button>
+      <div class="token-kicker">PORTAL SECURITY</div>
+      <h2 id="tokenGateTitle">Masukkan Token</h2>
+      <p class="token-description">Email dan sandi sudah berhasil diverifikasi. Masukkan Token Akses Portal untuk melanjutkan.</p>
+      <div class="field token-field">
+        <label for="portalTokenInput">Token Akses</label>
+        <input id="portalTokenInput" class="input" type="text" inputmode="text" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" maxlength="20" placeholder="20 karakter token">
+      </div>
+      <div id="portalTokenStatus" class="token-status" aria-live="polite"></div>
+      <div class="token-actions">
+        <button id="verifyPortalTokenBtn" class="btn primary full" type="button">VERIFIKASI</button>
+        <button id="getPortalTokenBtn" class="btn full" type="button">GET TOKEN</button>
+      </div>
+      <p class="token-hint">GET TOKEN akan mencatat request ke sistem Owner lalu membuka WhatsApp Owner.</p>
+    </section>
+  </div>
+
+  <script src="/js/auth-client.js"></script>
+  <script src="/js/icons.js"></script>
+  <script src="/js/notifications.js"></script>
+  <script src="/js/auth.js?v=20260827-wordmark-v6"></script>
+
+<script src="/js/ui-protection.js"></script>
+</body>
+</html>

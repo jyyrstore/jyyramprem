@@ -1,0 +1,668 @@
+/* =========================================================
+   JYY'R AMPREM — FINAL UI/UX PASS
+   Scope: non-login pages. Data/API/DB contracts untouched.
+========================================================= */
+
+.asset-ui-icon{display:block;width:20px;height:20px;max-width:100%;max-height:100%;object-fit:contain;flex:0 0 20px;pointer-events:none;user-select:none}
+.ui-icon{object-fit:contain}
+button .asset-ui-icon,a .asset-ui-icon{pointer-events:none}
+
+body[data-page="home"],
+body[data-page="dashboard"],
+body[data-page="setting"],
+body[data-page="owner"]{
+  --surface-1:#211d29;
+  --surface-2:#2a2532;
+  --surface-3:#15121b;
+  --line-soft:rgba(255,255,255,.07);
+  --accent:#b96cff;
+  --accent-2:#5fe1ff;
+}
+
+.app-shell{width:min(980px,calc(100% - 24px));padding:20px 0 34px}
+.card{border-radius:20px;padding:18px;border-color:var(--line-soft)}
+.card+.card{margin-top:14px}
+.topbar{margin-bottom:16px}
+.title{font-size:clamp(25px,5vw,36px)}
+.subtitle{max-width:680px}
+.section-head{align-items:flex-start}
+.section-title{font-size:16px}
+.section-note{max-width:760px}
+
+.btn{min-height:44px;border-radius:13px;font-weight:700}
+.btn .asset-ui-icon{width:19px;height:19px}
+.round-btn,.icon-btn{width:44px;height:44px}
+.round-btn .asset-ui-icon,.icon-btn .asset-ui-icon{width:22px;height:22px}
+.input,.select,.textarea{min-height:44px}
+.textarea{min-height:120px}
+.badge{white-space:nowrap}
+
+.table-wrap{overflow-x:auto;border:1px solid var(--line-soft);border-radius:14px}
+.table{width:100%;min-width:560px;border-collapse:separate;border-spacing:0}
+.table th,.table td{padding:11px 12px}
+.table th{font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:#cfc7d9;background:#17141d}
+.table td{font-size:11px;border-top:1px solid rgba(255,255,255,.045)}
+.table tbody tr:hover td{background:rgba(255,255,255,.018)}
+
+.bar-chart{min-height:220px;padding:20px 12px 8px;align-items:end}
+.bar-col{min-width:28px}
+.bar-col .bar{min-height:5px;border-radius:8px 8px 3px 3px;background:linear-gradient(180deg,#cb7dff,#7648cf);box-shadow:0 0 18px rgba(185,108,255,.18)}
+.bar-value{font-variant-numeric:tabular-nums;font-size:10px;color:#ddd5e7}
+.bar-label{font-size:9px;color:var(--muted)}
+
+.status{border-radius:13px;padding:11px 13px;line-height:1.45}
+.status.success{border-color:rgba(75,229,138,.28)}
+.status.error{border-color:rgba(255,99,120,.3)}
+.status.info{border-color:rgba(99,167,255,.25)}
+
+.bottom-nav{backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+.nav-item{min-height:64px}
+.nav-item .asset-ui-icon{width:22px;height:22px}
+.nav-item.active .asset-ui-icon{filter:drop-shadow(0 0 8px rgba(185,108,255,.55))}
+
+.profile-actions{gap:10px}
+.profile-actions .btn{min-width:120px}
+
+.filters{align-items:end}
+.filters .field{min-width:0}
+
+.pagination{gap:12px}
+.pagination>div{flex-wrap:wrap}
+
+.member-row,.security-row,.system-row{border-radius:14px;background:rgba(255,255,255,.025)}
+.member-row .btn-row{justify-content:flex-end}
+
+.owner-profile .asset-ui-icon{width:100%;height:100%;max-width:none;max-height:none;flex:0 0 auto}
+.owner-section{animation:sectionIn .18s ease both}
+@keyframes sectionIn{from{opacity:.45;transform:translateY(4px)}to{opacity:1;transform:none}}
+.chips{overflow-x:auto;scrollbar-width:none;flex-wrap:nowrap!important}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;min-height:40px;padding:9px 13px;border-radius:999px}
+.chip.active{box-shadow:0 0 18px rgba(157,92,255,.18)}
+
+.health-grid span{min-height:44px;display:grid;place-items:center}
+.maintenance{border-radius:13px}
+
+
+.result-line{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.result-line:last-child{border-bottom:0}
+.result-line span{color:var(--muted)}
+.result-line code{font-size:11px;overflow-wrap:anywhere;text-align:right}
+
+#magicLinkStep,#activationStep{scroll-margin-top:90px}
+#magicLinkStep:not(.hidden),#activationStep:not(.hidden){animation:sectionIn .2s ease both}
+#verifyBtn:disabled,#applyPremiumBtn:disabled,#generateBtn:disabled{filter:saturate(.7)}
+
+@media(max-width:720px){
+  .app-shell{width:min(100% - 16px,680px);padding-top:14px}
+  .card{padding:15px;border-radius:17px}
+  .grid-4{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .grid-3{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .table{min-width:520px}
+  .topbar{align-items:flex-start}
+  .section-head{gap:9px}
+  .section-title{font-size:15px}
+}
+
+@media(max-width:520px){
+  body{padding-bottom:82px}
+  .app-shell{width:calc(100% - 14px);padding-bottom:22px}
+  .grid-2,.grid-3,.grid-4{grid-template-columns:1fr}
+  .card{padding:13px;border-radius:16px}
+  .topbar{gap:9px}
+  .title{font-size:25px}
+  .subtitle{font-size:11px}
+  .section-head{flex-direction:column}
+  .section-head>.badge{align-self:flex-start}
+  .profile-actions{flex-direction:column}
+  .profile-actions .btn{width:100%}
+  .table-wrap{margin-inline:-2px}
+  .table{min-width:500px}
+  .bar-chart{min-height:190px;padding-inline:5px}
+  .member-row,.security-row,.system-row{flex-direction:column;align-items:stretch}
+  .member-row .btn-row,.security-row .btn-row,.system-row .btn-row{justify-content:stretch}
+  .member-row .btn-row .btn,.security-row .btn-row .btn,.system-row .btn-row .btn{flex:1 1 100px}
+  .broadcast-card{min-height:0}
+  .health-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .bottom-nav{width:calc(100% - 14px);min-height:68px;height:68px;border-radius:20px 20px 0 0}
+  .nav-item{min-height:66px}
+  .nav-item span:last-child{display:block;font-size:9px;margin-top:2px}
+  .nav-item .asset-ui-icon{width:22px;height:22px}
+  .result-line{align-items:flex-start;flex-direction:column}
+  .result-line code{text-align:left}
+}
+
+@media(max-width:380px){
+  .app-shell{width:calc(100% - 10px)}
+  .card{padding:11px}
+  .btn{min-height:42px}
+  .bottom-nav{width:100%}
+}
+
+/* Dashboard: primary metrics first; secondary metrics remain available below. */
+body[data-page="dashboard"] .metric:nth-child(n+5){opacity:.9}
+body[data-page="dashboard"] .metric-note{font-size:9px}
+
+/* Setting: treat this page as Account without changing route/data IDs. */
+body[data-page="setting"] .title{font-size:clamp(25px,5vw,34px)}
+body[data-page="setting"] .profile-card{padding-top:22px}
+
+/* Owner: keep powerful tools, make navigation usable on narrow screens. */
+body[data-page="owner"] .chips{display:flex;gap:7px}
+body[data-page="owner"] .owner-section .card{overflow:visible}
+body[data-page="owner"] .owner-profile .profile-actions .btn{min-width:130px}
+
+/* Reset password shares the system visual language; login remains untouched. */
+body.auth-page .auth-card{box-shadow:0 18px 55px rgba(0,0,0,.34)}
+body.auth-page .btn .asset-ui-icon{width:19px;height:19px}
+
+/* =========================================================
+   NAVIGATION — ONE CONSISTENT COMPONENT ON ALL THREE PAGES
+   Order: Dashboard | Home | Setting.
+   The active tab follows the current route; the active icon rises only a little.
+========================================================= */
+.bottom-nav{
+  position:fixed;
+  left:0;
+  right:0;
+  bottom:0;
+  transform:none;
+  width:100%;
+  height:72px;
+  min-height:72px;
+  padding:0 max(7px,env(safe-area-inset-left)) max(2px,env(safe-area-inset-bottom)) max(7px,env(safe-area-inset-right));
+  border:0;
+  border-top:2px solid rgba(174,48,197,.9);
+  border-radius:20px 20px 0 0;
+  background:#474747;
+  box-shadow:0 -5px 16px rgba(0,0,0,.26),0 -1px 6px rgba(174,48,197,.12);
+  backdrop-filter:none;
+  -webkit-backdrop-filter:none;
+  overflow:visible;
+  isolation:isolate;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+}
+.bottom-nav::after{
+  content:"";
+  position:absolute;
+  inset:2px 0 0;
+  z-index:-1;
+  background:#474747;
+  border-radius:18px 18px 0 0;
+  pointer-events:none;
+}
+.nav-item{
+  position:relative;
+  height:68px;
+  min-height:68px;
+  border-radius:0;
+  background:transparent;
+  color:#f1f1f1;
+  overflow:visible;
+  z-index:1;
+  display:grid;
+  place-items:center;
+  align-content:center;
+  gap:0;
+}
+.nav-item .asset-ui-icon{
+  position:relative;
+  z-index:3;
+  width:34px;
+  height:34px;
+  flex-basis:34px;
+  filter:none;
+  transition:transform .18s ease,filter .2s ease;
+}
+.nav-item span:last-child{
+  position:absolute;
+  width:1px;
+  height:1px;
+  padding:0;
+  margin:-1px;
+  overflow:hidden;
+  clip:rect(0,0,0,0);
+  white-space:nowrap;
+  border:0;
+}
+.nav-item.active{background:transparent;color:#fff}
+.nav-item.active::before{
+  content:"";
+  position:absolute;
+  z-index:0;
+  top:-31px;
+  left:50%;
+  width:72px;
+  height:72px;
+  transform:translateX(-50%);
+  border:2px solid rgba(174,48,197,.9);
+  border-bottom-color:transparent;
+  border-radius:50%;
+  background:#474747;
+  box-shadow:0 -1px 10px rgba(174,48,197,.18);
+}
+.nav-item.active::after{
+  content:"";
+  position:absolute;
+  z-index:1;
+  top:-1px;
+  left:50%;
+  width:54px;
+  height:5px;
+  transform:translateX(-50%);
+  background:#474747;
+  border-radius:50%;
+  pointer-events:none;
+}
+.nav-item.active .asset-ui-icon{
+  transform:translateY(-8px);
+  filter:drop-shadow(0 0 5px rgba(218,137,255,.42)) drop-shadow(0 0 9px rgba(174,48,197,.16));
+}
+.nav-item:not(.active) .asset-ui-icon{transform:translateY(5px);filter:drop-shadow(0 0 2px rgba(255,255,255,.06))}
+.nav-item:active .asset-ui-icon{transform:translateY(-11px) scale(.97)}
+.nav-item:not(.active):active .asset-ui-icon{transform:translateY(5px) scale(.95)}
+@media(max-width:520px){
+  body{padding-bottom:calc(78px + env(safe-area-inset-bottom))}
+  .bottom-nav{height:72px;min-height:72px;border-radius:20px 20px 0 0}
+  .nav-item{height:68px;min-height:68px}
+  .nav-item .asset-ui-icon{width:34px;height:34px;flex-basis:34px}
+  .nav-item.active::before{top:-31px;width:72px;height:72px}
+  .nav-item.active .asset-ui-icon{transform:translateY(-8px)}
+  .nav-item:not(.active) .asset-ui-icon{transform:translateY(5px)}
+}
+@media(max-width:360px){
+  body{padding-bottom:calc(74px + env(safe-area-inset-bottom))}
+  .bottom-nav{height:68px;min-height:68px;border-radius:18px 18px 0 0}
+  .nav-item{height:64px;min-height:64px}
+  .nav-item .asset-ui-icon{width:32px;height:32px;flex-basis:32px}
+  .nav-item.active::before{top:-29px;width:68px;height:68px}
+  .nav-item.active .asset-ui-icon{transform:translateY(-7px)}
+  .nav-item:not(.active) .asset-ui-icon{transform:translateY(5px)}
+}
+
+/* =========================================================
+   NAVIGATION — COLOR / SCALE REFINEMENT
+   Reference surface: #1a191f. Purple is intentionally translucent,
+   used only as a restrained edge/glow rather than a solid fill.
+========================================================= */
+.bottom-nav{
+  height:70px;
+  min-height:70px;
+  background:#1a191f;
+  border-top:2px solid rgba(185,108,255,.58);
+  box-shadow:0 -5px 18px rgba(0,0,0,.24),0 -1px 8px rgba(185,108,255,.10);
+}
+.bottom-nav::after{
+  background:linear-gradient(180deg,rgba(185,108,255,.055) 0%,rgba(26,25,31,.98) 22%,#1a191f 100%);
+}
+.nav-item{
+  height:66px;
+  min-height:66px;
+}
+.nav-item .asset-ui-icon{
+  width:36px;
+  height:36px;
+  flex-basis:36px;
+}
+.nav-item.active::before{
+  top:-32px;
+  width:72px;
+  height:72px;
+  border-width:2px;
+  border-color:rgba(185,108,255,.58);
+  border-bottom-color:transparent;
+  background:#1a191f;
+  box-shadow:0 -2px 12px rgba(185,108,255,.13);
+}
+.nav-item.active::after{
+  top:-1px;
+  width:56px;
+  height:5px;
+  background:#1a191f;
+}
+.nav-item.active .asset-ui-icon{
+  transform:translateY(-8px) scale(1.01);
+  filter:drop-shadow(0 0 5px rgba(218,137,255,.30)) drop-shadow(0 0 8px rgba(185,108,255,.10));
+}
+.nav-item:not(.active) .asset-ui-icon{
+  transform:translateY(5px);
+}
+.nav-item:active .asset-ui-icon{
+  transform:translateY(-10px) scale(.98);
+}
+@media(max-width:520px){
+  .bottom-nav{height:74px;min-height:74px}
+  .nav-item{height:70px;min-height:70px}
+  .nav-item .asset-ui-icon{width:38px;height:38px;flex-basis:38px}
+  .nav-item.active::before{top:-30px;width:72px;height:72px}
+  .nav-item.active .asset-ui-icon{transform:translateY(-8px) scale(1.01)}
+}
+@media(max-width:360px){
+  .bottom-nav{height:70px;min-height:70px}
+  .nav-item{height:66px;min-height:66px}
+  .nav-item .asset-ui-icon{width:36px;height:36px;flex-basis:36px}
+  .nav-item.active::before{top:-30px;width:72px;height:72px}
+  .nav-item.active .asset-ui-icon{transform:translateY(-7px) scale(1)}
+}
+
+/* FINAL: navigation controls are flat — no individual button/card surface. */
+.bottom-nav .nav-item,
+.bottom-nav .nav-item:hover,
+.bottom-nav .nav-item:focus,
+.bottom-nav .nav-item:focus-visible,
+.bottom-nav .nav-item:active,
+.bottom-nav .nav-item.active{
+  background:transparent !important;
+  border:0 !important;
+  box-shadow:none !important;
+  border-radius:0 !important;
+  outline:none;
+}
+.bottom-nav .nav-item::before,
+.bottom-nav .nav-item::after{
+  content:none !important;
+  display:none !important;
+}
+.bottom-nav .nav-item .asset-ui-icon{
+  background:transparent !important;
+  border:0 !important;
+  box-shadow:none !important;
+}
+.bottom-nav .nav-item.active .asset-ui-icon{
+  transform:translateY(-8px) scale(1.01);
+  filter:drop-shadow(0 0 5px rgba(218,137,255,.30)) drop-shadow(0 0 8px rgba(185,108,255,.10));
+}
+.bottom-nav .nav-item:not(.active) .asset-ui-icon{
+  transform:translateY(5px);
+  filter:drop-shadow(0 0 2px rgba(255,255,255,.06));
+}
+.bottom-nav .nav-item:active .asset-ui-icon,
+.bottom-nav .nav-item:not(.active):active .asset-ui-icon{
+  transform:translateY(-8px) scale(.99);
+}
+@media(max-width:360px){
+  .bottom-nav .nav-item.active .asset-ui-icon{transform:translateY(-7px) scale(1)}
+  .bottom-nav .nav-item:active .asset-ui-icon,
+  .bottom-nav .nav-item:not(.active):active .asset-ui-icon{transform:translateY(-7px) scale(.99)}
+}
+/* Navigation interaction fix: keep navigation icons stationary on press.
+   Active styling (color/filter) remains unchanged. */
+.bottom-nav .nav-item .asset-ui-icon,
+.bottom-nav .nav-item.active .asset-ui-icon,
+.bottom-nav .nav-item:not(.active) .asset-ui-icon,
+.bottom-nav .nav-item:active .asset-ui-icon,
+.bottom-nav .nav-item:not(.active):active .asset-ui-icon {
+  transform:none !important;
+}
+
+/* =========================================================
+   NEON AURORA NAVIGATION — FINAL VISUAL LAYER
+   Shared navigation for Home / Dashboard / Setting.
+========================================================= */
+.bottom-nav{
+  position:fixed;
+  left:50%;
+  bottom:max(12px, env(safe-area-inset-bottom));
+  transform:translateX(-50%);
+  width:min(470px,calc(100% - 28px));
+  height:72px;
+  min-height:72px;
+  padding:6px;
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:5px;
+  background:linear-gradient(145deg,rgba(31,24,43,.94),rgba(13,10,19,.97));
+  border:1px solid rgba(190,128,255,.30);
+  border-radius:25px;
+  box-shadow:
+    0 18px 55px rgba(0,0,0,.58),
+    0 0 0 1px rgba(255,255,255,.025) inset,
+    0 0 32px rgba(157,92,255,.12);
+  overflow:visible;
+  backdrop-filter:blur(22px) saturate(135%);
+  -webkit-backdrop-filter:blur(22px) saturate(135%);
+}
+.bottom-nav::before{
+  content:"";
+  position:absolute;
+  left:18%;right:18%;top:-1px;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(205,151,255,.82),transparent);
+  box-shadow:0 0 16px rgba(157,92,255,.48);
+  pointer-events:none;
+}
+.bottom-nav::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  background:linear-gradient(120deg,rgba(255,255,255,.035),transparent 32%,transparent 68%,rgba(157,92,255,.045));
+  pointer-events:none;
+}
+.bottom-nav .nav-item,
+.bottom-nav .nav-item:hover,
+.bottom-nav .nav-item:focus,
+.bottom-nav .nav-item:focus-visible,
+.bottom-nav .nav-item:active,
+.bottom-nav .nav-item.active{
+  position:relative;
+  z-index:1;
+  min-height:60px;
+  height:60px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:3px;
+  padding:7px 8px;
+  border:1px solid transparent !important;
+  border-radius:18px !important;
+  background:transparent !important;
+  color:#91899f;
+  box-shadow:none !important;
+  outline:none;
+  transition:color .22s ease,border-color .22s ease,background .22s ease,box-shadow .22s ease,transform .18s ease;
+}
+.bottom-nav .nav-item:hover{
+  color:#d7c9e5;
+  background:rgba(157,92,255,.055) !important;
+  border-color:rgba(255,255,255,.055) !important;
+}
+.bottom-nav .nav-item.active{
+  color:#f1e7ff;
+  background:linear-gradient(145deg,rgba(116,68,166,.27),rgba(74,42,107,.14)) !important;
+  border-color:rgba(190,128,255,.28) !important;
+  box-shadow:
+    0 0 24px rgba(157,92,255,.12),
+    0 0 0 1px rgba(255,255,255,.018) inset !important;
+}
+.bottom-nav .nav-item.active::before{
+  content:"" !important;
+  display:block !important;
+  position:absolute;
+  top:3px;left:50%;
+  width:34px;height:3px;
+  transform:translateX(-50%);
+  border:0 !important;
+  border-radius:999px;
+  background:linear-gradient(90deg,rgba(157,92,255,.35),#c58cff,rgba(157,92,255,.35));
+  box-shadow:0 0 13px rgba(197,140,255,.65);
+}
+.bottom-nav .nav-item::after{content:none !important;display:none !important}
+.bottom-nav .nav-item .asset-ui-icon{
+  width:22px !important;
+  height:22px !important;
+  flex:0 0 22px !important;
+  margin:0;
+  background:transparent !important;
+  border:0 !important;
+  box-shadow:none !important;
+  filter:drop-shadow(0 0 2px rgba(255,255,255,.04));
+  transition:filter .22s ease,transform .22s ease;
+}
+.bottom-nav .nav-item span:last-child{
+  display:block;
+  margin:0;
+  font-size:10px;
+  line-height:1.15;
+  font-weight:750;
+  letter-spacing:.01em;
+}
+.bottom-nav .nav-item.active .asset-ui-icon{
+  transform:none !important;
+  filter:drop-shadow(0 0 5px rgba(218,137,255,.48)) drop-shadow(0 0 12px rgba(157,92,255,.20));
+}
+.bottom-nav .nav-item:active{
+  transform:scale(.97);
+}
+.bottom-nav .nav-item:active .asset-ui-icon,
+.bottom-nav .nav-item:not(.active):active .asset-ui-icon{
+  transform:none !important;
+}
+@media(max-width:520px){
+  .bottom-nav{
+    width:calc(100% - 18px);
+    height:70px;
+    min-height:70px;
+    bottom:max(7px,env(safe-area-inset-bottom));
+    border-radius:22px;
+    padding:5px;
+  }
+  .bottom-nav .nav-item,
+  .bottom-nav .nav-item:hover,
+  .bottom-nav .nav-item:focus,
+  .bottom-nav .nav-item:active,
+  .bottom-nav .nav-item.active{
+    min-height:60px;height:60px;border-radius:17px !important;
+  }
+}
+@media(max-width:360px){
+  .bottom-nav{width:calc(100% - 12px);height:66px;min-height:66px;border-radius:20px;padding:4px}
+  .bottom-nav .nav-item,
+  .bottom-nav .nav-item:hover,
+  .bottom-nav .nav-item:focus,
+  .bottom-nav .nav-item:active,
+  .bottom-nav .nav-item.active{min-height:58px;height:58px;border-radius:16px !important}
+  .bottom-nav .nav-item .asset-ui-icon{width:21px !important;height:21px !important;flex-basis:21px !important}
+  .bottom-nav .nav-item span:last-child{font-size:9px}
+}
+
+/* =========================================================
+   NAVIGATION ICON SCALE + ALIGNMENT — FINAL SHARED PASS
+   Home / Dashboard / Setting share one icon-only visual system.
+   Icons are larger, centered on the same vertical axis, and
+   intentionally remain plain icons (no button/card treatment).
+========================================================= */
+.bottom-nav .nav-item,
+.bottom-nav .nav-item:hover,
+.bottom-nav .nav-item:focus,
+.bottom-nav .nav-item:focus-visible,
+.bottom-nav .nav-item:active,
+.bottom-nav .nav-item.active {
+  height: 68px !important;
+  min-height: 68px !important;
+  display: grid !important;
+  grid-template-rows: 43px 14px !important;
+  grid-auto-rows: 0 !important;
+  align-content: center !important;
+  justify-items: center !important;
+  align-items: center !important;
+  gap: 2px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  transform: none !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  outline: none;
+}
+
+.bottom-nav .nav-item .asset-ui-icon,
+.bottom-nav .nav-item.active .asset-ui-icon,
+.bottom-nav .nav-item:not(.active) .asset-ui-icon,
+.bottom-nav .nav-item:active .asset-ui-icon,
+.bottom-nav .nav-item:not(.active):active .asset-ui-icon {
+  width: 38px !important;
+  height: 38px !important;
+  min-width: 38px !important;
+  min-height: 38px !important;
+  flex: 0 0 38px !important;
+  margin: 0 !important;
+  transform: none !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.bottom-nav .nav-item > span:last-child {
+  display: block !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+  line-height: 14px !important;
+  font-size: 9px !important;
+  font-weight: 650 !important;
+  transform: none !important;
+}
+
+.bottom-nav .nav-item.active .asset-ui-icon {
+  filter: drop-shadow(0 0 7px rgba(218,137,255,.30)) !important;
+}
+
+.bottom-nav .nav-item:not(.active) .asset-ui-icon {
+  filter: drop-shadow(0 0 2px rgba(255,255,255,.06)) !important;
+}
+
+@media (max-width: 520px) {
+  .bottom-nav .nav-item,
+  .bottom-nav .nav-item:hover,
+  .bottom-nav .nav-item:focus,
+  .bottom-nav .nav-item:focus-visible,
+  .bottom-nav .nav-item:active,
+  .bottom-nav .nav-item.active {
+    height: 68px !important;
+    min-height: 68px !important;
+    grid-template-rows: 43px 14px !important;
+  }
+
+  .bottom-nav .nav-item .asset-ui-icon,
+  .bottom-nav .nav-item.active .asset-ui-icon,
+  .bottom-nav .nav-item:not(.active) .asset-ui-icon,
+  .bottom-nav .nav-item:active .asset-ui-icon,
+  .bottom-nav .nav-item:not(.active):active .asset-ui-icon {
+    width: 38px !important;
+    height: 38px !important;
+    min-width: 38px !important;
+    min-height: 38px !important;
+    flex-basis: 38px !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .bottom-nav .nav-item,
+  .bottom-nav .nav-item:hover,
+  .bottom-nav .nav-item:focus,
+  .bottom-nav .nav-item:focus-visible,
+  .bottom-nav .nav-item:active,
+  .bottom-nav .nav-item.active {
+    height: 68px !important;
+    min-height: 68px !important;
+    grid-template-rows: 41px 14px !important;
+  }
+
+  .bottom-nav .nav-item .asset-ui-icon,
+  .bottom-nav .nav-item.active .asset-ui-icon,
+  .bottom-nav .nav-item:not(.active) .asset-ui-icon,
+  .bottom-nav .nav-item:active .asset-ui-icon,
+  .bottom-nav .nav-item:not(.active):active .asset-ui-icon {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    min-height: 36px !important;
+    flex-basis: 36px !important;
+  }
+}
