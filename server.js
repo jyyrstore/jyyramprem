@@ -2818,3 +2818,9 @@ if (server) {
    VERCEL / SERVERLESS EXPORT
 ========================================================= */
 
+cd "/storage/emulated/0/.Upload Github/jyyramprem"
+
+cat >> server.js <<'EOF'
+
+export default app;
+EOF
