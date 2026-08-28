@@ -115,14 +115,53 @@
   }
 
   async function signUp(email, password, dataOptions = {}) {
-    const data = await api("/signup", { method: "POST", body: JSON.stringify({ email, password, data: dataOptions }) });
-    const session = normalizeSession(data);
-    if (session) writeSession(session);
-    return { session, user: data.user || session?.user || null };
+    const response = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ email, password, data: dataOptions }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const error = new Error(data.error || data.message || "Registrasi gagal.");
+      error.status = response.status;
+      error.code = data.code || "";
+      error.retryAfter = Number(data.retryAfter || 0);
+      throw error;
+    }
+    return data;
   }
 
-  async function verifyOtp(email, token, type = "signup") {
-    const data = await api("/verify", { method: "POST", body: JSON.stringify({ email, token, type }) });
+  async function resendSignupCode(email) {
+    const response = await fetch("/api/auth/resend-verification", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const error = new Error(data.error || data.message || "Tidak dapat mengirim ulang code.");
+      error.status = response.status;
+      error.code = data.code || "";
+      error.retryAfter = Number(data.retryAfter || 0);
+      throw error;
+    }
+    return data;
+  }
+
+  async function verifyOtp(email, token, password) {
+    const response = await fetch("/api/auth/verify-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ email, code: token, password }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const error = new Error(data.error || data.message || "Code verifikasi tidak valid.");
+      error.status = response.status;
+      error.code = data.code || "";
+      error.retryAfter = Number(data.retryAfter || 0);
+      throw error;
+    }
     const session = normalizeSession(data);
     if (session) writeSession(session);
     return { session, user: data.user || session?.user || null };
@@ -184,5 +223,5 @@
     return user;
   }
 
-  window.AMAuth = { getConfig, getSession, signIn, signUp, verifyOtp, signOut, resetPassword, getUser, getPortalAccess, requestPortalToken, verifyPortalToken };
+  window.AMAuth = { getConfig, getSession, signIn, signUp, resendSignupCode, verifyOtp, signOut, resetPassword, getUser, getPortalAccess, requestPortalToken, verifyPortalToken };
 })();

@@ -1,24 +1,11 @@
 
-/* FINAL_TARGET_FLOW
- * User email -> send-magiclink -> user pastes fresh link -> verify-account
- * -> user confirms -> apply-premium. No portal-owned mailbox service is used.
- */
-const FINAL_MAGIC_FLOW = Object.freeze({
-  flowMode: "user_email_manual_activation",
-  generateTriggersSendMagiclink: true,
-  requireRawMagicLinkBeforeVerify: true,
-  requireVerifiedBeforePremium: true,
-  applyPremiumSeparatedFromVerify: true,
-  rejectInvalidProviderToken: true,
-  mailboxProvider: "user_email_inbox",
-});
-
 import "dotenv/config";
 import express from "express";
 import rateLimit from "express-rate-limit";
 import { createClient } from "@supabase/supabase-js";
 import path from "node:path";
 import crypto from "node:crypto";
+import tls from "node:tls";
 import { fileURLToPath } from "node:url";
 import {
   decodeJwtPayloadSafe,
@@ -244,6 +231,33 @@ const SUPABASE_SERVICE_ROLE_KEY =
 const SUPABASE_PUBLISHABLE_KEY =
   env("SUPABASE_PUBLISHABLE_KEY");
 
+const AUTH_EMAIL_FROM = process.env.AUTH_EMAIL_FROM?.trim() || "";
+const AUTH_EMAIL_FROM_NAME = process.env.AUTH_EMAIL_FROM_NAME?.trim() || "Jyy'R Amprem";
+const SMTP_HOST = process.env.SMTP_HOST?.trim() || "smtp.gmail.com";
+const SMTP_PORT = Number(process.env.SMTP_PORT || 465);
+const SMTP_SECURE = /^(1|true|yes|on)$/i.test(String(process.env.SMTP_SECURE ?? "true"));
+const SMTP_USER = process.env.SMTP_USER?.trim() || AUTH_EMAIL_FROM;
+const SMTP_PASS = process.env.SMTP_PASS?.trim() || "";
+const SMTP_TIMEOUT_MS = Number(process.env.SMTP_TIMEOUT_MS || 15000);
+const AUTH_EMAIL_VERIFICATION_TTL_MINUTES = Math.max(5, Number(process.env.AUTH_EMAIL_VERIFICATION_TTL_MINUTES || 30));
+const AUTH_EMAIL_RESEND_COOLDOWN_SECONDS = Math.max(15, Number(process.env.AUTH_EMAIL_RESEND_COOLDOWN_SECONDS || 60));
+const AUTH_EMAIL_VERIFICATION_SECRET = process.env.AUTH_EMAIL_VERIFICATION_SECRET?.trim() || "";
+
+/* FINAL_TARGET_FLOW
+ * Registration is free of application cooldown. Email verification uses a
+ * 6-digit code delivered to the user's own mailbox. Resend is throttled.
+ * After email verification, the existing portal-token owner gate applies.
+ */
+const FINAL_MAGIC_FLOW = Object.freeze({
+  flowMode: "signup_email_code_then_owner_token",
+  signupCooldown: 0,
+  emailVerificationCode: true,
+  emailVerificationTtlMinutes: AUTH_EMAIL_VERIFICATION_TTL_MINUTES,
+  resendCooldownSeconds: AUTH_EMAIL_RESEND_COOLDOWN_SECONDS,
+  requireOwnerTokenBeforePortal: true,
+  providerPremiumFlowPreserved: true,
+});
+
 const supabase = createClient(
   SUPABASE_URL,
   SUPABASE_SERVICE_ROLE_KEY,
@@ -254,6 +268,225 @@ const supabase = createClient(
     },
   }
 );
+
+/* =========================================================
+   SIMPLE EMAIL VERIFICATION
+   Public signup has no app cooldown. Only resend is throttled.
+========================================================= */
+function assertEmailVerificationConfig() {
+  if (!SMTP_USER || !SMTP_PASS || !AUTH_EMAIL_FROM || !AUTH_EMAIL_VERIFICATION_SECRET) {
+    const error = new Error("Email verification belum dikonfigurasi di server.");
+    error.code = "AUTH_EMAIL_CONFIG_MISSING";
+    error.status = 503;
+    throw error;
+  }
+}
+
+function hashVerificationCode(userId, code) {
+  return crypto.createHmac("sha256", AUTH_EMAIL_VERIFICATION_SECRET).update(`${userId}:${String(code).trim()}`).digest("hex");
+}
+
+function generateVerificationCode() {
+  return String(crypto.randomInt(0, 1000000)).padStart(6, "0");
+}
+
+function smtpCommand(socket, command, expectedCodes) {
+  return new Promise((resolve, reject) => {
+    let buffer = "";
+    const onData = (chunk) => {
+      buffer += chunk.toString("utf8");
+      const lines = buffer.split(/\r?\n/);
+      const last = lines.filter(Boolean).at(-1) || "";
+      if (!/^\d{3} /.test(last)) return;
+      cleanup();
+      const code = Number(last.slice(0, 3));
+      if (!expectedCodes.includes(code)) {
+        const e = new Error(`SMTP error ${code}: ${last.slice(4)}`);
+        e.code = "SMTP_ERROR";
+        return reject(e);
+      }
+      resolve(buffer);
+    };
+    const onError = (error) => { cleanup(); reject(error); };
+    const onTimeout = () => { cleanup(); reject(new Error("SMTP timeout.")); };
+    function cleanup() { socket.off("data", onData); socket.off("error", onError); socket.off("timeout", onTimeout); }
+    socket.on("data", onData); socket.on("error", onError); socket.on("timeout", onTimeout);
+    if (command !== null) socket.write(`${command}\r\n`);
+  });
+}
+
+async function sendVerificationEmail(to, code) {
+  assertEmailVerificationConfig();
+  const socket = SMTP_SECURE ? tls.connect({ host: SMTP_HOST, port: SMTP_PORT, servername: SMTP_HOST, timeout: SMTP_TIMEOUT_MS }) : tls.connect({ host: SMTP_HOST, port: SMTP_PORT, servername: SMTP_HOST, timeout: SMTP_TIMEOUT_MS });
+  try {
+    await new Promise((resolve, reject) => {
+      const onReady = () => { cleanup(); resolve(); };
+      const onError = (error) => { cleanup(); reject(error); };
+      const onTimeout = () => { cleanup(); reject(new Error("SMTP connection timeout.")); };
+      function cleanup() { socket.off("secureConnect", onReady); socket.off("error", onError); socket.off("timeout", onTimeout); }
+      socket.on("secureConnect", onReady); socket.on("error", onError); socket.on("timeout", onTimeout);
+    });
+    await smtpCommand(socket, null, [220]);
+    await smtpCommand(socket, "EHLO localhost", [250]);
+    await smtpCommand(socket, "AUTH LOGIN", [334]);
+    await smtpCommand(socket, Buffer.from(SMTP_USER, "utf8").toString("base64"), [334]);
+    await smtpCommand(socket, Buffer.from(SMTP_PASS, "utf8").toString("base64"), [235]);
+    await smtpCommand(socket, `MAIL FROM:<${SMTP_USER}>`, [250]);
+    await smtpCommand(socket, `RCPT TO:<${to}>`, [250, 251]);
+    await smtpCommand(socket, "DATA", [354]);
+
+    const subject = "Verifikasi Email — Jyy'R Amprem";
+    const body = [
+      `From: ${AUTH_EMAIL_FROM_NAME} <${AUTH_EMAIL_FROM}>`,
+      `To: <${to}>`,
+      `Subject: ${subject}`,
+      "MIME-Version: 1.0",
+      "Content-Type: text/plain; charset=UTF-8",
+      "Content-Transfer-Encoding: 8bit",
+      "",
+      `Halo,`,
+      "",
+      "Gunakan code berikut untuk memverifikasi email akun Jyy'R Amprem:",
+      "",
+      `CODE: ${code}`,
+      "",
+      `Code berlaku ${AUTH_EMAIL_VERIFICATION_TTL_MINUTES} menit dan hanya dapat digunakan satu kali.`,
+      "",
+      "Jika kamu tidak melakukan pendaftaran ini, abaikan email ini.",
+      "",
+      "Jyy'R Amprem",
+      ".",
+    ].join("\r\n");
+    socket.write(body.replace(/\n\./g, "\n..") + "\r\n");
+    await smtpCommand(socket, null, [250]);
+    await smtpCommand(socket, "QUIT", [221]);
+  } finally {
+    socket.end();
+    socket.destroy();
+  }
+}
+
+function publicUser(data) {
+  return data ? { id: data.id, email: data.email, email_confirmed_at: data.email_confirmed_at || null, user_metadata: data.user_metadata || {} } : null;
+}
+
+async function findAuthUserByEmail(email) {
+  const target = String(email || "").toLowerCase();
+  for (let page = 1; page <= 100; page += 1) {
+    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage: 1000 });
+    if (error) throw error;
+    const users = Array.isArray(data?.users) ? data.users : [];
+    const found = users.find((u) => String(u.email || "").toLowerCase() === target);
+    if (found) return found;
+    if (users.length < 1000) break;
+  }
+  return null;
+}
+
+app.post("/api/auth/register", async (req, res) => {
+  try {
+    const parsed = normalizeUserEmail(req.body?.email);
+    if (!parsed.valid) return res.status(400).json({ ok: false, code: "INVALID_EMAIL", error: "Masukkan alamat email yang valid." });
+    const email = parsed.value;
+    const password = String(req.body?.password || "");
+    if (password.length < 8) return res.status(422).json({ ok: false, code: "WEAK_PASSWORD", error: "Password minimal 8 karakter." });
+    assertEmailVerificationConfig();
+
+    const metadata = (req.body?.data && typeof req.body.data === "object") ? req.body.data : {};
+    const { data: created, error: createError } = await supabase.auth.admin.createUser({ email, password, email_confirm: false, user_metadata: metadata });
+    if (createError) {
+      const duplicate = /already.*registered|already.*exists|duplicate/i.test(String(createError.message || ""));
+      return res.status(duplicate ? 409 : 400).json({ ok: false, code: duplicate ? "EMAIL_EXISTS" : "SIGNUP_FAILED", error: duplicate ? "Email sudah terdaftar. Silakan masuk." : createError.message });
+    }
+
+    const user = created.user;
+    const code = generateVerificationCode();
+    const hash = hashVerificationCode(user.id, code);
+    await supabase.from("am_email_verifications").delete().eq("user_id", user.id).is("used_at", null);
+    const { error: insertError } = await supabase.from("am_email_verifications").insert({ user_id: user.id, email, token_hash: hash, expires_at: new Date(Date.now() + AUTH_EMAIL_VERIFICATION_TTL_MINUTES * 60000).toISOString() });
+    if (insertError) throw insertError;
+    try { await sendVerificationEmail(email, code); } catch (mailError) {
+      await supabase.from("am_email_verifications").delete().eq("user_id", user.id).is("used_at", null);
+      console.error("[AUTH EMAIL SEND ERROR]", mailError);
+      return res.status(503).json({ ok: false, code: "EMAIL_SEND_FAILED", error: "Akun belum dapat diaktifkan karena email verifikasi gagal dikirim. Coba lagi sebentar." });
+    }
+    return res.status(201).json({ ok: true, stage: "pending_email", user: publicUser(user), email, resendAvailableAt: new Date(Date.now() + AUTH_EMAIL_RESEND_COOLDOWN_SECONDS * 1000).toISOString() });
+  } catch (error) {
+    console.error("[AUTH REGISTER ERROR]", error);
+    return res.status(Number(error.status) || 500).json({ ok: false, code: error.code || "AUTH_REGISTER_FAILED", error: error.status ? error.message : "Registrasi gagal. Coba lagi." });
+  }
+});
+
+app.post("/api/auth/resend-verification", async (req, res) => {
+  try {
+    const parsed = normalizeUserEmail(req.body?.email);
+    if (!parsed.valid) return res.status(400).json({ ok: false, code: "INVALID_EMAIL", error: "Masukkan alamat email yang valid." });
+    assertEmailVerificationConfig();
+    const email = parsed.value;
+    const user = await findAuthUserByEmail(email);
+    if (!user) return res.status(404).json({ ok: false, code: "USER_NOT_FOUND", error: "Akun dengan email tersebut belum terdaftar." });
+    if (user.email_confirmed_at) return res.status(409).json({ ok: false, code: "ALREADY_VERIFIED", error: "Email sudah terverifikasi. Silakan masuk." });
+
+    const { data: recent } = await supabase.from("am_email_verifications").select("created_at,expires_at,used_at").eq("user_id", user.id).is("used_at", null).order("created_at", { ascending: false }).limit(1).maybeSingle();
+    const retryAt = recent?.created_at ? new Date(new Date(recent.created_at).getTime() + AUTH_EMAIL_RESEND_COOLDOWN_SECONDS * 1000) : null;
+    if (retryAt && retryAt.getTime() > Date.now()) {
+      const retryAfter = Math.ceil((retryAt.getTime() - Date.now()) / 1000);
+      return res.status(429).json({ ok: false, code: "RESEND_COOLDOWN", retryAfter, error: `Tunggu ${retryAfter} detik sebelum mengirim ulang code.` });
+    }
+
+    const code = generateVerificationCode();
+    const hash = hashVerificationCode(user.id, code);
+    await supabase.from("am_email_verifications").delete().eq("user_id", user.id).is("used_at", null);
+    const { error: insertError } = await supabase.from("am_email_verifications").insert({ user_id: user.id, email, token_hash: hash, expires_at: new Date(Date.now() + AUTH_EMAIL_VERIFICATION_TTL_MINUTES * 60000).toISOString() });
+    if (insertError) throw insertError;
+    await sendVerificationEmail(email, code);
+    return res.json({ ok: true, email, resendAvailableAt: new Date(Date.now() + AUTH_EMAIL_RESEND_COOLDOWN_SECONDS * 1000).toISOString() });
+  } catch (error) {
+    console.error("[AUTH RESEND ERROR]", error);
+    return res.status(Number(error.status) || 500).json({ ok: false, code: error.code || "AUTH_RESEND_FAILED", retryAfter: Number(error.retryAfter || 0), error: error.status ? error.message : "Tidak dapat mengirim code verifikasi." });
+  }
+});
+
+app.post("/api/auth/verify-email", async (req, res) => {
+  try {
+    const parsed = normalizeUserEmail(req.body?.email);
+    if (!parsed.valid) return res.status(400).json({ ok: false, code: "INVALID_EMAIL", error: "Email tidak valid." });
+    const code = String(req.body?.code || "").replace(/\D/g, "");
+    if (!/^\d{6}$/.test(code)) return res.status(400).json({ ok: false, code: "INVALID_CODE", error: "Masukkan 6 digit code verifikasi." });
+    const email = parsed.value;
+    const user = await findAuthUserByEmail(email);
+    if (!user) return res.status(404).json({ ok: false, code: "USER_NOT_FOUND", error: "Akun tidak ditemukan." });
+    if (user.email_confirmed_at) {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password: String(req.body?.password || "") });
+      if (!error && data?.session) return res.json({ ok: true, stage: "email_verified", ...data });
+      return res.status(409).json({ ok: false, code: "ALREADY_VERIFIED", error: "Email sudah terverifikasi. Silakan masuk." });
+    }
+    const { data: row, error: rowError } = await supabase.from("am_email_verifications").select("id,token_hash,expires_at,used_at").eq("user_id", user.id).eq("email", email).is("used_at", null).order("created_at", { ascending: false }).limit(1).maybeSingle();
+    if (rowError) throw rowError;
+    if (!row || row.expires_at <= new Date().toISOString()) return res.status(410).json({ ok: false, code: "CODE_EXPIRED", error: "Code verifikasi sudah kedaluwarsa. Kirim ulang code baru." });
+    const expected = hashVerificationCode(user.id, code);
+    if (!crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(String(row.token_hash)))) {
+      const nextAttempts = Number(row.attempt_count || 0) + 1;
+      await supabase.from("am_email_verifications").update({ attempt_count: nextAttempts }).eq("id", row.id);
+      if (nextAttempts >= 5) {
+        await supabase.from("am_email_verifications").delete().eq("id", row.id);
+        return res.status(429).json({ ok: false, code: "CODE_ATTEMPTS_EXCEEDED", error: "Terlalu banyak percobaan. Kirim ulang code verifikasi baru." });
+      }
+      return res.status(401).json({ ok: false, code: "INVALID_CODE", error: "Code verifikasi salah." });
+    }
+
+    const { data: updated, error: updateError } = await supabase.auth.admin.updateUserById(user.id, { email_confirm: true });
+    if (updateError) throw updateError;
+    await supabase.from("am_email_verifications").update({ used_at: new Date().toISOString() }).eq("id", row.id);
+
+    const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({ email, password: String(req.body?.password || "") });
+    if (loginError || !loginData?.session) return res.status(200).json({ ok: true, stage: "email_verified", user: publicUser(updated.user), session: null });
+    return res.json({ ok: true, stage: "email_verified", ...loginData });
+  } catch (error) {
+    console.error("[AUTH VERIFY ERROR]", error);
+    return res.status(Number(error.status) || 500).json({ ok: false, code: error.code || "AUTH_VERIFY_FAILED", error: error.status ? error.message : "Verifikasi email gagal." });
+  }
+});
 
 app.get(
   "/api/config",

@@ -46,6 +46,27 @@ function status(message, type = "info") {
   window.JYYRNotify?.show(message, type);
 }
 
+let resendCooldownTimer = null;
+function startResendCooldown(seconds = 60) {
+  const button = $("#resendCode");
+  if (!button) return;
+  if (resendCooldownTimer) clearInterval(resendCooldownTimer);
+  let remaining = Math.max(1, Number(seconds) || 60);
+  button.disabled = true;
+  const render = () => {
+    button.textContent = `Kirim ulang code (${remaining}s)`;
+    remaining -= 1;
+    if (remaining < 0) {
+      clearInterval(resendCooldownTimer);
+      resendCooldownTimer = null;
+      button.disabled = false;
+      button.textContent = "Kirim ulang code";
+    }
+  };
+  render();
+  resendCooldownTimer = setInterval(render, 1000);
+}
+
 
 /* =========================================================
    AUTH MODE
@@ -321,6 +342,7 @@ async function submit(event) {
         $("#registerCodeField")?.classList.remove(
           "hidden"
         );
+        startResendCooldown(60);
 
         return;
       }
@@ -333,7 +355,7 @@ async function submit(event) {
       await AMAuth.verifyOtp(
         email,
         code,
-        "signup"
+        password
       );
 
       status("Email terverifikasi. Masukkan Token Akses Portal.", "success");
@@ -410,19 +432,14 @@ $("#resendCode").onclick = async () => {
   }
 
   try {
-    await AMAuth.signUp(
-      email,
-      password,
-      {
-        username
-      }
-    );
+    await AMAuth.resendSignupCode(email);
 
 
     status(
-      "Code verifikasi dikirim ulang.",
+      "Code verifikasi baru dikirim.",
       "success"
     );
+    startResendCooldown(60);
 
   } catch (error) {
     status(
