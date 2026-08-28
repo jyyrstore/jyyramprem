@@ -1,12 +1,11 @@
 cat > vercel.json <<'EOF'
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "server.js",
-      "use": "@vercel/node"
+  "functions": {
+    "server.js": {
+      "runtime": "nodejs22.x"
     }
-  ],
+  },
   "routes": [
     {
       "src": "/(.*)",
