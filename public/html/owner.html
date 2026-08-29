@@ -566,7 +566,20 @@
           <button id="generatePortalToken" class="btn primary" type="button">Generate Token</button>
           <button id="revokePortalToken" class="btn danger" type="button" disabled>Revoke Token</button>
         </div>
-        <div id="generatedPortalToken" class="status success" hidden></div>
+        <div id="generatedPortalToken" class="status success token-generated" hidden>
+          <button id="copyGeneratedPortalToken" class="icon-btn token-copy" type="button" aria-label="Salin token" title="Salin token"><span id="copyTokenIcon"></span></button>
+          <span id="generatedPortalTokenText"></span>
+        </div>
+      </article>
+      <article class="card">
+        <div class="section-head">
+          <div>
+            <h2 class="section-title">Token History</h2>
+            <p class="section-note">Riwayat semua token Owner. Plaintext token hanya tersedia saat token baru dibuat.</p>
+          </div>
+          <button id="refreshPortalTokenHistory" class="round-btn" type="button" aria-label="Refresh token history" title="Refresh"><span id="refreshTokenHistoryIcon"></span></button>
+        </div>
+        <div id="portalTokenHistory" class="token-history-list"><div class="status info">Memuat history token…</div></div>
       </article>
       <article class="card">
         <div class="section-head">

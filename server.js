@@ -1014,12 +1014,31 @@ app.post("/api/owner/token/generate", requireAuth, ownerMemberMutationLimiter, r
   try {
     const token = generatePortalToken();
     const expiresAt = new Date(Date.now() + PORTAL_TOKEN_TTL_HOURS * 60 * 60 * 1000).toISOString();
-    const { data, error } = await supabase.rpc("owner_create_portal_token", { p_owner_user_id: req.user.id, p_token_hash: hashPortalToken(token), p_expires_at: expiresAt });
+    const { data, error } = await supabase.rpc("owner_create_portal_token", {
+      p_owner_user_id: req.user.id,
+      p_token_hash: hashPortalToken(token),
+      p_token_preview: `${token.slice(0, 4)}••••${token.slice(-4)}`,
+      p_expires_at: expiresAt,
+    });
     if (error) throw error;
     return res.status(201).json({ ok: true, owner: true, token, expiresAt: data?.expires_at || expiresAt });
   } catch (error) {
     console.error("[OWNER TOKEN GENERATE ERROR]", { code: error?.code || null, message: error?.message || "Unknown error" });
     return res.status(500).json({ ok: false, error: "Gagal membuat token." });
+  }
+});
+
+app.get("/api/owner/token/history", requireAuth, ownerReadLimiter, requireOwner, async (req, res) => {
+  try {
+    const limit = parsePositiveInt(req.query.limit, 50, 100);
+    const offset = parsePositiveInt(req.query.offset, 0, 1000000);
+    if (limit === null || offset === null) return res.status(400).json({ ok: false, error: "Pagination tidak valid." });
+    const { data, error } = await supabase.rpc("owner_list_portal_tokens", { p_owner_user_id: req.user.id, p_limit: limit, p_offset: offset });
+    if (error) throw error;
+    return res.json({ ok: true, owner: true, ...data });
+  } catch (error) {
+    const status = /Owner access required/i.test(String(error?.message || "")) ? 403 : 500;
+    return res.status(status).json({ ok: false, error: status === 403 ? "Akses Owner diperlukan." : "Gagal membaca history token." });
   }
 });
 

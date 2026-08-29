@@ -6,7 +6,7 @@ const icon = (name) => window.icon?.(name) || "";
   ["broadcastIcon", "broadcast"], ["trashIcon", "trash"], ["editIcon", "edit"],
   ["messageIcon", "message"], ["bellIcon", "bell"], ["plusIcon", "plus"],
   ["plusIcon2", "plus"], ["shieldIcon", "shield"], ["lockIcon", "lock"],
-  ["settingsIcon", "settings"], ["checkIcon", "check"], ["refreshIcon2", "refresh"],
+  ["settingsIcon", "settings"], ["checkIcon", "check"], ["refreshIcon2", "refresh"], ["copyTokenIcon", "copy"], ["refreshTokenHistoryIcon", "refresh"],
 ].forEach(([id, name]) => {
   const el = document.getElementById(id);
   if (el) el.innerHTML = icon(name);
@@ -26,6 +26,7 @@ const state = {
   activeConversationId: null,
   editingBroadcastId: null,
   activePortalTokenId: null,
+  generatedPortalToken: null,
 };
 
 const redirectLogin = () => location.replace("/login.html");
@@ -60,6 +61,24 @@ function broadcastDate(value) {
   if (!value) return "—";
   const d = new Date(value);
   return Number.isNaN(d.getTime()) ? "—" : d.toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" });
+}
+
+async function copyGeneratedPortalToken() {
+  const token = state.generatedPortalToken;
+  if (!token) return;
+  try {
+    await navigator.clipboard.writeText(token);
+  } catch {
+    const area = document.createElement("textarea");
+    area.value = token;
+    area.style.position = "fixed";
+    area.style.opacity = "0";
+    document.body.appendChild(area);
+    area.select();
+    document.execCommand("copy");
+    area.remove();
+  }
+  ownerNotice("Token berhasil disalin.", "success");
 }
 
 function ownerRequest(path, session, options = {}) {
@@ -129,7 +148,7 @@ function setupTabs() {
         if (btn.dataset.section === "notifikasi") {
           await Promise.all([loadConversations(), loadContentAdmin(session)]);
         } else if (btn.dataset.section === "token") {
-          await Promise.all([loadPortalTokenStatus(session), loadPortalTokenRequests(session)]);
+          await Promise.all([loadPortalTokenStatus(session), loadPortalTokenHistory(session), loadPortalTokenRequests(session)]);
         } else if (btn.dataset.section === "security") {
           await loadLoginActivity(session);
         } else if (btn.dataset.section === "sistem") {
@@ -255,12 +274,33 @@ async function loadPortalTokenStatus(session) {
   const revoke = document.getElementById("revokePortalToken");
   state.activePortalTokenId = token.status === "active" ? token.id : null;
   if (statusEl) {
+    const activeCount = Number(data.activeCount) || 0;
     statusEl.textContent = token.status === "active"
-      ? `Aktif sampai ${broadcastDate(token.expires_at)}.`
-      : "Tidak ada token aktif.";
+      ? `${activeCount} token aktif · token terbaru berlaku sampai ${broadcastDate(token.expires_at)}.`
+      : activeCount ? `${activeCount} token aktif.` : "Tidak ada token aktif.";
     statusEl.className = `status ${token.status === "active" ? "success" : "info"}`;
   }
   if (revoke) revoke.disabled = !state.activePortalTokenId;
+}
+
+async function loadPortalTokenHistory(session) {
+  const response = await ownerRequest("/api/owner/token/history?limit=50&offset=0", session);
+  const data = await parseJson(response);
+  if (!response.ok) throw new Error(data.error || "History token gagal dimuat.");
+  const list = document.getElementById("portalTokenHistory");
+  if (!list) return;
+  const rows = Array.isArray(data.tokens) ? data.tokens : [];
+  const labels = { active: "ACTIVE", used: "USED", expired: "EXPIRED", revoked: "REVOKED" };
+  const cls = { active: "green", used: "red", expired: "yellow", revoked: "red" };
+  list.innerHTML = rows.length ? rows.map((t) => `
+    <div class="token-history-row">
+      <div class="token-history-main">
+        <div class="token-history-token">${escapeHtml(t.preview || "TOKEN-••••")}</div>
+        <small>Dibuat ${escapeHtml(broadcastDate(t.created_at))} · Expired ${escapeHtml(broadcastDate(t.expires_at))}${t.used_at ? ` · Digunakan ${escapeHtml(broadcastDate(t.used_at))}` : ""}</small>
+        ${t.used_email ? `<small>Digunakan oleh: ${escapeHtml(t.used_email)}</small>` : ""}
+      </div>
+      <span class="badge ${cls[t.status] || ""}">${escapeHtml(labels[t.status] || t.status || "UNKNOWN")}</span>
+    </div>`).join("") : `<div class="status info">Belum ada history token.</div>`;
 }
 
 async function loadPortalTokenRequests(session) {
@@ -280,11 +320,15 @@ async function generatePortalToken(session) {
   const data = await parseJson(response);
   if (!response.ok) throw new Error(data.error || "Gagal membuat token.");
   const out = document.getElementById("generatedPortalToken");
+  state.generatedPortalToken = data.token || null;
   if (out) {
     out.hidden = false;
-    out.textContent = `TOKEN: ${data.token} · berlaku sampai ${broadcastDate(data.expiresAt)}. Salin sekarang; token plaintext tidak dapat ditampilkan ulang.`;
+    const text = document.getElementById("generatedPortalTokenText");
+    if (text) text.textContent = `TOKEN: ${data.token} · berlaku sampai ${broadcastDate(data.expiresAt)}.`;
+    else out.textContent = `TOKEN: ${data.token} · berlaku sampai ${broadcastDate(data.expiresAt)}.`;
   }
   await loadPortalTokenStatus(session);
+  await loadPortalTokenHistory(session);
   await loadPortalTokenRequests(session);
 }
 
@@ -295,6 +339,7 @@ async function revokePortalToken(session) {
   if (!response.ok) throw new Error(data.error || "Gagal mencabut token.");
   document.getElementById("generatedPortalToken")?.setAttribute("hidden", "");
   await loadPortalTokenStatus(session);
+  await loadPortalTokenHistory(session);
 }
 
 /* =========================================================
@@ -800,6 +845,11 @@ function bindEvents() {
     const b = document.getElementById("revokePortalToken"); b.disabled = true;
     try { await revokePortalToken(s); ownerNotice("Token berhasil dicabut.", "success"); } catch (e) { ownerNotice(e.message); } finally { await loadPortalTokenStatus(s).catch(() => {}); }
   });
+  document.getElementById("copyGeneratedPortalToken")?.addEventListener("click", copyGeneratedPortalToken);
+  document.getElementById("refreshPortalTokenHistory")?.addEventListener("click", async () => {
+    const s = state.session || await requireSession(); if (!s) return;
+    try { await loadPortalTokenHistory(s); } catch (e) { ownerNotice(e.message); }
+  });
 
   document.getElementById("refreshPage")?.addEventListener("click", () => location.reload());
   document.getElementById("logoutBtn")?.addEventListener("click", async () => { await AMAuth.signOut(); redirectLogin(); });
@@ -819,7 +869,7 @@ async function loadPage() {
 
   await loadMembers(session).catch((e) => { console.error("[OWNER MEMBERS LOAD ERROR]", e); document.getElementById("memberList").innerHTML = `<div class="member-row"><div><strong>Member gagal dimuat</strong><small>${escapeHtml(e.message)}</small></div></div>`; });
   await loadBroadcasts(session).catch((e) => { console.error("[OWNER BROADCAST LOAD ERROR]", e); document.getElementById("broadcastList").innerHTML = `<div class="broadcast-card"><strong>Broadcast gagal dimuat</strong><p>${escapeHtml(e.message)}</p></div>`; });
-  await Promise.all([loadConversations(), loadContentAdmin(session), loadLoginActivity(session), loadMaintenance(session), loadPortalTokenStatus(session), loadPortalTokenRequests(session)]).catch((e) => console.warn("[OWNER SECONDARY LOAD]", e));
+  await Promise.all([loadConversations(), loadContentAdmin(session), loadLoginActivity(session), loadMaintenance(session), loadPortalTokenStatus(session), loadPortalTokenHistory(session), loadPortalTokenRequests(session)]).catch((e) => console.warn("[OWNER SECONDARY LOAD]", e));
 }
 
 bindEvents();

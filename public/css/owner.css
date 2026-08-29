@@ -343,3 +343,16 @@ body[data-page="owner"] .health-grid span {
 }
 
 #generatedPortalToken { word-break: break-all; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+
+/* Portal token history */
+body[data-page="owner"] .token-generated { display:flex; align-items:center; gap:10px; justify-content:space-between; }
+body[data-page="owner"] .token-generated #generatedPortalTokenText { min-width:0; flex:1; }
+body[data-page="owner"] .token-generated .token-copy { order:0; }
+body[data-page="owner"] .token-copy { flex:0 0 auto; width:36px; height:36px; border:1px solid rgba(255,255,255,.10); border-radius:10px; background:rgba(255,255,255,.05); color:inherit; display:grid; place-items:center; cursor:pointer; }
+body[data-page="owner"] .token-copy:hover { border-color:rgba(185,108,255,.35); }
+body[data-page="owner"] .token-history-list { display:grid; gap:8px; max-height:420px; overflow:auto; }
+body[data-page="owner"] .token-history-row { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding:12px; border:1px solid rgba(255,255,255,.07); border-radius:12px; background:rgba(255,255,255,.025); }
+body[data-page="owner"] .token-history-main { min-width:0; flex:1; }
+body[data-page="owner"] .token-history-token { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-weight:800; letter-spacing:.04em; overflow-wrap:anywhere; }
+body[data-page="owner"] .token-history-main small { display:block; margin-top:4px; color:#8f8999; line-height:1.4; }
