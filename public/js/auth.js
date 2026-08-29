@@ -365,11 +365,10 @@ async function submit(event) {
 
       await AMAuth.verifyOtp(
         email,
-        code,
-        password
+        code
       );
 
-      status("Email terverifikasi. Masukkan Token Akses Portal.", "success");
+      status("Akun berhasil diverifikasi. Masukkan Token Akses Portal.", "success");
       await continueAfterAuth();
 
       return;

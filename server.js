@@ -482,9 +482,10 @@ app.post("/api/auth/verify-email", async (req, res) => {
     const updated = confirmedUser || { user: user };
     await supabase.from("am_email_verifications").update({ used_at: new Date().toISOString() }).eq("id", row.id);
 
-    const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({ email, password: String(req.body?.password || "") });
-    if (loginError || !loginData?.session) return res.status(200).json({ ok: true, stage: "email_verified", user: publicUser(updated.user), session: null });
-    return res.json({ ok: true, stage: "email_verified", ...loginData });
+    // verifyOtp() already returns the authenticated Supabase session. Reuse it
+    // directly so registration does not force the user through a second
+    // email+password login before the Portal Token gate.
+    return res.json({ ok: true, stage: "email_verified", user: publicUser(updated.user), ...otpData });
   } catch (error) {
     console.error("[AUTH VERIFY ERROR]", error);
     return res.status(Number(error.status) || 500).json({ ok: false, code: error.code || "AUTH_VERIFY_FAILED", error: error.status ? error.message : "Verifikasi email gagal." });

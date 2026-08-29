@@ -148,11 +148,11 @@
     return data;
   }
 
-  async function verifyOtp(email, token, password) {
+  async function verifyOtp(email, token) {
     const response = await fetch("/api/auth/verify-email", {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({ email, code: token, password }),
+      body: JSON.stringify({ email, code: token }),
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
