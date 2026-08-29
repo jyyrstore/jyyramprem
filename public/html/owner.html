@@ -142,60 +142,32 @@
       id="ownerTabs"
     >
 
-      <button
-        class="chip active"
-        type="button"
-        data-section="statistik"
-      >
-        Statistik
+      <button class="chip active owner-tab" type="button" data-section="statistik">
+        <span class="owner-inline-icon" aria-hidden="true" id="tabStatistikIcon"></span><span>Statistik</span>
       </button>
 
-      <button
-        class="chip"
-        type="button"
-        data-section="member"
-      >
-        Member
+      <button class="chip owner-tab" type="button" data-section="member">
+        <span class="owner-inline-icon" aria-hidden="true" id="tabMemberIcon"></span><span>Member</span>
       </button>
 
-      <button
-        class="chip"
-        type="button"
-        data-section="broadcast"
-      >
-        Broadcast
+      <button class="chip owner-tab" type="button" data-section="broadcast">
+        <span class="owner-inline-icon" aria-hidden="true" id="tabBroadcastIcon"></span><span>Broadcast</span>
       </button>
 
-      <button
-        class="chip"
-        type="button"
-        data-section="notifikasi"
-      >
-        Notifikasi
+      <button class="chip owner-tab" type="button" data-section="notifikasi">
+        <span class="owner-inline-icon" aria-hidden="true" id="tabNotifikasiIcon"></span><span>Notifikasi</span>
       </button>
 
-      <button
-        class="chip"
-        type="button"
-        data-section="token"
-      >
-        Token
+      <button class="chip owner-tab" type="button" data-section="token">
+        <span class="owner-inline-icon" aria-hidden="true" id="tabTokenIcon"></span><span>Token</span>
       </button>
 
-      <button
-        class="chip"
-        type="button"
-        data-section="security"
-      >
-        Security
+      <button class="chip owner-tab" type="button" data-section="security">
+        <span class="owner-inline-icon" aria-hidden="true" id="tabSecurityIcon"></span><span>Security</span>
       </button>
 
-      <button
-        class="chip"
-        type="button"
-        data-section="sistem"
-      >
-        Sistem
+      <button class="chip owner-tab" type="button" data-section="sistem">
+        <span class="owner-inline-icon" aria-hidden="true" id="tabSistemIcon"></span><span>Sistem</span>
       </button>
 
     </div>
@@ -217,9 +189,7 @@
 
         <div>
 
-          <h2 class="section-title">
-            Grafik Account 7 Day
-          </h2>
+          <h2 class="section-title"><span class="owner-title-icon" aria-hidden="true" id="statisticsTitleIcon"></span><span>Grafik Account 7 Day</span></h2>
 
           <p class="section-note">
             Akun baru per hari berdasarkan
@@ -304,7 +274,7 @@
     <div class="card">
       <div class="section-head">
         <div>
-          <h2 class="section-title">Member Management</h2>
+          <h2 class="section-title"><span class="owner-title-icon" aria-hidden="true" id="memberTitleIcon"></span><span>Member Management</span></h2>
           <p class="section-note">Kelola status, profil dasar, catatan internal, pencarian, dan pagination member.</p>
         </div>
         <span class="badge green">Backend terhubung</span>
@@ -336,7 +306,7 @@
             <h3 class="section-title">Edit Member</h3>
             <p id="memberEditorMeta" class="section-note">—</p>
           </div>
-          <button id="memberEditorClose" class="btn" type="button">Tutup</button>
+          <button id="memberEditorClose" class="btn" type="button"><span id="closeMemberIcon"></span><span>Tutup</span></button>
         </div>
         <div class="grid grid-2">
           <div class="field">
@@ -349,18 +319,15 @@
           </div>
         </div>
         <div class="btn-row">
-          <button id="memberEditorSave" class="btn primary" type="button">Simpan Profil</button>
+          <button id="memberEditorSave" class="btn primary" type="button"><span id="saveMemberIcon"></span><span>Simpan Profil</span></button>
         </div>
         <small id="memberEditorStatus" class="section-note"></small>
       </div>
 
-      <div class="pagination">
+      <div class="pagination" id="memberPagination" aria-label="Member Management Pagination">
         <span id="memberTotal">Total Member : —</span>
-        <div class="btn-row">
-          <button id="memberPrev" class="btn" type="button">‹</button>
-          <span id="memberPageLabel" class="pagination-label">1 / 1</span>
-          <button id="memberNext" class="btn" type="button">›</button>
-        </div>
+        <span id="memberPrev" hidden></span><span id="memberNext" hidden></span>
+        <div class="pagination-controls" id="memberPaginationControls"></div>
       </div>
     </div>
   </section>
@@ -371,7 +338,7 @@
   <section id="broadcast" class="owner-section">
     <div class="grid grid-2">
       <article class="card">
-        <h2 class="section-title">Broadcast</h2>
+        <h2 class="section-title"><span class="owner-title-icon" aria-hidden="true" id="broadcastTitleIcon"></span><span>Broadcast</span></h2>
         <p class="section-note">Buat draft, jadwalkan, edit, hapus draft, atau jalankan broadcast yang sudah waktunya.</p>
         <div class="grid">
           <div class="field">
@@ -418,7 +385,7 @@
       <article class="card">
         <div class="section-head">
           <div>
-            <h2 class="section-title">Riwayat Broadcast</h2>
+            <h2 class="section-title"><span class="owner-title-icon" aria-hidden="true" id="broadcastHistoryTitleIcon"></span><span>Riwayat Broadcast</span></h2>
             <p class="section-note">Draft dan jadwal dapat diedit. Broadcast yang sudah sent tidak dapat diubah atau dihapus.</p>
           </div>
           <span id="broadcastTotal" class="section-note">Total: 0</span>
@@ -444,9 +411,7 @@
 
         <div>
 
-          <h2 class="section-title">
-            Member Message
-          </h2>
+          <h2 class="section-title"><span class="owner-title-icon" aria-hidden="true" id="messageTitleIcon"></span><span>Member Message</span></h2>
 
           <p class="section-note">
             Messaging Owner ↔ Member aktif dan terhubung langsung ke backend.
@@ -466,7 +431,7 @@
         </div>
         <div class="field">
           <label>&nbsp;</label>
-          <button id="messageStart" class="btn" type="button"><span id="bellIcon"></span> Mulai Percakapan</button>
+          <button id="messageStart" class="btn" type="button"><span id="bellIcon"></span><span>Mulai Percakapan</span></button>
         </div>
       </div>
 
@@ -480,7 +445,7 @@
           <label for="messageBody">Balasan</label>
           <textarea id="messageBody" class="textarea" maxlength="10000" placeholder="Tulis pesan…"></textarea>
         </div>
-        <button id="messageSend" class="btn" type="button">Kirim Pesan</button>
+        <button id="messageSend" class="btn" type="button"><span id="sendMessageIcon"></span><span>Kirim Pesan</span></button>
       </div>
 
       <div id="messageStatus" class="status info message-status">Messaging aktif. Pengiriman hanya dilakukan ke percakapan yang dipilih.</div>
@@ -493,7 +458,7 @@
       <article class="card">
         <div class="section-head">
           <div>
-            <h2 class="section-title">FAQ</h2>
+            <h2 class="section-title"><span class="owner-title-icon" aria-hidden="true" id="faqTitleIcon"></span><span>FAQ</span></h2>
             <p class="section-note">CRUD penuh dari RPC Owner: create, update, delete, publish, category, sort.</p>
           </div>
         </div>
@@ -511,7 +476,7 @@
           <label class="toggle-field"><input id="faqPublished" type="checkbox" checked><span>Published</span></label>
         </div>
         <div class="btn-row">
-          <button id="faqSave" class="btn primary" type="button"><span id="plusIcon"></span>Tambah FAQ</button>
+          <button id="faqSave" class="btn primary" type="button"><span id="plusIcon"></span><span>Tambah FAQ</span></button>
           <button id="faqCancelEdit" class="btn" type="button" hidden>Batal Edit</button>
         </div>
         <small id="faqStatus" class="section-note"></small>
@@ -521,7 +486,7 @@
       <article class="card">
         <div class="section-head">
           <div>
-            <h2 class="section-title">Help Center</h2>
+            <h2 class="section-title"><span class="owner-title-icon" aria-hidden="true" id="helpTitleIcon"></span><span>Help Center</span></h2>
             <p class="section-note">CRUD penuh artikel Owner dengan slug, category, sort order, dan publish state.</p>
           </div>
         </div>
@@ -539,7 +504,7 @@
           <label class="toggle-field"><input id="helpPublished" type="checkbox" checked><span>Published</span></label>
         </div>
         <div class="btn-row">
-          <button id="helpSave" class="btn primary" type="button"><span id="plusIcon2"></span>Tambah Artikel</button>
+          <button id="helpSave" class="btn primary" type="button"><span id="plusIcon2"></span><span>Tambah Artikel</span></button>
           <button id="helpCancelEdit" class="btn" type="button" hidden>Batal Edit</button>
         </div>
         <small id="helpStatus" class="section-note"></small>
@@ -553,38 +518,48 @@
 
   <section id="token" class="owner-section">
     <div class="grid grid-2">
-      <article class="card">
-        <div class="section-head">
+      <article class="card portal-token-card">
+        <div class="section-head portal-token-head">
           <div>
-            <h2 class="section-title">Portal Access Token</h2>
-            <p class="section-note">Token disimpan sebagai hash di database. Plaintext hanya ditampilkan sekali saat dibuat.</p>
+            <h2 class="section-title"><span class="owner-title-icon" aria-hidden="true" id="portalTokenTitleIcon"></span><span>Portal Access Token</span></h2>
+            <p class="section-note">Token disimpan terenkripsi di database. Plaintext hanya dibuka server-side untuk Owner.</p>
           </div>
-          <span class="badge blue">Server-side</span>
+          <span class="badge blue token-server-badge">Server-side</span>
         </div>
-        <div id="ownerTokenStatus" class="status info">Memuat status token…</div>
-        <div class="btn-row">
-          <button id="generatePortalToken" class="btn primary" type="button">Generate Token</button>
-          <button id="revokePortalToken" class="btn danger" type="button" disabled>Revoke Token</button>
-        </div>
+
         <div id="generatedPortalToken" class="status success token-generated" hidden>
           <button id="copyGeneratedPortalToken" class="icon-btn token-copy" type="button" aria-label="Salin token" title="Salin token"><span id="copyTokenIcon"></span></button>
-          <span id="generatedPortalTokenText"></span>
+          <div class="token-generated-copy">
+            <strong>Token berhasil dibuat</strong>
+            <span id="generatedPortalTokenText"></span>
+          </div>
+        </div>
+
+        <div id="ownerTokenStatus" class="status info" hidden aria-hidden="true">Memuat status token…</div>
+
+        <div class="btn-row token-actions">
+          <button id="generatePortalToken" class="btn primary" type="button"><span id="generateTokenIcon"></span><span>Generate Token</span></button>
+          <button id="revokePortalToken" class="btn danger" type="button" disabled><span id="revokeTokenIcon"></span><span>Revoke Token</span></button>
         </div>
       </article>
-      <article class="card">
+      <article class="card token-history-card">
         <div class="section-head">
           <div>
-            <h2 class="section-title">Token History</h2>
-            <p class="section-note">Riwayat semua token Owner. Plaintext token hanya tersedia saat token baru dibuat.</p>
+            <h2 class="section-title"><span class="owner-title-icon" aria-hidden="true" id="tokenHistoryTitleIcon"></span><span>Token History</span></h2>
+            <p class="section-note">Riwayat semua token Owner. Token disimpan terenkripsi dan ditampilkan hanya untuk Owner.</p>
           </div>
-          <button id="refreshPortalTokenHistory" class="round-btn" type="button" aria-label="Refresh token history" title="Refresh"><span id="refreshTokenHistoryIcon"></span></button>
+          <button id="refreshPortalTokenHistory" class="round-btn token-history-refresh" type="button" aria-label="Refresh token history" title="Refresh"><span id="refreshTokenHistoryIcon"></span></button>
         </div>
         <div id="portalTokenHistory" class="token-history-list"><div class="status info">Memuat history token…</div></div>
+        <div class="pagination token-pagination" id="tokenHistoryPagination" aria-label="Token History Pagination">
+          <span id="tokenHistoryTotal">Total Token : —</span>
+          <div class="pagination-controls" id="tokenHistoryControls"></div>
+        </div>
       </article>
       <article class="card">
         <div class="section-head">
           <div>
-            <h2 class="section-title">Token Requests</h2>
+            <h2 class="section-title"><span class="owner-title-icon" aria-hidden="true" id="tokenRequestsTitleIcon"></span><span>Token Requests</span></h2>
             <p class="section-note">Request dari user setelah Auth berhasil.</p>
           </div>
           <span id="tokenRequestPending" class="badge yellow">0 pending</span>
@@ -610,9 +585,7 @@
 
           <div>
 
-            <h2 class="section-title">
-              Security Owner
-            </h2>
+            <h2 class="section-title"><span class="owner-title-icon" aria-hidden="true" id="securityTitleIcon"></span><span>Security Owner</span></h2>
 
             <p class="section-note">
               Daftar Admin & Owner.
@@ -643,9 +616,7 @@
 
           <div>
 
-            <h2 class="section-title">
-              Login Activity
-            </h2>
+            <h2 class="section-title"><span class="owner-title-icon" aria-hidden="true" id="loginTitleIcon"></span><span>Login Activity</span></h2>
 
             <p class="section-note">
               Audit login activity terhubung ke backend Owner.
@@ -661,13 +632,10 @@
         <div id="loginActivityList" class="login-list"><div>Memuat…</div></div>
 
 
-        <div class="pagination">
+        <div class="pagination" id="loginPagination" aria-label="Login Activity Pagination">
           <span id="loginActivityTotal">Total Login : —</span>
-          <div class="btn-row">
-            <button id="loginPrev" class="btn" type="button">‹</button>
-            <span id="loginPageLabel" class="pagination-label">1 / 1</span>
-            <button id="loginNext" class="btn" type="button">›</button>
-          </div>
+          <span id="loginPrev" hidden></span><span id="loginNext" hidden></span>
+          <div class="pagination-controls" id="loginPaginationControls"></div>
         </div>
 
       </article>
@@ -691,9 +659,7 @@
 
         <div>
 
-          <h2 class="section-title">
-            Sistem Management
-          </h2>
+          <h2 class="section-title"><span class="owner-title-icon" aria-hidden="true" id="systemTitleIcon"></span><span>Sistem Management</span></h2>
 
           <p class="section-note">
             Control Web, maintenance mode,
@@ -726,7 +692,7 @@
           Maintenance Mode
         </span>
 
-        <button id="maintenanceToggle" class="btn" type="button"><span id="checkIcon"></span> Maintenance</button>
+        <button id="maintenanceToggle" class="btn" type="button"><span id="checkIcon"></span><span>Maintenance</span></button>
 
       </div>
 
@@ -740,9 +706,7 @@
       </div>
 
 
-      <h3 class="section-title health-title">
-        Health
-      </h3>
+      <h3 class="section-title health-title"><span class="owner-title-icon" aria-hidden="true" id="healthTitleIcon"></span><span>Health</span></h3>
 
 
       <div class="health-grid health-grid-status">

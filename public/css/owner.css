@@ -356,3 +356,786 @@ body[data-page="owner"] .token-history-row { display:flex; align-items:flex-star
 body[data-page="owner"] .token-history-main { min-width:0; flex:1; }
 body[data-page="owner"] .token-history-token { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-weight:800; letter-spacing:.04em; overflow-wrap:anywhere; }
 body[data-page="owner"] .token-history-main small { display:block; margin-top:4px; color:#8f8999; line-height:1.4; }
+
+/* ============================================================
+   OWNER VNEXT — NEON AURORA / DASHBOARD PARITY
+   Presentation layer only. Existing API, IDs and data contracts
+   remain unchanged.
+   ============================================================ */
+body[data-page="owner"] {
+  --owner-surface: #17151c;
+  --owner-surface-2: #1d1a22;
+  --owner-surface-3: #221e29;
+  --owner-text: #f2edf6;
+  --owner-muted: #97919e;
+  --owner-purple: #b56cff;
+  --owner-cyan: #66dcff;
+  --owner-line: rgba(255,255,255,.075);
+  --owner-glow: rgba(167,89,255,.16);
+  background:
+    radial-gradient(900px 420px at 50% -160px, rgba(121,58,189,.20), transparent 65%),
+    radial-gradient(700px 320px at 100% 18%, rgba(67,36,118,.10), transparent 72%),
+    linear-gradient(180deg,#0d0b10 0%,#09080c 54%,#060609 100%);
+}
+
+body[data-page="owner"] .app-shell {
+  width: min(960px, calc(100% - 28px));
+  padding: 18px 0 32px;
+}
+
+body[data-page="owner"] .topbar,
+body[data-page="owner"] .app-shell > .card,
+body[data-page="owner"] .owner-section > .card,
+body[data-page="owner"] .owner-section > .grid > .card {
+  border-color: var(--owner-line);
+  background:
+    linear-gradient(145deg, rgba(32,29,39,.98), rgba(21,19,25,.985));
+  box-shadow:
+    0 18px 44px rgba(0,0,0,.28),
+    inset 0 1px 0 rgba(255,255,255,.022),
+    0 0 0 1px rgba(175,105,255,.018);
+}
+
+body[data-page="owner"] .topbar::before,
+body[data-page="owner"] .app-shell > .card::before,
+body[data-page="owner"] .owner-section > .card::before,
+body[data-page="owner"] .owner-section > .grid > .card::before {
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(181,108,255,.12) 15%,
+    rgba(181,108,255,.76) 50%,
+    rgba(102,220,255,.16) 84%,
+    transparent 100%);
+}
+
+body[data-page="owner"] .topbar::after,
+body[data-page="owner"] .app-shell > .card::after,
+body[data-page="owner"] .owner-section > .card::after,
+body[data-page="owner"] .owner-section > .grid > .card::after {
+  background: linear-gradient(122deg,
+    rgba(255,255,255,.026), transparent 26%,
+    transparent 65%, rgba(157,92,255,.022));
+}
+
+body[data-page="owner"] .topbar .title {
+  color: var(--owner-text);
+  font-size: clamp(24px, 4.8vw, 31px);
+  font-weight: 820;
+  letter-spacing: -.035em;
+}
+
+body[data-page="owner"] .topbar .subtitle,
+body[data-page="owner"] .section-note,
+body[data-page="owner"] .owner-profile p {
+  color: var(--owner-muted);
+}
+
+body[data-page="owner"] .owner-profile {
+  padding: 20px;
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(173,101,255,.065), transparent 34%),
+    linear-gradient(180deg,#1a171f,#151319) !important;
+}
+
+body[data-page="owner"] .owner-profile .avatar-large {
+  width: 82px;
+  height: 82px;
+  margin-bottom: 14px;
+  border: 1px solid rgba(189,116,255,.30);
+  background: linear-gradient(145deg,rgba(184,108,255,.15),rgba(255,255,255,.035));
+  box-shadow: 0 0 30px rgba(157,92,255,.14), inset 0 1px 0 rgba(255,255,255,.04);
+}
+
+body[data-page="owner"] .owner-profile h2 {
+  font-size: 22px;
+  font-weight: 820;
+  color: #f2edf7;
+}
+
+body[data-page="owner"] .profile-meta > div {
+  padding: 14px 12px;
+  border-radius: 14px;
+  background: linear-gradient(180deg,#1d1a22,#17151b);
+  border-color: rgba(255,255,255,.075);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.018);
+}
+
+body[data-page="owner"] .profile-meta strong {
+  font-size: 13px;
+  color: #eee8f4;
+}
+
+body[data-page="owner"] .profile-actions .btn {
+  min-height: 44px;
+  border-radius: 13px;
+  min-width: 122px;
+  font-size: 11px;
+  font-weight: 760;
+}
+
+body[data-page="owner"] #ownerTabs {
+  padding: 2px 2px 4px;
+  gap: 9px;
+}
+
+body[data-page="owner"] #ownerTabs .chip {
+  min-height: 42px;
+  padding: 9px 15px;
+  border-radius: 999px;
+  background: linear-gradient(180deg,#24202a,#19171e);
+  border-color: rgba(255,255,255,.075);
+  color: #aaa3b1;
+  font-size: 11px;
+  font-weight: 760;
+}
+
+body[data-page="owner"] #ownerTabs .chip.active {
+  color: #f0e6f8;
+  border-color: rgba(184,108,255,.38);
+  background:
+    linear-gradient(180deg,rgba(126,72,170,.40),rgba(61,39,75,.48));
+  box-shadow:
+    0 0 20px rgba(157,92,255,.12),
+    inset 0 1px 0 rgba(255,255,255,.04);
+}
+
+body[data-page="owner"] .section-title {
+  color: #eee9f3;
+  font-size: 17px;
+  font-weight: 820;
+  letter-spacing: -.018em;
+}
+
+body[data-page="owner"] .section-head {
+  margin-bottom: 16px;
+}
+
+body[data-page="owner"] .badge {
+  min-height: 28px;
+  padding: 5px 10px;
+  font-size: 10px;
+  font-weight: 730;
+}
+
+body[data-page="owner"] .input,
+body[data-page="owner"] .textarea,
+body[data-page="owner"] select.input {
+  min-height: 45px;
+  border-radius: 13px;
+  background: linear-gradient(180deg,#111017,#0d0c11);
+  border-color: rgba(255,255,255,.075);
+  font-size: 13px;
+}
+
+body[data-page="owner"] .textarea { min-height: 116px; }
+
+body[data-page="owner"] .btn {
+  min-height: 42px;
+  padding: 9px 13px;
+  border-radius: 13px;
+  font-weight: 720;
+  border-color: rgba(255,255,255,.075);
+  background: linear-gradient(180deg,#28242e,#211e25);
+}
+
+body[data-page="owner"] .btn.primary {
+  background: linear-gradient(135deg,#8f4cff,#bd7cff);
+  border-color: rgba(205,143,255,.82);
+  box-shadow: 0 8px 24px rgba(157,92,255,.18);
+}
+
+body[data-page="owner"] .btn.danger {
+  background: linear-gradient(180deg,#4a202c,#381a24);
+  border-color: rgba(209,76,106,.55);
+}
+
+body[data-page="owner"] .owner-section > .grid.grid-2 {
+  gap: 14px;
+}
+
+body[data-page="owner"] .bar-chart {
+  height: 220px;
+  margin-top: 3px;
+  padding: 16px 8px 0;
+  border-bottom-color: rgba(255,255,255,.07);
+}
+
+body[data-page="owner"] .bar {
+  width: min(34px, 72%);
+  border-radius: 9px 9px 3px 3px;
+  background: linear-gradient(180deg,#c88cff,#7845c7);
+  box-shadow: 0 0 18px rgba(157,92,255,.16);
+}
+
+body[data-page="owner"] .metric {
+  min-height: 108px;
+  border-radius: 15px;
+  padding: 14px 13px;
+  background: linear-gradient(180deg,#1d1a22,#17151b);
+  border-color: rgba(255,255,255,.075);
+}
+
+body[data-page="owner"] .metric-value {
+  margin-top: 7px;
+  font-size: 27px;
+  color: #e8e2ee;
+}
+
+/* Member management — clearer hierarchy and touch-safe actions. */
+body[data-page="owner"] .member-list {
+  gap: 11px;
+}
+
+body[data-page="owner"] .member-row {
+  display: grid;
+  grid-template-columns: minmax(0,1fr);
+  gap: 13px;
+  padding: 15px;
+  border-radius: 16px;
+  background: linear-gradient(180deg,#1d1a22,#17151b);
+  border-color: rgba(255,255,255,.078);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.018);
+}
+
+body[data-page="owner"] .member-main,
+body[data-page="owner"] .member-identity,
+body[data-page="owner"] .member-name-wrap {
+  min-width: 0;
+}
+
+body[data-page="owner"] .member-identity {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+body[data-page="owner"] .member-name-wrap { display:grid; gap:4px; }
+body[data-page="owner"] .member-name { font-size: 14px; color:#f2edf6; font-weight:820; overflow-wrap:anywhere; }
+body[data-page="owner"] .member-email { margin:0; font-size:11px; color:#958e9e; overflow-wrap:anywhere; }
+body[data-page="owner"] .member-notes { margin:9px 0 0; color:#817a88; font-size:10px; line-height:1.55; overflow-wrap:anywhere; }
+
+body[data-page="owner"] .member-actions {
+  display: grid;
+  grid-template-columns: repeat(3,minmax(0,1fr));
+  gap: 8px;
+}
+
+body[data-page="owner"] .member-actions .btn {
+  min-width: 0;
+  min-height: 39px;
+  padding: 8px 9px;
+  font-size: 10px;
+}
+
+/* Broadcast cards. */
+body[data-page="owner"] .broadcast-list { display:grid; gap:11px; }
+body[data-page="owner"] .broadcast-card {
+  min-height: 0;
+  padding: 16px;
+  border-radius: 16px;
+  background: linear-gradient(180deg,#1d1a22,#17151b);
+}
+body[data-page="owner"] .broadcast-title-row { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+body[data-page="owner"] .broadcast-title-row strong { color:#f0ebf4; font-size:13px; line-height:1.4; overflow-wrap:anywhere; }
+body[data-page="owner"] .broadcast-main p { margin:10px 0 9px; color:#aaa3b0; font-size:11px; line-height:1.6; white-space:pre-wrap; overflow-wrap:anywhere; }
+body[data-page="owner"] .broadcast-main > small { color:#827b89; font-size:10px; line-height:1.45; }
+body[data-page="owner"] .broadcast-actions { position:static; margin-top:13px; display:flex; justify-content:flex-end; gap:7px; }
+body[data-page="owner"] .broadcast-actions .round-btn { width:38px; height:38px; border-radius:11px; background:#221f28; }
+
+/* Messaging / content admin. */
+body[data-page="owner"] .conversation-row { width:100%; text-align:left; }
+body[data-page="owner"] .message-thread {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 15px;
+  background: linear-gradient(180deg,#141218,#100f14);
+  border: 1px solid rgba(255,255,255,.065);
+}
+body[data-page="owner"] .message-thread-list { display:grid; gap:8px; max-height:430px; overflow:auto; margin:10px 0; }
+body[data-page="owner"] .message-bubble { padding:11px 12px; border:1px solid rgba(255,255,255,.06); border-radius:13px; background:#1c1921; }
+body[data-page="owner"] .message-bubble strong { font-size:10px; color:#d9c9e7; }
+body[data-page="owner"] .message-bubble p { margin:5px 0; font-size:11px; line-height:1.5; color:#e6dfea; white-space:pre-wrap; overflow-wrap:anywhere; }
+body[data-page="owner"] .message-bubble small { color:#7d7784; font-size:9px; }
+body[data-page="owner"] .owner-crud-row { padding:14px; border-radius:14px; gap:14px; }
+body[data-page="owner"] .owner-crud-row > div:first-child { min-width:0; }
+body[data-page="owner"] .owner-crud-row strong { font-size:12px; color:#eee8f2; overflow-wrap:anywhere; }
+body[data-page="owner"] .owner-crud-row p { color:#958f9d; font-size:10.5px; line-height:1.55; }
+body[data-page="owner"] .login-list { gap:9px; }
+body[data-page="owner"] .login-list > div { padding:12px 13px; border-radius:13px; background:linear-gradient(180deg,#1d1a22,#17151b); border-color:rgba(255,255,255,.07); }
+body[data-page="owner"] .login-list > div strong { color:#eee8f2; font-size:11px; }
+body[data-page="owner"] .login-list > div small { color:#89828f; font-size:9.5px; line-height:1.5; }
+
+/* Token control + dashboard-style history table. */
+body[data-page="owner"] .token-generated {
+  margin-top: 11px;
+  padding: 12px 13px;
+  border-radius: 13px;
+  background: linear-gradient(135deg,rgba(19,54,34,.95),rgba(16,39,27,.98));
+  border-color: rgba(75,229,138,.28);
+}
+body[data-page="owner"] .token-history-list { margin-top:2px; max-height:440px; overflow:auto; }
+body[data-page="owner"] .token-history-table-wrap { margin:0; border-radius:14px; background:rgba(8,7,11,.25); }
+body[data-page="owner"] .token-history-table { min-width: 660px; }
+body[data-page="owner"] .token-history-table th,
+body[data-page="owner"] .token-history-table td { padding:12px 13px; font-size:10.5px; vertical-align:top; }
+body[data-page="owner"] .token-history-table th { background:#1a181f; color:#aaa3b1; }
+body[data-page="owner"] .token-history-table td { background:rgba(255,255,255,.008); }
+body[data-page="owner"] .token-history-table tbody tr:hover td { background:rgba(157,92,255,.028); }
+body[data-page="owner"] .token-history-table .token-history-token { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; line-height:1.35; letter-spacing:.04em; color:#f0ebf4; overflow-wrap:anywhere; }
+body[data-page="owner"] .token-history-table td strong { color:#e6e0ea; font-weight:730; }
+body[data-page="owner"] .token-history-table td small { display:block; margin-top:4px; color:#817b88; line-height:1.45; }
+body[data-page="owner"] .token-history-usedby { max-width:240px; overflow-wrap:anywhere; }
+body[data-page="owner"] .token-history-table .token-history-revoke {
+  min-width:72px;
+  min-height:34px;
+  padding:7px 11px;
+  border-radius:9px;
+  justify-content:center;
+  font-size:10px;
+  font-weight:800;
+}
+body[data-page="owner"] .token-history-no-action {
+  display:inline-flex;
+  min-width:72px;
+  min-height:34px;
+  align-items:center;
+  justify-content:center;
+  color:#625d68;
+}
+
+/* Security + system. */
+body[data-page="owner"] .security-row,
+body[data-page="owner"] .system-row {
+  padding:13px 14px;
+  min-height:54px;
+  border-radius:14px;
+  background:linear-gradient(180deg,#1d1a22,#17151b);
+  border-color:rgba(255,255,255,.07);
+}
+body[data-page="owner"] .security-row + .security-row,
+body[data-page="owner"] .system-row + .system-row { margin-top:8px; }
+body[data-page="owner"] .security-row strong,
+body[data-page="owner"] .system-row > span:first-child { color:#eae4ef; font-size:11px; font-weight:760; }
+body[data-page="owner"] .security-row small { color:#86808c; font-size:9.5px; line-height:1.5; }
+body[data-page="owner"] .health-grid { grid-template-columns:repeat(5,minmax(0,1fr)); gap:9px; }
+body[data-page="owner"] .health-grid span {
+  min-height:52px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:10px 8px;
+  border-radius:13px;
+  background:linear-gradient(180deg,#1d1a22,#17151b);
+  border-color:rgba(255,255,255,.07);
+  color:#98919f;
+  font-size:10px;
+}
+body[data-page="owner"] .maintenance { margin-top:9px; padding:12px 13px; border-radius:13px; }
+body[data-page="owner"] #ownerHealth { margin-top:11px; border-radius:14px; min-height:48px; display:flex; align-items:center; }
+
+body[data-page="owner"] .owner-editor {
+  padding:15px;
+  border-radius:15px;
+  background:linear-gradient(180deg,#19171e,#131218);
+  border-color:rgba(255,255,255,.07);
+}
+body[data-page="owner"] .toggle-field { min-height:44px; padding:0 12px; border-radius:12px; background:#151319; border-color:rgba(255,255,255,.07); }
+
+body[data-page="owner"] .pagination {
+  margin-top:14px;
+  font-size:10px;
+}
+body[data-page="owner"] .pagination .btn {
+  min-width:38px;
+  min-height:38px;
+}
+
+body[data-page="owner"] .footer { margin-top:20px; color:#6f6a76; }
+
+@media (max-width:760px) {
+  body[data-page="owner"] .app-shell { width:calc(100% - 20px); }
+  body[data-page="owner"] .owner-section > .grid.grid-2 { grid-template-columns:1fr; }
+  body[data-page="owner"] .health-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  body[data-page="owner"] .owner-profile { padding:18px 15px; }
+  body[data-page="owner"] .member-actions { grid-template-columns:repeat(3,minmax(0,1fr)); }
+}
+
+@media (max-width:520px) {
+  body[data-page="owner"] .app-shell { width:calc(100% - 14px); padding-top:11px; }
+  body[data-page="owner"] .topbar { padding:11px 12px; border-radius:16px; }
+  body[data-page="owner"] .topbar .title { font-size:22px; }
+  body[data-page="owner"] .owner-profile { border-radius:17px; }
+  body[data-page="owner"] .profile-meta { gap:7px; }
+  body[data-page="owner"] .profile-meta > div { padding:11px 7px; }
+  body[data-page="owner"] .profile-meta span { font-size:8px; }
+  body[data-page="owner"] .profile-meta strong { font-size:11px; }
+  body[data-page="owner"] .profile-actions { gap:7px; }
+  body[data-page="owner"] .profile-actions .btn { flex:1 1 145px; min-width:0; }
+  body[data-page="owner"] .member-row { padding:13px; }
+  body[data-page="owner"] .member-actions { grid-template-columns:1fr 1fr; }
+  body[data-page="owner"] .member-actions .member-edit,
+  body[data-page="owner"] .member-actions .member-action[data-action="suspend"] { grid-column:span 1; }
+  body[data-page="owner"] .member-actions .member-delete { grid-column:1 / -1; }
+  body[data-page="owner"] .broadcast-actions { justify-content:stretch; }
+  body[data-page="owner"] .broadcast-actions .round-btn { flex:1; }
+  body[data-page="owner"] .section-title { font-size:16px; }
+  body[data-page="owner"] .health-grid span { min-height:58px; font-size:9.5px; }
+}
+
+@media (max-width:380px) {
+  body[data-page="owner"] .profile-meta { grid-template-columns:1fr; }
+  body[data-page="owner"] .profile-meta > div { padding:10px 11px; text-align:left; }
+  body[data-page="owner"] .member-identity { align-items:stretch; flex-direction:column; }
+  body[data-page="owner"] .member-identity .badge { align-self:flex-start; }
+  body[data-page="owner"] .health-grid { grid-template-columns:1fr; }
+  body[data-page="owner"] .owner-section > .card,
+  body[data-page="owner"] .owner-section > .grid.grid-2 > .card { border-radius:15px; }
+}
+
+@media (prefers-reduced-motion:no-preference) {
+  body[data-page="owner"] .app-shell > .card,
+  body[data-page="owner"] .owner-section > .card,
+  body[data-page="owner"] .owner-section > .grid.grid-2 > .card {
+    transition:border-color .22s ease, box-shadow .22s ease, transform .22s ease;
+  }
+  body[data-page="owner"] .app-shell > .card:hover,
+  body[data-page="owner"] .owner-section > .card:hover,
+  body[data-page="owner"] .owner-section > .grid.grid-2 > .card:hover {
+    border-color:rgba(181,108,255,.13);
+    box-shadow:0 20px 50px rgba(0,0,0,.30), 0 0 24px rgba(157,92,255,.045);
+  }
+}
+
+
+/* ============================================================
+   OWNER SPACING + LEFT-ALIGNED ICONOGRAPHY
+   - Creates a deliberate breathing gap between tabs and content.
+   - All icon + text controls keep icon on the left.
+   ============================================================ */
+body[data-page="owner"] #ownerTabs {
+  gap: 10px;
+  padding-bottom: 2px;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: none;
+}
+body[data-page="owner"] #ownerTabs::-webkit-scrollbar { display:none; }
+body[data-page="owner"] #ownerTabs .owner-tab {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  flex:0 0 auto;
+  white-space:nowrap;
+}
+body[data-page="owner"] .owner-inline-icon,
+body[data-page="owner"] .owner-title-icon,
+body[data-page="owner"] .btn > .asset-ui-icon,
+body[data-page="owner"] .btn > .ui-icon {
+  display:inline-flex;
+  flex:0 0 auto;
+  align-items:center;
+  justify-content:center;
+  order:0;
+}
+body[data-page="owner"] .owner-inline-icon .asset-ui-icon { width:15px; height:15px; }
+body[data-page="owner"] .section-title {
+  display:flex;
+  align-items:center;
+  gap:9px;
+}
+body[data-page="owner"] .owner-title-icon .asset-ui-icon {
+  width:19px;
+  height:19px;
+  object-fit:contain;
+  flex:0 0 auto;
+}
+body[data-page="owner"] .btn {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  white-space:nowrap;
+}
+body[data-page="owner"] .btn .asset-ui-icon,
+body[data-page="owner"] .btn .ui-icon { width:15px; height:15px; }
+body[data-page="owner"] .owner-section {
+  margin-top: 12px;
+}
+body[data-page="owner"] .owner-section > .card,
+body[data-page="owner"] .owner-section > .grid {
+  margin-top: 0;
+}
+body[data-page="owner"] .owner-section > .grid.grid-2 {
+  row-gap: 12px;
+  column-gap: 12px;
+}
+body[data-page="owner"] .owner-section > .grid.grid-2 > .card {
+  margin-bottom: 0;
+}
+body[data-page="owner"] #ownerTabs + .owner-section {
+  margin-top: 14px;
+}
+
+/* Dashboard-style Portal Access Token card: same compact result-state language as Home. */
+body[data-page="owner"] #token .card:first-child {
+  background: linear-gradient(180deg, #17151c 0%, #131118 100%);
+}
+body[data-page="owner"] #ownerTokenStatus {
+  margin-top: 12px;
+  border-radius: 12px;
+}
+body[data-page="owner"] #token #generatePortalToken,
+body[data-page="owner"] #token #revokePortalToken {
+  min-height: 42px;
+  border-radius: 11px;
+}
+body[data-page="owner"] #token .token-generated {
+  margin-top: 10px;
+  border-radius: 12px;
+  padding: 11px 12px;
+  background: linear-gradient(180deg, rgba(18,57,36,.98), rgba(14,40,28,.98));
+  border: 1px solid rgba(75,229,138,.28);
+  box-shadow: 0 10px 28px rgba(0,0,0,.14), 0 0 24px rgba(69,210,131,.07);
+}
+body[data-page="owner"] #token .token-copy {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+}
+
+/* Pagination Controls */
+body[data-page="owner"] .pagination {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-top:14px;
+  flex-wrap:wrap;
+}
+body[data-page="owner"] .pagination-controls {
+  display:inline-flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:6px;
+  flex-wrap:wrap;
+}
+body[data-page="owner"] .pagination-btn {
+  width:38px;
+  min-width:38px;
+  height:38px;
+  min-height:38px;
+  padding:0 7px;
+  border-radius:10px;
+  font-size:11px;
+  line-height:1;
+}
+body[data-page="owner"] .pagination-number.active {
+  border-color:rgba(181,108,255,.65);
+  background:linear-gradient(180deg, rgba(91,52,130,.72), rgba(59,34,83,.82));
+  color:#f3eaff;
+  box-shadow:0 0 18px rgba(165,92,255,.18), inset 0 0 0 1px rgba(218,171,255,.08);
+}
+body[data-page="owner"] .pagination-ellipsis {
+  min-width:12px;
+  text-align:center;
+  color:#77717f;
+  font-size:13px;
+}
+body[data-page="owner"] .token-pagination {
+  padding-top: 2px;
+}
+
+@media (max-width: 760px) {
+  body[data-page="owner"] .owner-section { margin-top: 10px; }
+  body[data-page="owner"] .pagination { align-items:flex-start; }
+  body[data-page="owner"] .pagination-controls { width:100%; justify-content:flex-start; }
+}
+@media (max-width: 430px) {
+  body[data-page="owner"] #ownerTabs { gap:8px; }
+  body[data-page="owner"] #ownerTabs .owner-tab { padding-inline: 13px; }
+  body[data-page="owner"] .pagination-controls { gap:5px; }
+  body[data-page="owner"] .pagination-btn { width:35px; min-width:35px; height:35px; min-height:35px; font-size:10px; }
+  body[data-page="owner"] .section-title { gap:7px; }
+  body[data-page="owner"] .owner-title-icon .asset-ui-icon { width:17px; height:17px; }
+}
+
+/* ============================================================
+   OWNER FIX 2 — PAGINATION + PORTAL TOKEN POLISH
+   Only presentation/interaction refinements; existing contracts stay intact.
+   ============================================================ */
+body[data-page="owner"] .pagination-controls {
+  flex-wrap:nowrap;
+  gap:6px;
+}
+
+body[data-page="owner"] .pagination-btn {
+  flex:0 0 38px;
+  width:38px;
+  min-width:38px;
+  height:38px;
+  min-height:38px;
+  padding:0;
+  border-radius:10px;
+  font-weight:780;
+}
+
+body[data-page="owner"] .pagination-btn.pagination-jump {
+  font-size:13px;
+  letter-spacing:-.04em;
+}
+
+/* Token card: Server-side stays pinned to the top-right. */
+body[data-page="owner"] #token .portal-token-card {
+  position:relative;
+  overflow:hidden;
+}
+body[data-page="owner"] #token .portal-token-head {
+  padding-right:94px;
+}
+body[data-page="owner"] #token .token-server-badge {
+  position:absolute;
+  top:18px;
+  right:18px;
+  margin:0;
+  white-space:nowrap;
+}
+
+/* Generated token is intentionally above Generate/Revoke. */
+body[data-page="owner"] #token .token-generated {
+  margin:16px 0 12px;
+  display:grid;
+  grid-template-columns:42px minmax(0,1fr);
+  align-items:center;
+  gap:12px;
+  min-height:68px;
+  padding:11px 12px;
+  border-radius:13px;
+}
+body[data-page="owner"] #token .token-generated-copy {
+  min-width:0;
+  display:grid;
+  gap:4px;
+}
+body[data-page="owner"] #token .token-generated-copy strong {
+  color:#dff8e8;
+  font-size:13px;
+  font-weight:850;
+  letter-spacing:.01em;
+}
+body[data-page="owner"] #token .token-generated-copy span {
+  min-width:0;
+  color:#bff8d0;
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  font-size:13px;
+  line-height:1.55;
+  font-weight:850;
+  letter-spacing:.045em;
+  overflow-wrap:anywhere;
+}
+body[data-page="owner"] #token .token-copy {
+  width:42px;
+  height:42px;
+  border-radius:12px;
+}
+body[data-page="owner"] #token .token-actions {
+  width:min(100%, 420px);
+  margin:14px auto 0;
+  display:flex;
+  justify-content:center;
+  align-items:stretch;
+  gap:10px;
+  flex-wrap:nowrap;
+}
+body[data-page="owner"] #token #generatePortalToken,
+body[data-page="owner"] #token #revokePortalToken {
+  flex:1 1 0;
+  min-width:0;
+  min-height:46px;
+  padding-inline:18px;
+  border-radius:11px;
+  justify-content:center;
+}
+body[data-page="owner"] #token #generatePortalToken span:last-child,
+body[data-page="owner"] #token #revokePortalToken span:last-child {
+  font-size:14px;
+  font-weight:850;
+  letter-spacing:.01em;
+}
+body[data-page="owner"] #token #generatePortalToken .asset-ui-icon,
+body[data-page="owner"] #token #revokePortalToken .asset-ui-icon {
+  width:19px;
+  height:19px;
+}
+@media (max-width:430px) {
+  body[data-page="owner"] #token .token-actions {
+    width:100%;
+    gap:8px;
+  }
+  body[data-page="owner"] #token #generatePortalToken,
+  body[data-page="owner"] #token #revokePortalToken {
+    padding-inline:10px;
+  }
+}
+
+/* History refresh: clean circular control in the card's upper-right corner. */
+body[data-page="owner"] #token .token-history-card {
+  position:relative;
+}
+body[data-page="owner"] #token .token-history-card .section-head {
+  padding-right:52px;
+}
+body[data-page="owner"] #token .token-history-refresh {
+  position:absolute;
+  top:16px;
+  right:16px;
+  width:40px;
+  height:40px;
+  min-width:40px;
+  min-height:40px;
+  padding:0;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  z-index:3;
+}
+body[data-page="owner"] #token .token-history-refresh .asset-ui-icon {
+  width:17px;
+  height:17px;
+}
+
+/* Token history makes the created token preview the primary visual datum. */
+body[data-page="owner"] #token .token-history-table .token-history-token::before {
+  content:"";
+}
+
+/* FAQ in Notifications starts a little lower, without altering the message card. */
+body[data-page="owner"] #notifikasi > .grid.grid-2 {
+  margin-top:18px;
+}
+
+@media (max-width:520px) {
+  body[data-page="owner"] #token .token-server-badge {
+    top:14px;
+    right:14px;
+  }
+  body[data-page="owner"] #token .portal-token-head {
+    padding-right:86px;
+  }
+  body[data-page="owner"] #token .token-history-refresh {
+    top:13px;
+    right:13px;
+  }
+  body[data-page="owner"] .pagination-controls {
+    gap:5px;
+  }
+  body[data-page="owner"] .pagination-btn {
+    flex-basis:35px;
+    width:35px;
+    min-width:35px;
+    height:35px;
+    min-height:35px;
+  }
+}

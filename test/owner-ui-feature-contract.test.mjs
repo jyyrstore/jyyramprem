@@ -40,3 +40,13 @@ test('server disables stale caching for HTML, API, CSS and JS while preserving c
   assert.ok(server.includes("if (/\\.(?:css|js)$/i.test(filePath))"));
   assert.ok(server.includes("no-cache, no-store, must-revalidate"));
 });
+
+test('owner can revoke any individually active portal token without affecting other active tokens', () => {
+  assert.match(html, /id=["']portalTokenHistory["']/);
+  assert.match(js, /token-history-revoke/);
+  assert.match(js, /revokePortalTokenById/);
+  assert.match(js, /Token lain yang masih aktif tetap dapat digunakan/);
+  assert.match(js, /data-token-id/);
+  assert.match(server, /app\.post\("\/api\/owner\/token\/revoke"/);
+  assert.match(server, /owner_revoke_portal_token/);
+});

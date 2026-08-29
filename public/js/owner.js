@@ -7,6 +7,14 @@ const icon = (name) => window.icon?.(name) || "";
   ["messageIcon", "message"], ["bellIcon", "bell"], ["plusIcon", "plus"],
   ["plusIcon2", "plus"], ["shieldIcon", "shield"], ["lockIcon", "lock"],
   ["settingsIcon", "settings"], ["checkIcon", "check"], ["refreshIcon2", "refresh"], ["copyTokenIcon", "copy"], ["refreshTokenHistoryIcon", "refresh"],
+  ["tabStatistikIcon", "chart"], ["tabMemberIcon", "users"], ["tabBroadcastIcon", "broadcast"],
+  ["tabNotifikasiIcon", "bell"], ["tabTokenIcon", "lock"], ["tabSecurityIcon", "shield"], ["tabSistemIcon", "settings"],
+  ["statisticsTitleIcon", "chart"], ["memberTitleIcon", "users"], ["broadcastTitleIcon", "broadcast"],
+  ["broadcastHistoryTitleIcon", "receipt"], ["messageTitleIcon", "message"], ["faqTitleIcon", "help"], ["helpTitleIcon", "help"],
+  ["portalTokenTitleIcon", "lock"], ["tokenHistoryTitleIcon", "receipt"], ["tokenRequestsTitleIcon", "bell"],
+  ["securityTitleIcon", "shield"], ["loginTitleIcon", "lock"], ["systemTitleIcon", "settings"], ["healthTitleIcon", "chart"],
+  ["closeMemberIcon", "close"], ["saveMemberIcon", "check"], ["sendMessageIcon", "arrowRight"],
+  ["generateTokenIcon", "plus"], ["revokeTokenIcon", "lock"],
 ].forEach(([id, name]) => {
   const el = document.getElementById(id);
   if (el) el.innerHTML = icon(name);
@@ -15,11 +23,11 @@ const icon = (name) => window.icon?.(name) || "";
 const state = {
   session: null,
   memberPage: 0,
-  memberLimit: 10,
+  memberLimit: 5,
   memberTotal: 0,
   memberEditingId: null,
   loginPage: 0,
-  loginLimit: 10,
+  loginLimit: 5,
   loginTotal: 0,
   faqEditingId: null,
   helpEditingId: null,
@@ -27,7 +35,63 @@ const state = {
   editingBroadcastId: null,
   activePortalTokenId: null,
   generatedPortalToken: null,
+  tokenHistoryPage: 0,
+  tokenHistoryLimit: 5,
+  tokenHistoryTotal: 0,
+  tokenStatusNotified: false,
+  generatedPortalTokenId: null,
 };
+
+const PORTAL_TOKEN_VAULT_KEY = "jyyramprem.ownerPortalTokens.v2";
+
+// Frontend UUID validation for token actions. Keep this local so token history
+// rendering never depends on a server-only helper.
+function isPortalTokenId(value) {
+  return typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
+function readPortalTokenVault() {
+  try {
+    const raw = localStorage.getItem(PORTAL_TOKEN_VAULT_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function writePortalTokenVault(vault) {
+  try {
+    localStorage.setItem(PORTAL_TOKEN_VAULT_KEY, JSON.stringify(vault));
+  } catch {
+    // Local storage is only a secondary recovery path. Server/database remains primary.
+  }
+}
+
+function rememberPortalTokenOnDevice(session, tokenId, token, expiresAt) {
+  if (!session?.user?.id || !tokenId || !token) return;
+  const vault = readPortalTokenVault();
+  const ownerKey = String(session.user.id);
+  if (!vault[ownerKey] || typeof vault[ownerKey] !== "object") vault[ownerKey] = {};
+  vault[ownerKey][String(tokenId)] = {
+    token: String(token).trim().toUpperCase(),
+    expiresAt: expiresAt || null,
+    savedAt: new Date().toISOString(),
+  };
+  writePortalTokenVault(vault);
+}
+
+function findRememberedPortalToken(session, row) {
+  if (!session?.user?.id || !row?.id) return null;
+  const vault = readPortalTokenVault();
+  const item = vault?.[String(session.user.id)]?.[String(row.id)];
+  if (!item?.token) return null;
+  if (item.expiresAt) {
+    const expiry = Date.parse(item.expiresAt);
+    if (Number.isFinite(expiry) && expiry <= Date.now()) return null;
+  }
+  return String(item.token).trim().toUpperCase() || null;
+}
 
 const redirectLogin = () => location.replace("/login.html");
 const redirectHome = () => location.replace("/home.html");
@@ -161,6 +225,67 @@ function setupTabs() {
   });
 }
 
+/* Legacy pagination hooks retained for compatibility: memberPrev/memberNext, loginPrev/loginNext. */
+/* =========================================================
+   PAGINATION CONTROLS
+   - Previous (<) appears from page 4 onward.
+   - First (<<) appears from page 5 onward.
+   - Page numbers remain compact and mobile friendly.
+========================================================= */
+function renderPaginationControls(containerId, pageIndex, pageCount, onPageChange) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const totalPages = Math.max(1, Number(pageCount) || 1);
+  const current = Math.min(Math.max(Number(pageIndex) || 0, 0), totalPages - 1);
+  const last = totalPages - 1;
+
+  if (totalPages <= 1) {
+    container.innerHTML = "";
+    return;
+  }
+
+  // Compact pagination: ALWAYS show at most 3 page numbers.
+  // <  appears from page 4 onward (1-based).
+  // << appears from page 5 onward (1-based).
+  let start = Math.max(0, current - 1);
+  if (start + 3 > totalPages) start = Math.max(0, totalPages - 3);
+  const end = Math.min(totalPages - 1, start + 2);
+
+  const parts = [];
+  if (current >= 3) {
+    parts.push('<button class="btn pagination-btn pagination-jump" type="button" data-page="' + (current - 1) + '" aria-label="Previous page">&lt;</button>');
+  }
+  if (current >= 4) {
+    parts.push('<button class="btn pagination-btn pagination-jump" type="button" data-page="0" aria-label="First page">&lt;&lt;</button>');
+  }
+
+  for (let page = start; page <= end; page += 1) {
+    parts.push('<button class="btn pagination-btn pagination-number ' + (page === current ? 'active' : '') + '" type="button" data-page="' + page + '" aria-label="Halaman ' + (page + 1) + '" ' + (page === current ? 'aria-current="page"' : '') + '>' + (page + 1) + '</button>');
+  }
+
+  if (current < last) {
+    parts.push('<button class="btn pagination-btn pagination-jump" type="button" data-page="' + (current + 1) + '" aria-label="Next page">&gt;</button>');
+    parts.push('<button class="btn pagination-btn pagination-jump" type="button" data-page="' + last + '" aria-label="Last page">&gt;&gt;</button>');
+  }
+
+  container.innerHTML = parts.join("");
+  container.querySelectorAll("[data-page]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const target = Number(button.dataset.page);
+      if (!Number.isInteger(target) || target === current || target < 0 || target > last) return;
+      button.disabled = true;
+      try {
+        await onPageChange(target);
+      } catch (error) {
+        ownerNotice(error.message);
+      } finally {
+        button.disabled = false;
+      }
+    });
+  });
+}
+
 /* =========================================================
    MEMBER MANAGEMENT
 ========================================================= */
@@ -172,8 +297,10 @@ function renderMembers(data) {
   const page = Math.min(state.memberPage, pageCount - 1);
   state.memberPage = page;
   document.getElementById("memberTotal")?.replaceChildren(document.createTextNode(`Total Member : ${total}`));
-  const pageLabel = document.getElementById("memberPageLabel");
-  if (pageLabel) pageLabel.textContent = `${page + 1} / ${pageCount}`;
+  renderPaginationControls("memberPaginationControls", page, pageCount, async (target) => {
+    state.memberPage = target;
+    await loadMembers(state.session);
+  });
   const members = Array.isArray(data.members) ? data.members : [];
   if (!list) return;
   if (!members.length) {
@@ -185,22 +312,27 @@ function renderMembers(data) {
     const email = escapeHtml(m.email || "—");
     const name = escapeHtml(m.display_name || email.split("@")[0]);
     const status = escapeHtml(m.status || "active");
-    return `<div class="member-row" data-member-id="${id}">
-      <div><strong>${name}</strong><small>${email}${m.notes ? ` · ${escapeHtml(m.notes)}` : ""}</small></div>
-      <div class="btn-row">
-        ${memberBadge(status)}
-        <button class="btn member-edit" data-id="${id}" type="button">Detail/Edit</button>
-        <button class="btn member-action" data-action="suspend" data-id="${id}" type="button" ${status !== "active" ? "disabled" : ""}>Suspend</button>
-        <button class="btn member-action" data-action="ban" data-id="${id}" type="button" ${status === "banned" ? "disabled" : ""}>Ban</button>
-        <button class="btn member-action" data-action="unban" data-id="${id}" type="button" ${status === "active" ? "disabled" : ""}>Unban</button>
-        <button class="btn member-delete" data-id="${id}" type="button">Hapus Akun</button>
+    const notes = m.notes ? `<p class="member-notes">${escapeHtml(m.notes)}</p>` : "";
+    return `<article class="member-row" data-member-id="${id}">
+      <div class="member-main">
+        <div class="member-identity">
+          <div class="member-name-wrap">
+            <strong class="member-name">${name}</strong>
+            <small class="member-email">${email}</small>
+          </div>
+          ${memberBadge(status)}
+        </div>
+        ${notes}
       </div>
-    </div>`;
+      <div class="member-actions" aria-label="Aksi member">
+        <button class="btn member-edit" data-id="${id}" type="button">${icon("edit")}<span>Detail/Edit</span></button>
+        <button class="btn member-action" data-action="suspend" data-id="${id}" type="button" ${status !== "active" ? "disabled" : ""}>${icon("lock")}<span>Suspend</span></button>
+        <button class="btn member-action" data-action="ban" data-id="${id}" type="button" ${status === "banned" ? "disabled" : ""}>${icon("shield")}<span>Ban</span></button>
+        <button class="btn member-action" data-action="unban" data-id="${id}" type="button" ${status === "active" ? "disabled" : ""}>${icon("unlock")}<span>Unban</span></button>
+        <button class="btn danger member-delete" data-id="${id}" type="button">${icon("trash")}<span>Hapus Akun</span></button>
+      </div>
+    </article>`;
   }).join("");
-  const prev = document.getElementById("memberPrev");
-  const next = document.getElementById("memberNext");
-  if (prev) prev.disabled = page <= 0;
-  if (next) next.disabled = page >= pageCount - 1;
 }
 
 async function loadMembers(session) {
@@ -248,8 +380,14 @@ async function saveMemberEditor(session) {
 }
 
 async function memberAction(session, id, action) {
-  const reason = window.prompt("Alasan perubahan status (opsional):", "");
-  if (reason === null) return;
+  const reason = await window.JYYRNotify?.prompt?.("Alasan perubahan status (opsional):", {
+    title: "Perubahan Status Member",
+    placeholder: "Masukkan alasan (opsional)",
+    value: "",
+    confirmText: "Simpan",
+    cancelText: "Batal",
+  });
+  if (reason === null || reason === undefined) return;
   const response = await ownerRequest(`/api/owner/members/${encodeURIComponent(id)}/${action}`, session, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -269,38 +407,86 @@ async function loadPortalTokenStatus(session) {
   const response = await ownerRequest("/api/owner/token/status", session);
   const data = await parseJson(response);
   if (!response.ok) throw new Error(data.error || "Status token gagal dimuat.");
-  const token = data.token || { status: "none" };
+  const token = data?.token || { status: "none" };
   const statusEl = document.getElementById("ownerTokenStatus");
   const revoke = document.getElementById("revokePortalToken");
   state.activePortalTokenId = token.status === "active" ? token.id : null;
   if (statusEl) {
-    const activeCount = Number(data.activeCount) || 0;
+    const activeCount = Number(data?.active_count ?? data?.activeCount) || 0;
     statusEl.textContent = token.status === "active"
       ? `${activeCount} token aktif · token terbaru berlaku sampai ${broadcastDate(token.expires_at)}.`
       : activeCount ? `${activeCount} token aktif.` : "Tidak ada token aktif.";
     statusEl.className = `status ${token.status === "active" ? "success" : "info"}`;
+    statusEl.hidden = true;
   }
-  if (revoke) revoke.disabled = !state.activePortalTokenId;
+  // The top revoke control always represents the newest active token.
+  // Individual active tokens can also be revoked from Token History.
+  if (revoke) {
+    revoke.disabled = token.status !== "active" || !token.id;
+    revoke.hidden = false;
+  }
+
+  // Jangan tampilkan toast saat initial load. Notifikasi hanya boleh muncul
+  // sebagai hasil aksi user (Generate/Revoke), bukan karena halaman dibuka.
+  if (token.status === "active") state.tokenStatusNotified = false;
 }
 
 async function loadPortalTokenHistory(session) {
-  const response = await ownerRequest("/api/owner/token/history?limit=50&offset=0", session);
+  const query = new URLSearchParams({ limit: String(state.tokenHistoryLimit), offset: String(state.tokenHistoryPage * state.tokenHistoryLimit) });
+  const response = await ownerRequest(`/api/owner/token/history?${query.toString()}`, session);
   const data = await parseJson(response);
   if (!response.ok) throw new Error(data.error || "History token gagal dimuat.");
   const list = document.getElementById("portalTokenHistory");
   if (!list) return;
+  state.tokenHistoryTotal = Number(data.total) || 0;
+  const pageCount = Math.max(1, Math.ceil(state.tokenHistoryTotal / state.tokenHistoryLimit));
+  state.tokenHistoryPage = Math.min(state.tokenHistoryPage, pageCount - 1);
+  const totalEl = document.getElementById("tokenHistoryTotal");
+  if (totalEl) totalEl.textContent = `Total Token : ${state.tokenHistoryTotal}`;
   const rows = Array.isArray(data.tokens) ? data.tokens : [];
   const labels = { active: "ACTIVE", used: "USED", expired: "EXPIRED", revoked: "REVOKED" };
   const cls = { active: "green", used: "red", expired: "yellow", revoked: "red" };
-  list.innerHTML = rows.length ? rows.map((t) => `
-    <div class="token-history-row">
-      <div class="token-history-main">
-        <div class="token-history-token">${escapeHtml(t.preview || "TOKEN-••••")}</div>
-        <small>Dibuat ${escapeHtml(broadcastDate(t.created_at))} · Expired ${escapeHtml(broadcastDate(t.expires_at))}${t.used_at ? ` · Digunakan ${escapeHtml(broadcastDate(t.used_at))}` : ""}</small>
-        ${t.used_email ? `<small>Digunakan oleh: ${escapeHtml(t.used_email)}</small>` : ""}
-      </div>
-      <span class="badge ${cls[t.status] || ""}">${escapeHtml(labels[t.status] || t.status || "UNKNOWN")}</span>
-    </div>`).join("") : `<div class="status info">Belum ada history token.</div>`;
+  if (!rows.length) {
+    list.innerHTML = `<div class="status info">Belum ada history token.</div>`;
+  } else {
+    const body = rows.map((t, index) => {
+      // The just-generated token is also available in the current Owner session.
+      // Prefer the server-revealed value, then the exact generated token ID;
+      // finally use the newest row as a defensive fallback when an older RPC
+      // response omitted its id.
+      const rememberedToken = findRememberedPortalToken(session, t);
+      const serverToken = /^[A-F0-9]{20}$/.test(String(t.token || "").trim().toUpperCase())
+        ? String(t.token).trim().toUpperCase()
+        : null;
+      const generatedToken = t.id && t.id === state.generatedPortalTokenId && /^[A-F0-9]{20}$/.test(String(state.generatedPortalToken || "").trim().toUpperCase())
+        ? String(state.generatedPortalToken).trim().toUpperCase()
+        : null;
+      const newestToken = index === 0 && t.status === "active" && /^[A-F0-9]{20}$/.test(String(state.generatedPortalToken || "").trim().toUpperCase())
+        ? String(state.generatedPortalToken).trim().toUpperCase()
+        : null;
+      // Always prefer a known full 20-character token. A masked preview is
+      // only a last-resort display for legacy rows that cannot be recovered.
+      const tokenValue = rememberedToken || serverToken || generatedToken || newestToken || null;
+      const token = escapeHtml(tokenValue || t.preview || "—");
+      if (tokenValue && t.id) rememberPortalTokenOnDevice(session, t.id, tokenValue, t.expires_at);
+      const statusLabel = escapeHtml(labels[t.status] || t.status || "UNKNOWN");
+      const statusClass = cls[t.status] || "blue";
+      const created = escapeHtml(broadcastDate(t.created_at));
+      const expires = escapeHtml(broadcastDate(t.expires_at));
+      const used = t.used_at ? escapeHtml(broadcastDate(t.used_at)) : "—";
+      const usedBy = t.used_email ? `<small class="token-history-usedby">${escapeHtml(t.used_email)}</small>` : `<small class="token-history-usedby">Belum digunakan</small>`;
+      const canRevoke = t.status === "active" && isPortalTokenId(t.id);
+      const action = canRevoke
+        ? `<button class="btn danger token-history-revoke" type="button" data-revoke-token-id="${escapeHtml(t.id)}" data-revoke-token="${escapeHtml(tokenValue || t.preview || "token aktif")}">Cabut</button>`
+        : "—";
+      return `<tr data-token-id="${escapeHtml(t.id || "")}"><td><div class="token-history-token">${token}</div>${usedBy}</td><td><span class="badge ${statusClass}">${statusLabel}</span></td><td><strong>${created}</strong><small>Expired ${expires}</small></td><td><strong>${used}</strong></td><td class="token-history-action">${action}</td></tr>`;
+    }).join("");
+    list.innerHTML = `<div class="table-wrap token-history-table-wrap"><table class="table token-history-table"><thead><tr><th>Token</th><th>Status</th><th>Dibuat</th><th>Digunakan</th><th>Aksi</th></tr></thead><tbody>${body}</tbody></table></div>`;
+  }
+  renderPaginationControls("tokenHistoryControls", state.tokenHistoryPage, pageCount, async (target) => {
+    state.tokenHistoryPage = target;
+    await loadPortalTokenHistory(state.session);
+  });
 }
 
 async function loadPortalTokenRequests(session) {
@@ -321,23 +507,47 @@ async function generatePortalToken(session) {
   if (!response.ok) throw new Error(data.error || "Gagal membuat token.");
   const out = document.getElementById("generatedPortalToken");
   state.generatedPortalToken = data.token || null;
+  state.generatedPortalTokenId = data.tokenId || null;
+  if (data.token && data.tokenId) rememberPortalTokenOnDevice(session, data.tokenId, data.token, data.expiresAt);
   if (out) {
     out.hidden = false;
     const text = document.getElementById("generatedPortalTokenText");
-    if (text) text.textContent = `TOKEN: ${data.token} · berlaku sampai ${broadcastDate(data.expiresAt)}.`;
-    else out.textContent = `TOKEN: ${data.token} · berlaku sampai ${broadcastDate(data.expiresAt)}.`;
+    if (text) text.textContent = data.token
+      ? `${data.token} · berlaku sampai ${broadcastDate(data.expiresAt)}.`
+      : "Token berhasil dibuat, tetapi server tidak mengembalikan plaintext token.";
+    else out.textContent = data.token
+      ? `TOKEN: ${data.token} · berlaku sampai ${broadcastDate(data.expiresAt)}.`
+      : "Token berhasil dibuat, tetapi server tidak mengembalikan plaintext token.";
   }
+  state.tokenHistoryPage = 0;
+  state.tokenStatusNotified = false;
   await loadPortalTokenStatus(session);
   await loadPortalTokenHistory(session);
   await loadPortalTokenRequests(session);
 }
 
-async function revokePortalToken(session) {
-  if (!state.activePortalTokenId) return;
-  const response = await ownerRequest("/api/owner/token/revoke", session, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token_id: state.activePortalTokenId }) });
+async function revokePortalTokenById(session, tokenId) {
+  if (!isPortalTokenId(tokenId)) throw new Error("Token ID tidak valid.");
+  const response = await ownerRequest("/api/owner/token/revoke", session, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token_id: tokenId }),
+  });
   const data = await parseJson(response);
   if (!response.ok) throw new Error(data.error || "Gagal mencabut token.");
-  document.getElementById("generatedPortalToken")?.setAttribute("hidden", "");
+  return data;
+}
+
+async function revokePortalToken(session, tokenId = state.activePortalTokenId) {
+  if (!isPortalTokenId(tokenId)) return;
+  await revokePortalTokenById(session, tokenId);
+  if (state.generatedPortalTokenId === tokenId) {
+    document.getElementById("generatedPortalToken")?.setAttribute("hidden", "");
+    state.generatedPortalToken = null;
+    state.generatedPortalTokenId = null;
+  }
+  state.tokenHistoryPage = 0;
+  state.tokenStatusNotified = false;
   await loadPortalTokenStatus(session);
   await loadPortalTokenHistory(session);
 }
@@ -476,6 +686,21 @@ async function saveBroadcast(session) {
   const scheduled_at = scheduledLocal ? new Date(scheduledLocal).toISOString() : null;
   if (!title || !message) throw new Error("Judul dan pesan wajib diisi.");
   if (status === "scheduled" && !scheduled_at) throw new Error("Jadwal wajib diisi.");
+
+  const statusLabels = { draft: "Draf", scheduled: "Terjadwal", sending: "Mengirim", sent: "Terkirim" };
+  const statusLabel = statusLabels[status] || status;
+  const confirmationMessage = status === "scheduled"
+    ? `Simpan broadcast sebagai terjadwal?\n\nJadwal: ${broadcastDate(scheduled_at)}\nTarget: ${recipient_filter}\n\nBroadcast akan tetap terjadwal sampai waktunya tiba.`
+    : status === "draft"
+      ? `Simpan broadcast sebagai draf?\n\nTarget: ${recipient_filter}\n\nBroadcast belum akan dikirim.`
+      : `Simpan perubahan broadcast dengan status ${statusLabel}?\n\nTarget: ${recipient_filter}`;
+  const confirmed = await window.JYYRNotify?.confirm?.(confirmationMessage, {
+    title: state.editingBroadcastId ? "Konfirmasi Perubahan Broadcast" : "Konfirmasi Broadcast",
+    confirmText: status === "scheduled" ? "Jadwalkan" : status === "draft" ? "Simpan Draf" : "Simpan",
+    cancelText: "Batal",
+  });
+  if (!confirmed) return false;
+
   const path = state.editingBroadcastId ? `/api/owner/broadcasts/${encodeURIComponent(state.editingBroadcastId)}` : "/api/owner/broadcasts";
   const response = await ownerRequest(path, session, {
     method: state.editingBroadcastId ? "PATCH" : "POST",
@@ -486,10 +711,17 @@ async function saveBroadcast(session) {
   if (!response.ok) throw new Error(data.error || "Broadcast gagal disimpan");
   resetBroadcastForm();
   await loadBroadcasts(session);
+  return true;
 }
 
 async function deleteBroadcast(session, id) {
-  if (!window.confirm("Hapus broadcast ini?")) return;
+  const confirmed = await window.JYYRNotify?.confirm?.("Hapus broadcast ini?", {
+    title: "Hapus Broadcast",
+    confirmText: "Hapus",
+    cancelText: "Batal",
+    danger: true,
+  });
+  if (!confirmed) return;
   const response = await ownerRequest(`/api/owner/broadcasts/${encodeURIComponent(id)}`, session, { method: "DELETE" });
   const data = await parseJson(response);
   if (!response.ok) throw new Error(data.error || "Broadcast gagal dihapus");
@@ -497,7 +729,12 @@ async function deleteBroadcast(session, id) {
 }
 
 async function executeBroadcast(session, id) {
-  if (!window.confirm("Jalankan broadcast sekarang? Broadcast yang berhasil akan berstatus sent dan membuat notifikasi untuk target.") ) return;
+  const confirmed = await window.JYYRNotify?.confirm?.("Jalankan broadcast sekarang? Broadcast yang berhasil akan berstatus sent dan membuat notifikasi untuk target.", {
+    title: "Jalankan Broadcast",
+    confirmText: "Jalankan",
+    cancelText: "Batal",
+  });
+  if (!confirmed) return;
   const response = await ownerRequest(`/api/owner/broadcasts/${encodeURIComponent(id)}/execute`, session, { method: "POST" });
   const data = await parseJson(response);
   if (!response.ok) throw new Error(data.error || "Broadcast gagal dijalankan");
@@ -634,7 +871,13 @@ async function editFaq(session, id) {
 }
 
 async function deleteFaq(session, id) {
-  if (!window.confirm("Hapus FAQ ini?")) return;
+  const confirmed = await window.JYYRNotify?.confirm?.("Hapus FAQ ini?", {
+    title: "Hapus FAQ",
+    confirmText: "Hapus",
+    cancelText: "Batal",
+    danger: true,
+  });
+  if (!confirmed) return;
   const response = await ownerRequest(`/api/owner/faq/${encodeURIComponent(id)}`, session, { method: "DELETE" });
   const data = await parseJson(response);
   if (!response.ok) throw new Error(data.error || "FAQ gagal dihapus.");
@@ -689,7 +932,13 @@ async function editHelp(session, id) {
 }
 
 async function deleteHelp(session, id) {
-  if (!window.confirm("Hapus artikel Help Center ini?")) return;
+  const confirmed = await window.JYYRNotify?.confirm?.("Hapus artikel Help Center ini?", {
+    title: "Hapus Artikel",
+    confirmText: "Hapus",
+    cancelText: "Batal",
+    danger: true,
+  });
+  if (!confirmed) return;
   const response = await ownerRequest(`/api/owner/help/${encodeURIComponent(id)}`, session, { method: "DELETE" });
   const data = await parseJson(response);
   if (!response.ok) throw new Error(data.error || "Artikel gagal dihapus.");
@@ -713,12 +962,10 @@ async function loadLoginActivity(session) {
   }
   const totalEl = document.getElementById("loginActivityTotal");
   if (totalEl) totalEl.textContent = `Total Login : ${state.loginTotal}`;
-  const label = document.getElementById("loginPageLabel");
-  if (label) label.textContent = `${state.loginPage + 1} / ${pageCount}`;
-  const prev = document.getElementById("loginPrev");
-  const next = document.getElementById("loginNext");
-  if (prev) prev.disabled = state.loginPage <= 0;
-  if (next) next.disabled = state.loginPage >= pageCount - 1;
+  renderPaginationControls("loginPaginationControls", state.loginPage, pageCount, async (target) => {
+    state.loginPage = target;
+    await loadLoginActivity(state.session);
+  });
 }
 
 async function loadContentAdmin(session) {
@@ -747,15 +994,6 @@ function bindEvents() {
     try { await loadMembers(state.session); } catch (e) { ownerNotice(e.message); }
   });
 
-  document.getElementById("memberPrev")?.addEventListener("click", async () => {
-    if (state.memberPage <= 0) return;
-    state.memberPage -= 1;
-    try { await loadMembers(state.session); } catch (e) { ownerNotice(e.message); }
-  });
-  document.getElementById("memberNext")?.addEventListener("click", async () => {
-    state.memberPage += 1;
-    try { await loadMembers(state.session); } catch (e) { ownerNotice(e.message); }
-  });
 
   document.getElementById("memberList")?.addEventListener("click", async (event) => {
     const edit = event.target.closest(".member-edit");
@@ -766,8 +1004,14 @@ function bindEvents() {
     try {
       if (edit) return await openMemberEditor(session, edit.dataset.id);
       if (deleteButton) {
-        const confirmed = window.confirm(
-          "Hapus akun member ini secara permanen?\n\nSemua akses akun dan data member terkait akan dihapus. Tindakan ini tidak dapat dibatalkan."
+        const confirmed = await window.JYYRNotify?.confirm?.(
+          "Hapus akun member ini secara permanen?\n\nSemua akses akun dan data member terkait akan dihapus. Tindakan ini tidak dapat dibatalkan.",
+          {
+            title: "Hapus Member",
+            confirmText: "Hapus Member",
+            cancelText: "Batal",
+            danger: true,
+          }
         );
         if (!confirmed) return;
         const response = await ownerRequest(`/api/owner/members/${encodeURIComponent(deleteButton.dataset.id)}`, session, {
@@ -798,7 +1042,10 @@ function bindEvents() {
   document.getElementById("broadcastSave")?.addEventListener("click", async () => {
     const session = state.session || await requireSession(); if (!session) return;
     const button = document.getElementById("broadcastSave"); button.disabled = true;
-    try { await saveBroadcast(session); ownerNotice("Broadcast berhasil disimpan.", "success"); } catch (e) { document.getElementById("broadcastFormStatus").textContent = e.message; ownerNotice(e.message); } finally { button.disabled = false; }
+    try {
+      const saved = await saveBroadcast(session);
+      if (saved !== false) ownerNotice("Broadcast berhasil disimpan.", "success");
+    } catch (e) { document.getElementById("broadcastFormStatus").textContent = e.message; ownerNotice(e.message); } finally { button.disabled = false; }
   });
   document.getElementById("broadcastList")?.addEventListener("click", async (event) => {
     const edit = event.target.closest(".broadcast-edit");
@@ -826,25 +1073,75 @@ function bindEvents() {
   document.getElementById("helpCancelEdit")?.addEventListener("click", resetHelpForm);
   document.getElementById("helpList")?.addEventListener("click", async (event) => { const edit=event.target.closest(".help-edit"),del=event.target.closest(".help-delete");if(!edit&&!del)return;const s=state.session||await requireSession();if(!s)return;try{if(edit)await editHelp(s,edit.dataset.id);else await deleteHelp(s,del.dataset.id);}catch(e){ownerNotice(e.message);} });
 
-  document.getElementById("loginPrev")?.addEventListener("click", async () => { if(state.loginPage<=0)return;state.loginPage-=1;try{await loadLoginActivity(state.session);}catch(e){ownerNotice(e.message);} });
-  document.getElementById("loginNext")?.addEventListener("click", async () => { state.loginPage+=1;try{await loadLoginActivity(state.session);}catch(e){ownerNotice(e.message);} });
 
   document.getElementById("maintenanceToggle")?.addEventListener("click", async () => {
     const s=state.session||await requireSession();if(!s)return;const b=document.getElementById("maintenanceToggle");
     const enabled=b.dataset.enabled!=="1";b.disabled=true;
+    const confirmed = await window.JYYRNotify?.confirm?.(enabled ? "Aktifkan mode maintenance sekarang? Member akan melihat halaman maintenance." : "Matikan mode maintenance sekarang dan buka akses member kembali?", {
+      title: enabled ? "Aktifkan Maintenance" : "Nonaktifkan Maintenance",
+      confirmText: enabled ? "Aktifkan" : "Matikan",
+      cancelText: "Batal",
+    });
+    if (!confirmed) return;
     try{const r=await ownerRequest("/api/owner/maintenance",s,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({enabled,message:"Jyy'R Amprem Sedang Maintenance"})});const d=await parseJson(r);if(!r.ok)throw new Error(d.error||"Gagal mengubah maintenance.");await loadMaintenance(s);ownerNotice(enabled?"Maintenance diaktifkan.":"Maintenance dimatikan.","success");}catch(e){ownerNotice(e.message);}finally{b.disabled=false;}
   });
 
   document.getElementById("generatePortalToken")?.addEventListener("click", async () => {
     const s = state.session || await requireSession(); if (!s) return;
+    const confirmed = await window.JYYRNotify?.confirm?.("Buat token portal owner baru? Token aktif yang lama dapat tetap digunakan sampai dicabut atau kedaluwarsa.", {
+      title: "Generate Token Portal",
+      confirmText: "Generate Token",
+      cancelText: "Batal",
+    });
+    if (!confirmed) return;
     const b = document.getElementById("generatePortalToken"); b.disabled = true;
     try { await generatePortalToken(s); ownerNotice("Token baru berhasil dibuat.", "success"); } catch (e) { ownerNotice(e.message); } finally { b.disabled = false; }
   });
   document.getElementById("revokePortalToken")?.addEventListener("click", async () => {
     const s = state.session || await requireSession(); if (!s) return;
+    const activeTokenId = state.activePortalTokenId;
+    if (!isPortalTokenId(activeTokenId)) return;
+    const tokenRow = Array.from(document.querySelectorAll(".token-history-table tbody tr[data-token-id]")).find((row) => row.dataset.tokenId === String(activeTokenId));
+    const tokenText = tokenRow?.querySelector(".token-history-token")?.textContent?.trim() || "token aktif";
+    const confirmed = await window.JYYRNotify?.confirm?.(`Verifikasi pencabutan\n\nToken ${tokenText} akan dicabut dan tidak dapat digunakan lagi.\nToken aktif lainnya tetap aman.\n\nLanjutkan?`, {
+      title: "Verifikasi Pencabutan Token",
+      confirmText: "Cabut Token",
+      cancelText: "Batal",
+      danger: true,
+    });
+    if (!confirmed) return;
     const b = document.getElementById("revokePortalToken"); b.disabled = true;
-    try { await revokePortalToken(s); ownerNotice("Token berhasil dicabut.", "success"); } catch (e) { ownerNotice(e.message); } finally { await loadPortalTokenStatus(s).catch(() => {}); }
+    try {
+      await revokePortalToken(s, activeTokenId);
+      ownerNotice("Token berhasil dicabut.", "success");
+    } catch (e) { ownerNotice(e.message); }
+    finally { await loadPortalTokenStatus(s).catch(() => {}); }
   });
+
+  document.getElementById("portalTokenHistory")?.addEventListener("click", async (event) => {
+    const button = event.target.closest("[data-revoke-token-id]");
+    if (!button) return;
+    const s = state.session || await requireSession(); if (!s) return;
+    const tokenId = button.dataset.revokeTokenId;
+    const tokenText = button.dataset.revokeToken || "token aktif";
+    if (!isPortalTokenId(tokenId)) return;
+    const confirmed = await window.JYYRNotify?.confirm?.(`Verifikasi pencabutan\n\nToken ${tokenText} akan dicabut dan tidak dapat digunakan lagi.\nToken aktif lainnya tetap aman.\n\nLanjutkan?`, {
+      title: "Verifikasi Pencabutan Token",
+      confirmText: "Cabut Token",
+      cancelText: "Batal",
+      danger: true,
+    });
+    if (!confirmed) return;
+    button.disabled = true;
+    try {
+      await revokePortalToken(s, tokenId);
+      ownerNotice("Token berhasil dicabut.", "success");
+    } catch (e) {
+      button.disabled = false;
+      ownerNotice(e.message);
+    }
+  });
+
   document.getElementById("copyGeneratedPortalToken")?.addEventListener("click", copyGeneratedPortalToken);
   document.getElementById("refreshPortalTokenHistory")?.addEventListener("click", async () => {
     const s = state.session || await requireSession(); if (!s) return;

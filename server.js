@@ -532,6 +532,75 @@ function generatePortalToken() {
   return crypto.randomBytes(10).toString("hex").toUpperCase();
 }
 
+function getPortalTokenEncryptionKey() {
+  const secret = String(SUPABASE_SERVICE_ROLE_KEY || "").trim();
+  if (secret.length < 32) {
+    const error = new Error("SUPABASE_SERVICE_ROLE_KEY belum dikonfigurasi dengan aman.");
+    error.code = "PORTAL_TOKEN_ENCRYPTION_KEY_MISSING";
+    error.status = 500;
+    throw error;
+  }
+  return crypto.createHash("sha256").update(`JYYR-AM-PRESENT-PORTAL-TOKEN|${secret}`, "utf8").digest();
+}
+
+function encryptPortalToken(token) {
+  const plaintext = normalizePortalToken(token);
+  if (!plaintext) throw new Error("Portal token kosong.");
+  const key = getPortalTokenEncryptionKey();
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv("aes-256-gcm", key, iv);
+  const ciphertext = Buffer.concat([cipher.update(plaintext, "utf8"), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return [iv, tag, ciphertext].map((part) => part.toString("base64url")).join(".");
+}
+
+// Short-lived in-memory fallback for the token just generated.
+// The database remains the durable source of truth via token_encrypted; this
+// only bridges the immediate history render when an old schema/migration has
+// not finished propagating yet.
+const recentOwnerPortalTokens = new Map();
+const RECENT_OWNER_TOKEN_TTL_MS = 5 * 60 * 1000;
+
+function rememberRecentOwnerPortalToken(ownerUserId, tokenId, token, expiresAt) {
+  if (!ownerUserId || !tokenId || !token) return;
+  recentOwnerPortalTokens.set(`${ownerUserId}:${tokenId}`, {
+    token: normalizePortalToken(token),
+    expiresAt: Date.parse(expiresAt || '') || (Date.now() + PORTAL_TOKEN_TTL_HOURS * 60 * 60 * 1000),
+    rememberedAt: Date.now(),
+  });
+}
+
+function getRecentOwnerPortalToken(ownerUserId, tokenId) {
+  const key = `${ownerUserId}:${tokenId}`;
+  const entry = recentOwnerPortalTokens.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.rememberedAt > RECENT_OWNER_TOKEN_TTL_MS || Date.now() >= entry.expiresAt) {
+    recentOwnerPortalTokens.delete(key);
+    return null;
+  }
+  return entry.token;
+}
+
+function decryptPortalToken(encrypted) {
+  const parts = String(encrypted || "").split(".");
+  if (parts.length !== 3) throw new Error("Portal token terenkripsi tidak valid.");
+  try {
+    const key = getPortalTokenEncryptionKey();
+    const iv = Buffer.from(parts[0], "base64url");
+    const tag = Buffer.from(parts[1], "base64url");
+    const ciphertext = Buffer.from(parts[2], "base64url");
+    if (iv.length !== 12 || tag.length !== 16 || !ciphertext.length) throw new Error("Portal token terenkripsi tidak valid.");
+    const decipher = crypto.createDecipheriv("aes-256-gcm", key, iv);
+    decipher.setAuthTag(tag);
+    return normalizePortalToken(Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString("utf8"));
+  } catch {
+    const error = new Error("Portal token tidak dapat dibuka secara aman.");
+    error.code = "PORTAL_TOKEN_DECRYPT_FAILED";
+    error.status = 500;
+    throw error;
+  }
+}
+
 function isPortalAccessExempt(req) {
   if (PORTAL_ACCESS_EXEMPT_PATHS.has(req.path)) return true;
   if (req.path.startsWith("/api/owner/")) return true;
@@ -1014,14 +1083,53 @@ app.post("/api/owner/token/generate", requireAuth, ownerMemberMutationLimiter, r
   try {
     const token = generatePortalToken();
     const expiresAt = new Date(Date.now() + PORTAL_TOKEN_TTL_HOURS * 60 * 60 * 1000).toISOString();
-    const { data, error } = await supabase.rpc("owner_create_portal_token", {
-      p_owner_user_id: req.user.id,
-      p_token_hash: hashPortalToken(token),
-      p_token_preview: `${token.slice(0, 4)}••••${token.slice(-4)}`,
-      p_expires_at: expiresAt,
-    });
+    const tokenHash = hashPortalToken(token);
+    const tokenPreview = `${token.slice(0, 4)}••••${token.slice(-4)}`;
+    const tokenEncrypted = encryptPortalToken(token);
+
+    // IMPORTANT: persist the full owner token directly through the trusted
+    // server client. Do not rely on overloaded/legacy RPC signatures here;
+    // several historical versions of owner_create_portal_token exist in
+    // production and some of them silently omit token_encrypted.
+    const { data, error } = await supabase
+      .from("portal_access_tokens")
+      .insert({
+        token_hash: tokenHash,
+        token_preview: tokenPreview,
+        token_encrypted: tokenEncrypted,
+        status: "active",
+        expires_at: expiresAt,
+        created_by: req.user.id,
+      })
+      .select("id, expires_at, status, token_encrypted")
+      .single();
+
     if (error) throw error;
-    return res.status(201).json({ ok: true, owner: true, token, expiresAt: data?.expires_at || expiresAt });
+    if (!data?.id) throw Object.assign(new Error("Token ID tidak dikembalikan database."), { code: "PORTAL_TOKEN_ID_MISSING", status: 500 });
+    if (!data.token_encrypted) {
+      throw Object.assign(new Error("Token terenkripsi tidak tersimpan di database."), { code: "PORTAL_TOKEN_ENCRYPTED_NOT_PERSISTED", status: 500 });
+    }
+
+    // Read-after-write verification. This catches a wrong database/schema
+    // immediately instead of allowing a token that disappears after refresh.
+    const { data: persisted, error: persistedError } = await supabase
+      .from("portal_access_tokens")
+      .select("id, token_encrypted, expires_at")
+      .eq("id", data.id)
+      .single();
+    if (persistedError) throw persistedError;
+    if (!persisted?.token_encrypted) {
+      throw Object.assign(new Error("Token terenkripsi hilang setelah insert."), { code: "PORTAL_TOKEN_ENCRYPTED_READBACK_FAILED", status: 500 });
+    }
+
+    rememberRecentOwnerPortalToken(req.user.id, data.id, token, persisted.expires_at || data.expires_at || expiresAt);
+    return res.status(201).json({
+      ok: true,
+      owner: true,
+      token,
+      tokenId: data.id,
+      expiresAt: persisted.expires_at || data.expires_at || expiresAt,
+    });
   } catch (error) {
     console.error("[OWNER TOKEN GENERATE ERROR]", { code: error?.code || null, message: error?.message || "Unknown error" });
     return res.status(500).json({ ok: false, error: "Gagal membuat token." });
@@ -1033,9 +1141,50 @@ app.get("/api/owner/token/history", requireAuth, ownerReadLimiter, requireOwner,
     const limit = parsePositiveInt(req.query.limit, 50, 100);
     const offset = parsePositiveInt(req.query.offset, 0, 1000000);
     if (limit === null || offset === null) return res.status(400).json({ ok: false, error: "Pagination tidak valid." });
-    const { data, error } = await supabase.rpc("owner_list_portal_tokens", { p_owner_user_id: req.user.id, p_limit: limit, p_offset: offset });
+
+    // Read directly from the trusted service-role client. This avoids the
+    // historical owner_list_portal_tokens overloads that can omit the
+    // encrypted field and cause a token to disappear after refresh.
+    const { data: rows, error } = await supabase
+      .from("portal_access_tokens")
+      .select("id, token_preview, token_encrypted, status, created_at, expires_at, used_at, revoked_at")
+      .order("created_at", { ascending: false })
+      .range(offset, offset + limit - 1);
     if (error) throw error;
-    return res.json({ ok: true, owner: true, ...data });
+
+    const { count: total, error: countError } = await supabase
+      .from("portal_access_tokens")
+      .select("id", { count: "exact", head: true });
+    if (countError) throw countError;
+
+    const tokens = (Array.isArray(rows) ? rows : []).map((row) => {
+      const safeRow = {
+        id: row.id,
+        preview: row.token_preview || null,
+        status: row.status === "active" && new Date(row.expires_at).getTime() <= Date.now() ? "expired" : row.status,
+        created_at: row.created_at,
+        expires_at: row.expires_at,
+        used_at: row.used_at,
+        revoked_at: row.revoked_at,
+      };
+      const encrypted = String(row.token_encrypted || "").trim();
+      if (encrypted) {
+        try {
+          safeRow.token = decryptPortalToken(encrypted);
+        } catch (decryptError) {
+          console.error("[OWNER TOKEN HISTORY DECRYPT ERROR]", { code: decryptError?.code || null, tokenId: row.id });
+          safeRow.token = getRecentOwnerPortalToken(req.user.id, row.id);
+        }
+      } else {
+        safeRow.token = getRecentOwnerPortalToken(req.user.id, row.id);
+      }
+      // Owner history intentionally does not expose plaintext to the browser
+      // when it cannot be recovered. The preview remains available as a safe
+      // diagnostic for legacy rows.
+      return safeRow;
+    });
+
+    return res.json({ ok: true, owner: true, tokens, total: Number(total) || 0, limit, offset });
   } catch (error) {
     const status = /Owner access required/i.test(String(error?.message || "")) ? 403 : 500;
     return res.status(status).json({ ok: false, error: status === 403 ? "Akses Owner diperlukan." : "Gagal membaca history token." });
