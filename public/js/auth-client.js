@@ -162,12 +162,12 @@
       error.retryAfter = Number(data.retryAfter || 0);
       throw error;
     }
-    const session = normalizeSession(data);
-    if (session) {
-      writeSession(session);
-    }
-    const persisted = session?.access_token ? (readSession() || session) : null;
-    return { session: persisted, user: data.user || persisted?.user || null };
+    // Supabase Auth returns the session inside `data.session` for verifyOtp.
+    // Accept both the nested Supabase shape and a legacy top-level session so
+    // successful email verification immediately establishes the browser auth session.
+    const session = normalizeSession(data?.session || data);
+    if (session) writeSession(session);
+    return { session, user: data.user || data?.session?.user || session?.user || null };
   }
 
   async function signOut() {
