@@ -174,6 +174,7 @@ function renderMembers(data) {
         <button class="btn member-action" data-action="suspend" data-id="${id}" type="button" ${status !== "active" ? "disabled" : ""}>Suspend</button>
         <button class="btn member-action" data-action="ban" data-id="${id}" type="button" ${status === "banned" ? "disabled" : ""}>Ban</button>
         <button class="btn member-action" data-action="unban" data-id="${id}" type="button" ${status === "active" ? "disabled" : ""}>Unban</button>
+        <button class="btn member-delete" data-id="${id}" type="button">Hapus Akun</button>
       </div>
     </div>`;
   }).join("");
@@ -714,10 +715,25 @@ function bindEvents() {
   document.getElementById("memberList")?.addEventListener("click", async (event) => {
     const edit = event.target.closest(".member-edit");
     const actionButton = event.target.closest(".member-action");
+    const deleteButton = event.target.closest(".member-delete");
     const session = state.session || await requireSession();
     if (!session) return;
     try {
       if (edit) return await openMemberEditor(session, edit.dataset.id);
+      if (deleteButton) {
+        const confirmed = window.confirm(
+          "Hapus akun member ini secara permanen?\n\nSemua akses akun dan data member terkait akan dihapus. Tindakan ini tidak dapat dibatalkan."
+        );
+        if (!confirmed) return;
+        const response = await ownerRequest(`/api/owner/members/${encodeURIComponent(deleteButton.dataset.id)}`, session, {
+          method: "DELETE",
+        });
+        const data = await parseJson(response);
+        if (!response.ok) throw new Error(data.error || "Gagal menghapus akun member.");
+        ownerNotice("Akun member berhasil dihapus secara permanen.", "success");
+        state.memberPage = 0;
+        return await loadMembers(session);
+      }
       if (actionButton && !actionButton.disabled) await memberAction(session, actionButton.dataset.id, actionButton.dataset.action);
     } catch (error) { ownerNotice(error.message); }
   });

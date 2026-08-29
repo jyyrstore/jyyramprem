@@ -1128,6 +1128,87 @@ async function updateMemberProfile(req, res) {
 
 app.patch("/api/owner/members/:id", requireAuth, ownerMemberMutationLimiter, requireOwner, updateMemberProfile);
 
+
+app.delete("/api/owner/members/:id", requireAuth, ownerMemberMutationLimiter, requireOwner, async (req, res) => {
+  try {
+    const userId = String(req.params.id || "").trim();
+    if (!isUuid(userId)) {
+      return res.status(400).json({ ok: false, error: "Member ID tidak valid." });
+    }
+
+    // Never allow the Owner account itself to be deleted through member management.
+    if (userId === req.user.id) {
+      return res.status(400).json({ ok: false, error: "Akun Owner tidak dapat dihapus dari Member Management." });
+    }
+
+    const { data: targetData, error: targetError } = await supabase.auth.admin.getUserById(userId);
+    if (targetError) throw targetError;
+    const target = targetData?.user;
+    if (!target) {
+      return res.status(404).json({ ok: false, error: "Akun member tidak ditemukan." });
+    }
+
+    /*
+     * Some historical project tables intentionally use ON DELETE RESTRICT for
+     * audit/owner-message references. Clean only the target member's dependent
+     * records first, then let Supabase Auth perform the canonical user delete.
+     * All writes use the service-role client and therefore remain server-side.
+     */
+    const { error: deleteMessagesError } = await supabase
+      .from("owner_messages")
+      .delete()
+      .or(`sender_user_id.eq.${userId},recipient_user_id.eq.${userId}`);
+    if (deleteMessagesError) throw deleteMessagesError;
+
+    const { error: deleteConversationsError } = await supabase
+      .from("owner_conversations")
+      .delete()
+      .eq("member_user_id", userId);
+    if (deleteConversationsError) throw deleteConversationsError;
+
+    const { error: deleteStatusEventsError } = await supabase
+      .from("member_status_events")
+      .delete()
+      .eq("changed_by", userId);
+    if (deleteStatusEventsError) throw deleteStatusEventsError;
+
+    const { error: deleteTokenAuditError } = await supabase
+      .from("portal_access_tokens")
+      .delete()
+      .eq("created_by", userId);
+    if (deleteTokenAuditError) throw deleteTokenAuditError;
+
+    const { error: deleteError } = await supabase.auth.admin.deleteUser(userId, false);
+    if (deleteError) throw deleteError;
+
+    console.info("[OWNER MEMBER DELETE]", {
+      ownerUserId: req.user.id,
+      deletedUserId: userId,
+    });
+
+    return res.json({
+      ok: true,
+      owner: true,
+      deleted: true,
+      user_id: userId,
+      email: target.email || null,
+    });
+  } catch (error) {
+    console.error("[OWNER MEMBER DELETE ERROR]", {
+      code: error?.code || null,
+      message: error?.message || "Unknown error",
+    });
+    const message = String(error?.message || "");
+    if (/Owner access required/i.test(message)) {
+      return res.status(403).json({ ok: false, error: "Akses Owner diperlukan." });
+    }
+    if (/User not found|not found/i.test(message)) {
+      return res.status(404).json({ ok: false, error: "Akun member tidak ditemukan." });
+    }
+    return res.status(500).json({ ok: false, error: "Gagal menghapus akun member." });
+  }
+});
+
 async function setMemberStatus(req, res, forcedStatus) {
   try {
     if (!isUuid(req.params.id)) return res.status(400).json({ ok: false, error: "Member ID tidak valid." });
