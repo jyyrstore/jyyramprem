@@ -89,10 +89,15 @@ function setMode(next) {
 
   $("#emailLabel").textContent = "Email / Gmail";
 
-  $("#usernameField")?.classList.toggle(
-    "hidden",
-    !registerMode
-  );
+  const usernameField = $("#usernameField");
+  const usernameInput = $("#username");
+
+  // Username remains part of REGISTER and is intentionally hidden only
+  // while the page is in LOGIN mode. It must survive the OTP step so the
+  // value supplied before verification is still submitted as Auth metadata.
+  usernameField?.classList.toggle("hidden", !registerMode);
+  usernameInput?.toggleAttribute("required", registerMode);
+  usernameInput?.setAttribute("aria-required", registerMode ? "true" : "false");
 
   const showOtpStep = registerMode && registerOtpStep;
 
@@ -210,17 +215,11 @@ function closePortalTokenGate() {
 }
 
 async function continueAfterAuth() {
-  const session = await AMAuth.getSession().catch(() => null);
-  if (!session?.access_token) {
-    return false;
-  }
-
   const { response, data } = await AMAuth.getPortalAccess();
   if (response.ok && (data.access === true || data.owner === true)) {
     location.replace("/home.html");
     return true;
   }
-
   showPortalTokenGate();
   return false;
 }
@@ -369,22 +368,13 @@ async function submit(event) {
        * Verify email OTP.
        */
 
-      const verification = await AMAuth.verifyOtp(
+      await AMAuth.verifyOtp(
         email,
         code
       );
 
-      /*
-       * OTP verification returns an authenticated Supabase session.
-       * Do not send the user through the login form again. The next gate is
-       * the Owner Portal Token modal in this same page.
-       */
-      if (!verification?.session?.access_token) {
-        throw new Error("Verifikasi berhasil tetapi session akun belum tersedia. Silakan coba lagi.");
-      }
-
       status("Akun berhasil diverifikasi. Masukkan Token Akses Portal.", "success");
-      showPortalTokenGate();
+      await continueAfterAuth();
 
       return;
     }
