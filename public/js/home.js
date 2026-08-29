@@ -71,6 +71,7 @@ function escapeHtml(value) {
   ["dmcaIcon", "shield"],
   ["homeMenu", "home"],
   ["dashboardMenu", "dashboard"],
+  ["downloadAppMenu", "download"],
   ["giftMenu", "gift"],
   ["receiptMenu", "receipt"],
   ["helpMenu", "help"],

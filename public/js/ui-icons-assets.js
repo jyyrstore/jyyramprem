@@ -41,6 +41,7 @@
     cancel:       "cancel.png",
 
     refresh:      "Refresh.png",
+    download:     "Download-App.png",
 
 
     /* ---------- Premium / Status ---------- */

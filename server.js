@@ -616,6 +616,30 @@ async function hasPortalAccess(userId) {
   return data === true;
 }
 
+async function getMemberStatus(userId) {
+  const { data, error } = await supabase
+    .from("member_profiles")
+    .select("status,status_reason,suspended_at,banned_at")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) {
+    console.error("[MEMBER STATUS CHECK ERROR]", { code: error.code || null, message: error.message || "Unknown error" });
+    throw error;
+  }
+  return data || { status: "active", status_reason: null, suspended_at: null, banned_at: null };
+}
+
+function restrictedMemberResponse(res, status) {
+  const banned = status.status === "banned";
+  return res.status(403).json({
+    ok: false,
+    code: banned ? "MEMBER_BANNED" : "MEMBER_SUSPENDED",
+    status: status.status,
+    reason: status.status_reason || null,
+    error: banned ? "Akun Anda telah dibanned oleh Owner." : "Akun Anda sedang disuspend oleh Owner.",
+  });
+}
+
 async function requireAuth(
   req,
   res,
@@ -667,6 +691,16 @@ async function requireAuth(
     }
 
     req.user = user;
+
+    // Enforce the application member state at the authentication boundary.
+    // This makes Suspend/Ban effective for every authenticated member API route,
+    // including requests made with an already-issued JWT. Owner is exempt.
+    if (!isPortalAccessExempt(req)) {
+      const memberStatus = await getMemberStatus(user.id);
+      if (memberStatus.status === "suspended" || memberStatus.status === "banned") {
+        return restrictedMemberResponse(res, memberStatus);
+      }
+    }
 
     // Owner access is intrinsic: an authenticated Owner must never be blocked by
     // the member portal-token gate. Keep the explicit owner flag on req so the
@@ -1005,9 +1039,10 @@ app.get(
 
 app.get("/api/access/status", requireAuth, async (req, res) => {
   try {
-    const access = await hasPortalAccess(req.user.id);
+    const status = await getMemberStatus(req.user.id);
+    const access = status.status === "active" && await hasPortalAccess(req.user.id);
     const owner = await isOwner(req.user.id);
-    return res.json({ ok: true, access, owner });
+    return res.json({ ok: true, access, owner, status: status.status, reason: status.status_reason || null });
   } catch (error) {
     console.error("[PORTAL ACCESS STATUS ERROR]", error);
     return res.status(500).json({ ok: false, access: false, error: "Gagal memeriksa akses portal." });
@@ -1388,7 +1423,20 @@ async function setMemberStatus(req, res, forcedStatus) {
       p_owner_user_id: req.user.id, p_user_id: req.params.id, p_new_status: forcedStatus, p_reason: reason,
     });
     if (error) throw error;
-    return res.json({ ok: true, owner: true, member: data });
+
+    // Also enforce the decision in Supabase Auth itself. This immediately
+    // prevents login/refresh for suspended/banned accounts instead of waiting
+    // for the app-level JWT gate. Unban clears the Auth ban.
+    const banDuration = forcedStatus === "active" ? "none" : "876000h";
+    const { error: authError } = await supabase.auth.admin.updateUserById(req.params.id, {
+      ban_duration: banDuration,
+    });
+    if (authError) {
+      console.error("[OWNER MEMBER AUTH STATUS ERROR]", { code: authError.code || null, message: authError.message || "Unknown error" });
+      return res.status(502).json({ ok: false, error: "Status database berhasil diubah, tetapi enforcement Auth gagal. Coba ulangi aksi." });
+    }
+
+    return res.json({ ok: true, owner: true, member: data, auth_enforced: true });
   } catch (error) {
     console.error("[OWNER MEMBER STATUS ERROR]", error);
     const status = memberErrorStatus(error);
