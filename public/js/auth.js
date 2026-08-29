@@ -210,11 +210,17 @@ function closePortalTokenGate() {
 }
 
 async function continueAfterAuth() {
+  const session = await AMAuth.getSession().catch(() => null);
+  if (!session?.access_token) {
+    return false;
+  }
+
   const { response, data } = await AMAuth.getPortalAccess();
   if (response.ok && (data.access === true || data.owner === true)) {
     location.replace("/home.html");
     return true;
   }
+
   showPortalTokenGate();
   return false;
 }
@@ -363,13 +369,22 @@ async function submit(event) {
        * Verify email OTP.
        */
 
-      await AMAuth.verifyOtp(
+      const verification = await AMAuth.verifyOtp(
         email,
         code
       );
 
+      /*
+       * OTP verification returns an authenticated Supabase session.
+       * Do not send the user through the login form again. The next gate is
+       * the Owner Portal Token modal in this same page.
+       */
+      if (!verification?.session?.access_token) {
+        throw new Error("Verifikasi berhasil tetapi session akun belum tersedia. Silakan coba lagi.");
+      }
+
       status("Akun berhasil diverifikasi. Masukkan Token Akses Portal.", "success");
-      await continueAfterAuth();
+      showPortalTokenGate();
 
       return;
     }

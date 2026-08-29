@@ -163,8 +163,11 @@
       throw error;
     }
     const session = normalizeSession(data);
-    if (session) writeSession(session);
-    return { session, user: data.user || session?.user || null };
+    if (session) {
+      writeSession(session);
+    }
+    const persisted = session?.access_token ? (readSession() || session) : null;
+    return { session: persisted, user: data.user || persisted?.user || null };
   }
 
   async function signOut() {
