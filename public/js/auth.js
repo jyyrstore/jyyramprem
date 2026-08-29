@@ -47,6 +47,7 @@ function status(message, type = "info") {
 }
 
 let resendCooldownTimer = null;
+let registerOtpStep = false;
 function startResendCooldown(seconds = 60) {
   const button = $("#resendCode");
   if (!button) return;
@@ -74,6 +75,7 @@ function startResendCooldown(seconds = 60) {
 
 function setMode(next) {
   mode = next;
+  registerOtpStep = false;
 
   const registerMode = mode === "register";
 
@@ -92,14 +94,16 @@ function setMode(next) {
     !registerMode
   );
 
+  const showOtpStep = registerMode && registerOtpStep;
+
   $("#registerCodeField")?.classList.toggle(
     "hidden",
-    !registerMode
+    !showOtpStep
   );
 
   $("#resendCode")?.classList.toggle(
     "hidden",
-    !registerMode
+    !showOtpStep
   );
 
   $("#forgotPassword")?.classList.toggle(
@@ -113,8 +117,13 @@ function setMode(next) {
 
   if (submitButton) {
     submitButton.textContent = registerMode
-      ? "CREATE ACCOUNT"
+      ? (registerOtpStep ? "VERIFY CODE" : "CREATE ACCOUNT")
       : "LOGIN";
+  }
+
+  if (registerMode) {
+    const codeInput = $("#code");
+    if (codeInput) codeInput.value = "";
   }
 
   $("#password").autocomplete = registerMode
@@ -270,7 +279,7 @@ async function submit(event) {
   const email = $("#email").value.trim();
   const password = $("#password").value;
   const username = $("#username").value.trim();
-  const code = $("#code").value.trim();
+  const code = $("#code").value.replace(/\D/g, "").slice(0, 6);
 
   /* -----------------------------------------
      Validation
@@ -335,13 +344,15 @@ async function submit(event) {
 
 
         status(
-          "Registrasi dibuat. Cek email untuk code verifikasi, lalu masukkan code.",
+          "Registrasi berhasil dibuat. Masukkan code 6 digit yang dikirim ke email.",
           "success"
         );
 
-        $("#registerCodeField")?.classList.remove(
-          "hidden"
-        );
+        registerOtpStep = true;
+        $("#registerCodeField")?.classList.remove("hidden");
+        $("#resendCode")?.classList.remove("hidden");
+        $("#submitBtn").textContent = "VERIFY CODE";
+        $("#code")?.focus();
         startResendCooldown(60);
 
         return;
@@ -384,7 +395,16 @@ async function submit(event) {
     );
 
     const normalized = message.toLowerCase();
-    if (normalized.includes("email not confirmed")) {
+    if (error?.code === "EMAIL_PENDING_VERIFICATION") {
+      registerOtpStep = true;
+      $("#registerCodeField")?.classList.remove("hidden");
+      $("#resendCode")?.classList.remove("hidden");
+      $("#submitBtn").textContent = "VERIFY CODE";
+      $("#code")?.focus();
+      status(error.message || "Email belum terverifikasi. Masukkan code 6 digit.", "warning");
+    } else if (error?.code === "EMAIL_EXISTS") {
+      status(error.message || "Email sudah terdaftar. Silakan masuk.", "error");
+    } else if (normalized.includes("email not confirmed")) {
       status(
         "Email belum dikonfirmasi. Gunakan code verifikasi.",
         "warning"

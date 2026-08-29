@@ -300,6 +300,7 @@ async function sendVerificationEmail(to) {
     options: {
       shouldCreateUser: false,
     },
+
   });
   if (!error) return;
 
@@ -337,23 +338,67 @@ app.post("/api/auth/register", async (req, res) => {
     assertEmailVerificationConfig();
 
     const metadata = (req.body?.data && typeof req.body.data === "object") ? req.body.data : {};
-    const { data: created, error: createError } = await supabase.auth.admin.createUser({ email, password, email_confirm: false, user_metadata: metadata });
-    if (createError) {
-      const duplicate = /already.*registered|already.*exists|duplicate/i.test(String(createError.message || ""));
-      return res.status(duplicate ? 409 : 400).json({ ok: false, code: duplicate ? "EMAIL_EXISTS" : "SIGNUP_FAILED", error: duplicate ? "Email sudah terdaftar. Silakan masuk." : createError.message });
+
+    const existingUser = await findAuthUserByEmail(email);
+    if (existingUser) {
+      if (existingUser.email_confirmed_at) {
+        return res.status(409).json({
+          ok: false,
+          code: "EMAIL_EXISTS",
+          error: "Email sudah terdaftar. Silakan masuk.",
+        });
+      }
+
+      return res.status(409).json({
+        ok: false,
+        code: "EMAIL_PENDING_VERIFICATION",
+        stage: "pending_email",
+        user: publicUser(existingUser),
+        email,
+        error: "Email sudah digunakan tetapi belum terverifikasi. Masukkan code 6 digit atau kirim ulang code.",
+      });
     }
 
-    const user = created.user;
+    const { data: signupData, error: signupError } = await supabaseAuth.auth.signUp({
+      email,
+      password,
+      options: {
+        data: metadata,
+      },
+    });
+    if (signupError) {
+      const message = String(signupError.message || "");
+      const duplicate = /already.*registered|already.*exists|duplicate/i.test(message);
+      return res.status(duplicate ? 409 : Number(signupError.status) || 400).json({
+        ok: false,
+        code: duplicate ? "EMAIL_EXISTS" : "SIGNUP_FAILED",
+        error: duplicate ? "Email sudah terdaftar. Silakan masuk." : message,
+      });
+    }
+
+    const user = signupData?.user;
+    if (!user?.id) {
+      return res.status(502).json({ ok: false, code: "SIGNUP_USER_MISSING", error: "Registrasi dibuat tanpa data akun yang valid." });
+    }
+
     const requestHash = verificationRequestHash(user.id);
     await supabase.from("am_email_verifications").delete().eq("user_id", user.id).is("used_at", null);
-    const { error: insertError } = await supabase.from("am_email_verifications").insert({ user_id: user.id, email, token_hash: requestHash, expires_at: new Date(Date.now() + AUTH_EMAIL_VERIFICATION_TTL_MINUTES * 60000).toISOString() });
+    const { error: insertError } = await supabase.from("am_email_verifications").insert({
+      user_id: user.id,
+      email,
+      token_hash: requestHash,
+      expires_at: new Date(Date.now() + AUTH_EMAIL_VERIFICATION_TTL_MINUTES * 60000).toISOString(),
+    });
     if (insertError) throw insertError;
-    try { await sendVerificationEmail(email); } catch (mailError) {
-      await supabase.from("am_email_verifications").delete().eq("user_id", user.id).is("used_at", null);
-      console.error("[AUTH EMAIL SEND ERROR]", mailError);
-      return res.status(Number(mailError.status) === 429 ? 429 : 503).json({ ok: false, code: "EMAIL_SEND_FAILED", retryAfter: Number(mailError.retryAfter || 0), error: "Akun belum dapat diaktifkan karena email verifikasi gagal dikirim. Coba lagi sebentar." });
-    }
-    return res.status(201).json({ ok: true, stage: "pending_email", user: publicUser(user), email, resendAvailableAt: new Date(Date.now() + AUTH_EMAIL_RESEND_COOLDOWN_SECONDS * 1000).toISOString() });
+
+    return res.status(201).json({
+      ok: true,
+      stage: "pending_email",
+      user: publicUser(user),
+      email,
+      session: null,
+      resendAvailableAt: new Date(Date.now() + AUTH_EMAIL_RESEND_COOLDOWN_SECONDS * 1000).toISOString(),
+    });
   } catch (error) {
     console.error("[AUTH REGISTER ERROR]", error);
     return res.status(Number(error.status) || 500).json({ ok: false, code: error.code || "AUTH_REGISTER_FAILED", error: error.status ? error.message : "Registrasi gagal. Coba lagi." });
@@ -379,7 +424,12 @@ app.post("/api/auth/resend-verification", async (req, res) => {
 
     const requestHash = verificationRequestHash(user.id);
     await supabase.from("am_email_verifications").delete().eq("user_id", user.id).is("used_at", null);
-    const { error: insertError } = await supabase.from("am_email_verifications").insert({ user_id: user.id, email, token_hash: requestHash, expires_at: new Date(Date.now() + AUTH_EMAIL_VERIFICATION_TTL_MINUTES * 60000).toISOString() });
+    const { error: insertError } = await supabase.from("am_email_verifications").insert({
+      user_id: user.id,
+      email,
+      token_hash: requestHash,
+      expires_at: new Date(Date.now() + AUTH_EMAIL_VERIFICATION_TTL_MINUTES * 60000).toISOString(),
+    });
     if (insertError) throw insertError;
     try {
       await sendVerificationEmail(email);

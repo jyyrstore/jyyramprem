@@ -2,8 +2,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-const root = path.resolve(new URL("..", import.meta.url).pathname);
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const server = fs.readFileSync(path.join(root, "server.js"), "utf8");
 const owner = fs.readFileSync(path.join(root, "public/js/owner.js"), "utf8");
 const worker = fs.readFileSync(path.join(root, "scripts/run-due-broadcasts.mjs"), "utf8");

@@ -122,6 +122,8 @@
               >
             </span>
 
+            <span id="registerCodeHelp" class="sr-only">Masukkan tepat 6 digit yang dikirim ke email Anda.</span>
+
           </div>
 
 
@@ -209,6 +211,7 @@
             class="field hidden"
           >
 
+            <label for="code" class="sr-only">Kode verifikasi 6 digit</label>
             <input
               id="code"
               class="input"
@@ -217,6 +220,8 @@
               autocomplete="one-time-code"
               placeholder="6 digit code"
               maxlength="6"
+              pattern="[0-9]{6}"
+              aria-describedby="registerCodeHelp"
             >
 
             <span
