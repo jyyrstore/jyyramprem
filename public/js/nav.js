@@ -463,7 +463,7 @@
      */
     q('#downloadAppAction')?.addEventListener(
       'click',
-      installApp
+      () => { window.location.href = '/app.html'; }
     );
 
     /*

@@ -40,11 +40,23 @@
       "unchanged": true
     }
   },
-  "validation": "npm test: PASS",
+  "validation": "PASS: npm test (all suites)",
   "secrets_excluded": [
     ".env.local",
     ".env.production.local",
     "node_modules",
     ".vercel"
-  ]
+  ],
+  "app_distribution": {
+    "platform": "android",
+    "version": "1.0.0",
+    "version_code": 1,
+    "apk": "public/releases/android/1.0.0/JyyR-Amprem-1.0.0.apk",
+    "sha256": "81fb4e7c46867b13bf1848b110c91fd0ebb4d0aa5b881331f7128e9bb085b69b",
+    "size_bytes": 9229016,
+    "website": "/app.html",
+    "latest_api": "/api/app/latest",
+    "app_center_alias": "/app",
+    "release_backend": "Supabase public.app_releases + app-releases Storage bucket"
+  }
 }

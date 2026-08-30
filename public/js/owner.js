@@ -217,6 +217,8 @@ function setupTabs() {
           await loadLoginActivity(session);
         } else if (btn.dataset.section === "sistem") {
           await loadMaintenance(session);
+        } else if (btn.dataset.section === "app-release") {
+          await loadAppReleases(session);
         }
       } catch (error) {
         ownerNotice(error.message);
@@ -1103,7 +1105,7 @@ function bindEvents() {
     if (!isPortalTokenId(activeTokenId)) return;
     const tokenRow = Array.from(document.querySelectorAll(".token-history-table tbody tr[data-token-id]")).find((row) => row.dataset.tokenId === String(activeTokenId));
     const tokenText = tokenRow?.querySelector(".token-history-token")?.textContent?.trim() || "token aktif";
-    const confirmed = await window.JYYRNotify?.confirm?.(`Verifikasi pencabutan\n\nToken ${tokenText} akan dicabut dan tidak dapat digunakan lagi.\nToken aktif lainnya tetap aman.\n\nLanjutkan?`, {
+    const confirmed = await window.JYYRNotify?.confirm?.(`Verifikasi pencabutan\n\nToken ${tokenText} akan dicabut dan tidak dapat digunakan lagi.\nToken lain yang masih aktif tetap dapat digunakan.\n\nLanjutkan?`, {
       title: "Verifikasi Pencabutan Token",
       confirmText: "Cabut Token",
       cancelText: "Batal",
@@ -1125,7 +1127,7 @@ function bindEvents() {
     const tokenId = button.dataset.revokeTokenId;
     const tokenText = button.dataset.revokeToken || "token aktif";
     if (!isPortalTokenId(tokenId)) return;
-    const confirmed = await window.JYYRNotify?.confirm?.(`Verifikasi pencabutan\n\nToken ${tokenText} akan dicabut dan tidak dapat digunakan lagi.\nToken aktif lainnya tetap aman.\n\nLanjutkan?`, {
+    const confirmed = await window.JYYRNotify?.confirm?.(`Verifikasi pencabutan\n\nToken ${tokenText} akan dicabut dan tidak dapat digunakan lagi.\nToken lain yang masih aktif tetap dapat digunakan.\n\nLanjutkan?`, {
       title: "Verifikasi Pencabutan Token",
       confirmText: "Cabut Token",
       cancelText: "Batal",
@@ -1148,9 +1150,61 @@ function bindEvents() {
     try { await loadPortalTokenHistory(s); } catch (e) { ownerNotice(e.message); }
   });
 
+  document.getElementById("releasePublish")?.addEventListener("click", async () => {
+    const button = document.getElementById("releasePublish");
+    try { button.disabled = true; await publishAppRelease(); } catch (e) { const s=document.getElementById("releaseUploadStatus"); if(s){s.className="status error";s.textContent=e.message;} ownerNotice(e.message); } finally { button.disabled = false; }
+  });
+  document.getElementById("releaseRefresh")?.addEventListener("click", async () => { const s=state.session || await requireSession(); if(s) await loadAppReleases(s).catch(e=>ownerNotice(e.message)); });
+
   document.getElementById("refreshPage")?.addEventListener("click", () => location.reload());
   document.getElementById("logoutBtn")?.addEventListener("click", async () => { await AMAuth.signOut(); redirectLogin(); });
   document.getElementById("logoutBtnTop")?.addEventListener("click", async () => { await AMAuth.signOut(); redirectLogin(); });
+}
+
+
+async function loadAppReleases(session) {
+  const response = await ownerRequest("/api/owner/app-releases", session);
+  const data = await parseJson(response);
+  if (!response.ok) throw new Error(data.error || "Gagal membaca release aplikasi.");
+  const container = document.getElementById("ownerReleaseList");
+  if (!container) return;
+  const rows = data.releases || [];
+  container.innerHTML = rows.length ? rows.map((r) => `
+    <div class="login-row">
+      <div><strong>v${escapeHtml(r.version)} · code ${escapeHtml(r.version_code)}</strong><small>${escapeHtml(r.status)} · ${escapeHtml(r.release_channel)} · ${r.published_at ? new Date(r.published_at).toLocaleString("id-ID") : "belum publish"}</small></div>
+      <span class="badge ${r.mandatory_update ? "red" : r.status === "published" ? "green" : "blue"}">${r.mandatory_update ? "WAJIB" : escapeHtml(r.status)}</span>
+    </div>`).join("") : `<div class="status info">Belum ada release.</div>`;
+}
+
+async function publishAppRelease() {
+  const status = document.getElementById("releaseUploadStatus");
+  const file = document.getElementById("releaseFile")?.files?.[0];
+  const version = document.getElementById("releaseVersion")?.value.trim();
+  const versionCode = Number(document.getElementById("releaseVersionCode")?.value);
+  if (!file || !version || !Number.isInteger(versionCode) || versionCode < 1) throw new Error("Version, version code, dan APK wajib diisi.");
+  if (!/\.apk$/i.test(file.name)) throw new Error("File harus APK.");
+  const session = state.session || await requireSession(); if (!session) return;
+  status.textContent = "Menyiapkan upload…";
+  const signResp = await ownerRequest("/api/owner/app-releases/sign-upload", session, { method: "POST", body: JSON.stringify({ version, version_code: versionCode, file_name: file.name, content_type: file.type || "application/vnd.android.package-archive" }) });
+  const signData = await parseJson(signResp);
+  if (!signResp.ok) throw new Error(signData.error || "Gagal menyiapkan upload.");
+  status.textContent = "Mengupload APK…";
+  const form = new FormData();
+  form.append("cacheControl", "31536000");
+  form.append("", file, file.name);
+  const uploadResponse = await fetch(signData.upload.signedUrl, { method: "PUT", body: form });
+  if (!uploadResponse.ok) throw new Error("Upload APK gagal.");
+  const digest = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
+  const sha256 = Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
+  const changelog = document.getElementById("releaseChangelog")?.value.split("\n").map(x => x.trim()).filter(Boolean) || [];
+  const payload = { version, version_code: versionCode, title: "Jyy'R Amprem", changelog, download_url: `${(await AMAuth.getConfig()).supabaseUrl}/storage/v1/object/public/app-releases/${signData.upload.path}`, storage_path: signData.upload.path, file_name: file.name, file_size_bytes: file.size, sha256, min_supported_version: document.getElementById("releaseMinVersion")?.value.trim() || null, mandatory_update: !!document.getElementById("releaseMandatory")?.checked, release_channel: document.getElementById("releaseChannel")?.value || "stable", status: document.getElementById("releaseStatus")?.value || "draft" };
+  status.textContent = "Menyimpan metadata release…";
+  const saveResp = await ownerRequest("/api/owner/app-releases", session, { method: "POST", body: JSON.stringify(payload) });
+  const saveData = await parseJson(saveResp);
+  if (!saveResp.ok) throw new Error(saveData.error || "Gagal menyimpan release.");
+  status.className = "status success";
+  status.textContent = `Release v${version} berhasil ${payload.status === "published" ? "dipublikasikan" : "disimpan sebagai draft"}.`;
+  await loadAppReleases(session);
 }
 
 async function loadPage() {
@@ -1166,7 +1220,7 @@ async function loadPage() {
 
   await loadMembers(session).catch((e) => { console.error("[OWNER MEMBERS LOAD ERROR]", e); document.getElementById("memberList").innerHTML = `<div class="member-row"><div><strong>Member gagal dimuat</strong><small>${escapeHtml(e.message)}</small></div></div>`; });
   await loadBroadcasts(session).catch((e) => { console.error("[OWNER BROADCAST LOAD ERROR]", e); document.getElementById("broadcastList").innerHTML = `<div class="broadcast-card"><strong>Broadcast gagal dimuat</strong><p>${escapeHtml(e.message)}</p></div>`; });
-  await Promise.all([loadConversations(), loadContentAdmin(session), loadLoginActivity(session), loadMaintenance(session), loadPortalTokenStatus(session), loadPortalTokenHistory(session), loadPortalTokenRequests(session)]).catch((e) => console.warn("[OWNER SECONDARY LOAD]", e));
+  await Promise.all([loadConversations(), loadContentAdmin(session), loadLoginActivity(session), loadMaintenance(session), loadPortalTokenStatus(session), loadPortalTokenHistory(session), loadPortalTokenRequests(session), loadAppReleases(session)]).catch((e) => console.warn("[OWNER SECONDARY LOAD]", e));
 }
 
 bindEvents();

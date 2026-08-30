@@ -288,28 +288,6 @@ const supabaseAuth = createClient(
   }
 );
 
-/**
- * Deliver the six-digit verification code through Supabase Auth over HTTPS.
- * The Supabase Magic Link email template must render {{ .Token }} for an OTP.
- * No raw SMTP/TLS socket is opened from the Vercel function.
- */
-async function sendVerificationEmail(to) {
-  assertEmailVerificationConfig();
-  const { error } = await supabaseAuth.auth.signInWithOtp({
-    email: to,
-    options: {
-      shouldCreateUser: false,
-    },
-
-  });
-  if (!error) return;
-
-  const wrapped = new Error(error.message || "Supabase Auth OTP email gagal dikirim.");
-  wrapped.code = error.code || "AUTH_EMAIL_SEND_FAILED";
-  wrapped.status = Number(error.status) || 503;
-  wrapped.retryAfter = Number(error.retryAfter || 0);
-  throw wrapped;
-}
 
 function publicUser(data) {
   return data ? { id: data.id, email: data.email, email_confirmed_at: data.email_confirmed_at || null, user_metadata: data.user_metadata || {} } : null;
@@ -405,6 +383,8 @@ app.post("/api/auth/register", async (req, res) => {
   }
 });
 
+
+
 app.post("/api/auth/resend-verification", async (req, res) => {
   try {
     const parsed = normalizeUserEmail(req.body?.email);
@@ -432,7 +412,7 @@ app.post("/api/auth/resend-verification", async (req, res) => {
     });
     if (insertError) throw insertError;
     try {
-      await sendVerificationEmail(email);
+      await sendSignupVerificationEmail(email);
     } catch (mailError) {
       await supabase.from("am_email_verifications").delete().eq("user_id", user.id).is("used_at", null);
       throw mailError;
@@ -504,6 +484,177 @@ app.get(
     });
   }
 );
+
+/* =========================================================
+   APP RELEASE / DISTRIBUTION
+========================================================= */
+
+function semverParts(value) {
+  const match = String(value || "").trim().match(/^(\d+)\.(\d+)\.(\d+)(?:[-+][0-9A-Za-z.-]+)?$/);
+  return match ? [Number(match[1]), Number(match[2]), Number(match[3])] : null;
+}
+
+function compareSemver(a, b) {
+  const aa = semverParts(a) || [0, 0, 0];
+  const bb = semverParts(b) || [0, 0, 0];
+  for (let i = 0; i < 3; i += 1) {
+    if (aa[i] !== bb[i]) return aa[i] - bb[i];
+  }
+  return 0;
+}
+
+function normalizeReleaseUrl(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (raw.startsWith("/releases/")) return raw;
+  const url = new URL(raw, SUPABASE_URL);
+  if (!["http:", "https:"].includes(url.protocol)) throw new Error("URL download tidak valid.");
+  return url.toString();
+}
+
+app.get("/app", (_req, res) => res.redirect(302, "/app.html"));
+
+app.get("/api/app/latest", async (req, res) => {
+  try {
+    const channel = String(req.query?.channel || "stable").trim().toLowerCase();
+    if (!["stable", "beta"].includes(channel)) return res.status(400).json({ ok: false, error: "Channel tidak valid." });
+    const { data, error } = await supabase.from("app_releases")
+      .select("id,app_key,platform,version,version_code,title,changelog,download_url,file_name,file_size_bytes,sha256,min_supported_version,mandatory_update,release_channel,status,published_at,created_at,updated_at")
+      .eq("app_key", "jyyramprem").eq("platform", "android").eq("release_channel", channel).eq("status", "published")
+      .order("version_code", { ascending: false }).order("published_at", { ascending: false }).limit(1).maybeSingle();
+    if (error) throw error;
+    if (!data) return res.status(404).json({ ok: false, code: "NO_RELEASE", error: "Belum ada release tersedia." });
+    return res.set("Cache-Control", "public, max-age=60, stale-while-revalidate=300").json({ ok: true, release: data });
+  } catch (error) {
+    console.error("[APP LATEST ERROR]", error);
+    return res.status(500).json({ ok: false, error: "Gagal membaca release aplikasi." });
+  }
+});
+
+app.get("/api/app/releases", async (req, res) => {
+  try {
+    const limit = Math.min(Math.max(Number.parseInt(req.query?.limit || "20", 10) || 20, 1), 50);
+    const channel = String(req.query?.channel || "stable").trim().toLowerCase();
+    if (!["stable", "beta"].includes(channel)) return res.status(400).json({ ok: false, error: "Channel tidak valid." });
+    const { data, error } = await supabase.from("app_releases")
+      .select("id,app_key,platform,version,version_code,title,changelog,download_url,file_name,file_size_bytes,sha256,min_supported_version,mandatory_update,release_channel,status,published_at,created_at,updated_at")
+      .eq("app_key", "jyyramprem").eq("platform", "android").eq("release_channel", channel).eq("status", "published")
+      .order("version_code", { ascending: false }).order("published_at", { ascending: false }).limit(limit);
+    if (error) throw error;
+    return res.set("Cache-Control", "public, max-age=60, stale-while-revalidate=300").json({ ok: true, releases: data || [] });
+  } catch (error) {
+    console.error("[APP RELEASES ERROR]", error);
+    return res.status(500).json({ ok: false, error: "Gagal membaca riwayat release aplikasi." });
+  }
+});
+
+const ownerBroadcastReadLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 30,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  keyGenerator: (req) => req.user?.id ? `user:${req.user.id}` : "unauthenticated",
+  message: { ok: false, error: "Batas request Broadcast tercapai. Coba lagi nanti." },
+});
+
+const ownerMemberMutationLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 20,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  keyGenerator: (req) => req.user?.id ? `user:${req.user.id}` : "unauthenticated",
+  message: { ok: false, error: "Batas perubahan Member tercapai. Coba lagi nanti." },
+});
+
+
+app.post("/api/owner/app-releases/sign-upload", requireAuth, ownerMemberMutationLimiter, requireOwner, async (req, res) => {
+  try {
+    const body = req.body || {};
+    const version = String(body.version || "").trim();
+    const versionCode = Number(body.version_code);
+    const fileName = String(body.file_name || "").trim();
+    const contentType = String(body.content_type || "application/vnd.android.package-archive").trim();
+    if (!semverParts(version)) return res.status(400).json({ ok: false, error: "Version harus mengikuti format X.Y.Z." });
+    if (!Number.isInteger(versionCode) || versionCode < 1) return res.status(400).json({ ok: false, error: "Version code tidak valid." });
+    if (!/^[-_.A-Za-z0-9]{1,180}\.apk$/i.test(fileName)) return res.status(400).json({ ok: false, error: "Nama file APK tidak valid." });
+    if (contentType !== "application/vnd.android.package-archive" && contentType !== "application/octet-stream") return res.status(400).json({ ok: false, error: "Content-Type APK tidak valid." });
+    const path = `android/${version}/JyyR-Amprem-${version}.apk`;
+    const { data, error } = await supabase.storage.from("app-releases").createSignedUploadUrl(path, { upsert: false });
+    if (error) throw error;
+    return res.json({ ok: true, upload: { path, token: data.token, signedUrl: data.signedUrl, contentType } });
+  } catch (error) {
+    console.error("[APP RELEASE SIGN UPLOAD ERROR]", error);
+    return res.status(500).json({ ok: false, error: "Gagal menyiapkan upload APK." });
+  }
+});
+
+app.get("/api/owner/app-releases", requireAuth, ownerBroadcastReadLimiter, requireOwner, async (_req, res) => {
+  try {
+    const { data, error } = await supabase.from("app_releases").select("*").eq("app_key", "jyyramprem").eq("platform", "android").order("version_code", { ascending: false }).order("created_at", { ascending: false }).limit(50);
+    if (error) throw error;
+    return res.json({ ok: true, owner: true, releases: data || [] });
+  } catch (error) {
+    console.error("[OWNER APP RELEASES ERROR]", error);
+    return res.status(500).json({ ok: false, error: "Gagal membaca release aplikasi." });
+  }
+});
+
+app.post("/api/owner/app-releases", requireAuth, ownerMemberMutationLimiter, requireOwner, async (req, res) => {
+  try {
+    const b = req.body || {};
+    const version = String(b.version || "").trim();
+    const versionCode = Number(b.version_code);
+    if (!semverParts(version)) return res.status(400).json({ ok: false, error: "Version harus X.Y.Z." });
+    if (!Number.isInteger(versionCode) || versionCode < 1) return res.status(400).json({ ok: false, error: "Version code tidak valid." });
+    if (!String(b.download_url || "").trim()) return res.status(400).json({ ok: false, error: "Download URL wajib diisi." });
+    const changelog = Array.isArray(b.changelog) ? b.changelog.map((x) => String(x).trim()).filter(Boolean).slice(0, 30) : [];
+    const payload = {
+      app_key: "jyyramprem", platform: "android", version, version_code: versionCode,
+      title: String(b.title || "Jyy\'R Amprem").trim().slice(0, 160),
+      changelog, download_url: normalizeReleaseUrl(b.download_url), storage_path: b.storage_path ? String(b.storage_path).trim() : null,
+      file_name: b.file_name ? String(b.file_name).trim().slice(0, 180) : null, file_size_bytes: Number.isInteger(Number(b.file_size_bytes)) ? Number(b.file_size_bytes) : null,
+      sha256: b.sha256 ? String(b.sha256).trim().toLowerCase() : null, min_supported_version: b.min_supported_version ? String(b.min_supported_version).trim() : null,
+      mandatory_update: Boolean(b.mandatory_update), release_channel: ["stable", "beta"].includes(String(b.release_channel || "stable")) ? String(b.release_channel || "stable") : "stable",
+      status: ["draft", "published", "archived"].includes(String(b.status || "draft")) ? String(b.status || "draft") : "draft",
+      published_at: String(b.status || "draft") === "published" ? new Date().toISOString() : null, created_by: req.user.id,
+    };
+    if (!/^[A-Fa-f0-9]{64}$/.test(payload.sha256 || "")) payload.sha256 = null;
+    const minV = payload.min_supported_version ? semverParts(payload.min_supported_version) : null;
+    if (payload.min_supported_version && !minV) return res.status(400).json({ ok: false, error: "Minimum version tidak valid." });
+    const { data, error } = await supabase.from("app_releases").insert(payload).select("*").single();
+    if (error) throw error;
+    return res.status(201).json({ ok: true, owner: true, release: data });
+  } catch (error) {
+    console.error("[OWNER APP RELEASE CREATE ERROR]", error);
+    const duplicate = /duplicate key|unique constraint/i.test(String(error.message));
+    return res.status(duplicate ? 409 : 500).json({ ok: false, error: duplicate ? "Version release tersebut sudah ada." : "Gagal membuat release aplikasi." });
+  }
+});
+
+app.patch("/api/owner/app-releases/:id", requireAuth, ownerMemberMutationLimiter, requireOwner, async (req, res) => {
+  try {
+    if (!isUuid(req.params.id)) return res.status(400).json({ ok: false, error: "Release ID tidak valid." });
+    const b = req.body || {};
+    const patch = {};
+    for (const key of ["title","download_url","storage_path","file_name","min_supported_version","sha256"]) if (b[key] !== undefined) patch[key] = String(b[key] || "").trim() || null;
+    if (b.changelog !== undefined) patch.changelog = Array.isArray(b.changelog) ? b.changelog.map((x) => String(x).trim()).filter(Boolean).slice(0,30) : [];
+    if (b.mandatory_update !== undefined) patch.mandatory_update = Boolean(b.mandatory_update);
+    if (b.status !== undefined) patch.status = ["draft","published","archived"].includes(String(b.status)) ? String(b.status) : undefined;
+    if (b.release_channel !== undefined) patch.release_channel = ["stable","beta"].includes(String(b.release_channel)) ? String(b.release_channel) : undefined;
+    if (b.file_size_bytes !== undefined) patch.file_size_bytes = Number.isInteger(Number(b.file_size_bytes)) ? Number(b.file_size_bytes) : null;
+    if (b.status === "published") patch.published_at = new Date().toISOString();
+    if (patch.download_url) patch.download_url = normalizeReleaseUrl(patch.download_url);
+    if (patch.min_supported_version && !semverParts(patch.min_supported_version)) return res.status(400).json({ ok: false, error: "Minimum version tidak valid." });
+    if (patch.sha256 && !/^[A-Fa-f0-9]{64}$/.test(patch.sha256)) return res.status(400).json({ ok: false, error: "SHA-256 tidak valid." });
+    Object.keys(patch).forEach((k) => patch[k] === undefined && delete patch[k]);
+    const { data, error } = await supabase.from("app_releases").update(patch).eq("id", req.params.id).select("*").single();
+    if (error) throw error;
+    return res.json({ ok: true, owner: true, release: data });
+  } catch (error) {
+    console.error("[OWNER APP RELEASE UPDATE ERROR]", error);
+    return res.status(/no rows|JSON object requested/i.test(String(error.message)) ? 404 : 500).json({ ok: false, error: "Gagal memperbarui release aplikasi." });
+  }
+});
 
 /* =========================================================
    SUPABASE AUTH
@@ -794,15 +945,6 @@ const ownerMemberReadLimiter = rateLimit({
   message: { ok: false, error: "Batas request Member Management tercapai. Coba lagi nanti." },
 });
 
-const ownerBroadcastReadLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  limit: 30,
-  standardHeaders: "draft-8",
-  legacyHeaders: false,
-  keyGenerator: (req) => req.user?.id ? `user:${req.user.id}` : "unauthenticated",
-  message: { ok: false, error: "Batas request Broadcast tercapai. Coba lagi nanti." },
-});
-
 const ownerBroadcastMutationLimiter = rateLimit({
   windowMs: 60 * 1000,
   limit: 15,
@@ -810,15 +952,6 @@ const ownerBroadcastMutationLimiter = rateLimit({
   legacyHeaders: false,
   keyGenerator: (req) => req.user?.id ? `user:${req.user.id}` : "unauthenticated",
   message: { ok: false, error: "Batas perubahan Broadcast tercapai. Coba lagi nanti." },
-});
-
-const ownerMemberMutationLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  limit: 20,
-  standardHeaders: "draft-8",
-  legacyHeaders: false,
-  keyGenerator: (req) => req.user?.id ? `user:${req.user.id}` : "unauthenticated",
-  message: { ok: false, error: "Batas perubahan Member tercapai. Coba lagi nanti." },
 });
 
 /* =========================================================
@@ -3215,6 +3348,19 @@ app.post(
     }
   }
 );
+
+
+async function sendSignupVerificationEmail(email) {
+  assertEmailVerificationConfig();
+  const { error } = await supabaseAuth.auth.resend({ type: "signup", email: email });
+  if (!error) return;
+  const wrapped = new Error(error.message || "Supabase Auth OTP email gagal dikirim.");
+  wrapped.code = error.code || "AUTH_EMAIL_SEND_FAILED";
+  wrapped.status = Number(error.status) || 503;
+  wrapped.retryAfter = Number(error.retryAfter || 0);
+  throw wrapped;
+}
+
 
 /* =========================================================
    HTML PAGE ROUTES
