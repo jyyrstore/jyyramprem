@@ -9,7 +9,8 @@ const app = fs.readFileSync(new URL('public/app.html', root), 'utf8');
 const owner = fs.readFileSync(new URL('public/html/owner.html', root), 'utf8');
 const ownerJs = fs.readFileSync(new URL('public/js/owner.js', root), 'utf8');
 const nav = fs.readFileSync(new URL('public/js/nav.js', root), 'utf8');
-const apk = fs.readFileSync(new URL('public/releases/android/1.0.0/JyyR-Amprem-1.0.0.apk', root));
+const apkPath = new URL('public/releases/android/1.0.0/JyyR-Amprem-1.0.0.apk', root);
+const apk = fs.existsSync(apkPath) ? fs.readFileSync(apkPath) : null;
 
  test('public release API and App Center contracts exist', () => {
   assert.match(server, /app\.get\("\/api\/app\/latest"/);
@@ -29,8 +30,23 @@ test('owner release publish flow exists and is owner-authenticated', () => {
 });
 
 test('home navigation targets the App Center', () => { assert.match(nav, /window\.location\.href = '\/app\.html'/); });
-test('bundled APK checksum matches release metadata', () => {
+test('bundled APK checksum matches release metadata when APK is present', () => {
+  if (!apk) {
+    assert.ok(true, 'APK binary is external in source-only packages.');
+    return;
+  }
   const sha = crypto.createHash('sha256').update(apk).digest('hex');
   assert.equal(apk.length, 9229016);
   assert.equal(sha, '81fb4e7c46867b13bf1848b110c91fd0ebb4d0aa5b881331f7128e9bb085b69b');
+});
+test('owner release history exposes edit controls and PATCH metadata flow', () => {
+  assert.match(server, /app\.patch\("\/api\/owner\/app-releases\/:id"/);
+  assert.match(server, /requireAuth, ownerMemberMutationLimiter, requireOwner/);
+  assert.match(owner, /id=["']releaseCancelEdit["']/);
+  assert.match(owner, /id=["']releaseFileSize["']/);
+  assert.match(owner, /id=["']releaseSha["']/);
+  assert.match(ownerJs, /\/api\/owner\/app-releases\/\$\{encodeURIComponent\(id\)\}/);
+  assert.match(ownerJs, /method: "PATCH"/);
+  assert.match(ownerJs, /data-release-edit/);
+  assert.match(ownerJs, /data-release-open/);
 });

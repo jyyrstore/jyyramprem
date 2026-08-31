@@ -40,6 +40,8 @@ const state = {
   tokenHistoryTotal: 0,
   tokenStatusNotified: false,
   generatedPortalTokenId: null,
+  appReleaseEditingId: null,
+  appReleases: [],
 };
 
 const PORTAL_TOKEN_VAULT_KEY = "jyyramprem.ownerPortalTokens.v2";
@@ -1152,7 +1154,27 @@ function bindEvents() {
 
   document.getElementById("releasePublish")?.addEventListener("click", async () => {
     const button = document.getElementById("releasePublish");
-    try { button.disabled = true; await publishAppRelease(); } catch (e) { const s=document.getElementById("releaseUploadStatus"); if(s){s.className="status error";s.textContent=e.message;} ownerNotice(e.message); } finally { button.disabled = false; }
+    try {
+      button.disabled = true;
+      if (state.appReleaseEditingId) await saveAppReleaseEdit();
+      else await publishAppRelease();
+    } catch (e) {
+      const s = document.getElementById("releaseUploadStatus");
+      if (s) { s.className = "status error"; s.textContent = e.message; }
+      ownerNotice(e.message);
+    } finally { button.disabled = false; }
+  });
+  document.getElementById("releaseCancelEdit")?.addEventListener("click", resetAppReleaseEditor);
+  document.getElementById("ownerReleaseList")?.addEventListener("click", async (event) => {
+    const editButton = event.target.closest("[data-release-edit]");
+    const openButton = event.target.closest("[data-release-open]");
+    if (!editButton && !openButton) return;
+    const session = state.session || await requireSession();
+    if (!session) return;
+    try {
+      if (editButton) await openAppReleaseEditor(editButton.dataset.releaseEdit);
+      else if (openButton) window.open(openButton.dataset.releaseOpen, "_blank", "noopener,noreferrer");
+    } catch (e) { ownerNotice(e.message); }
   });
   document.getElementById("releaseRefresh")?.addEventListener("click", async () => { const s=state.session || await requireSession(); if(s) await loadAppReleases(s).catch(e=>ownerNotice(e.message)); });
 
@@ -1161,20 +1183,6 @@ function bindEvents() {
   document.getElementById("logoutBtnTop")?.addEventListener("click", async () => { await AMAuth.signOut(); redirectLogin(); });
 }
 
-
-async function loadAppReleases(session) {
-  const response = await ownerRequest("/api/owner/app-releases", session);
-  const data = await parseJson(response);
-  if (!response.ok) throw new Error(data.error || "Gagal membaca release aplikasi.");
-  const container = document.getElementById("ownerReleaseList");
-  if (!container) return;
-  const rows = data.releases || [];
-  container.innerHTML = rows.length ? rows.map((r) => `
-    <div class="login-row">
-      <div><strong>v${escapeHtml(r.version)} · code ${escapeHtml(r.version_code)}</strong><small>${escapeHtml(r.status)} · ${escapeHtml(r.release_channel)} · ${r.published_at ? new Date(r.published_at).toLocaleString("id-ID") : "belum publish"}</small></div>
-      <span class="badge ${r.mandatory_update ? "red" : r.status === "published" ? "green" : "blue"}">${r.mandatory_update ? "WAJIB" : escapeHtml(r.status)}</span>
-    </div>`).join("") : `<div class="status info">Belum ada release.</div>`;
-}
 
 async function publishAppRelease() {
   const status = document.getElementById("releaseUploadStatus");
@@ -1204,7 +1212,185 @@ async function publishAppRelease() {
   if (!saveResp.ok) throw new Error(saveData.error || "Gagal menyimpan release.");
   status.className = "status success";
   status.textContent = `Release v${version} berhasil ${payload.status === "published" ? "dipublikasikan" : "disimpan sebagai draft"}.`;
+  resetAppReleaseEditor();
   await loadAppReleases(session);
+}
+
+function releaseDate(value) {
+  if (!value) return "belum publish";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "belum publish" : date.toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" });
+}
+
+function releaseFileSize(value) {
+  const bytes = Number(value);
+  if (!Number.isFinite(bytes) || bytes < 0) return "—";
+  if (bytes < 1024) return `${bytes} B`;
+  const units = ["KB", "MB", "GB"];
+  let n = bytes / 1024;
+  let unit = units[0];
+  for (let i = 1; i < units.length && n >= 1024; i++) { n /= 1024; unit = units[i]; }
+  return `${n.toFixed(n >= 100 ? 0 : n >= 10 ? 1 : 2)} ${unit}`;
+}
+
+function releaseStatusClass(row) {
+  if (row.mandatory_update) return "red";
+  if (row.status === "published") return "green";
+  if (row.status === "archived") return "yellow";
+  return "blue";
+}
+
+function setAppReleaseEditorMode(editing) {
+  const mode = document.getElementById("releaseEditorMode");
+  const notice = document.getElementById("releaseEditNotice");
+  const fileField = document.getElementById("releaseFileField");
+  const fileInput = document.getElementById("releaseFile");
+  const sizeField = document.getElementById("releaseFileSizeField");
+  const shaField = document.getElementById("releaseShaField");
+  const sizeInput = document.getElementById("releaseFileSize");
+  const shaInput = document.getElementById("releaseSha");
+  const version = document.getElementById("releaseVersion");
+  const versionCode = document.getElementById("releaseVersionCode");
+  const publishButton = document.getElementById("releasePublish");
+  const cancelButton = document.getElementById("releaseCancelEdit");
+  if (mode) { mode.textContent = editing ? "Edit" : "Create"; mode.className = `badge ${editing ? "yellow" : "blue"}`; }
+  if (notice) notice.hidden = !editing;
+  if (fileField) fileField.hidden = editing;
+  if (sizeField) sizeField.hidden = !editing;
+  if (shaField) shaField.hidden = !editing;
+  if (sizeInput) sizeInput.disabled = !editing;
+  if (shaInput) shaInput.disabled = !editing;
+  if (version) version.readOnly = !!editing;
+  if (versionCode) versionCode.readOnly = !!editing;
+  if (fileInput && !editing) fileInput.value = "";
+  if (publishButton) publishButton.textContent = editing ? "Simpan Perubahan" : "Upload & Publish";
+  if (cancelButton) cancelButton.hidden = !editing;
+}
+
+function resetAppReleaseEditor() {
+  state.appReleaseEditingId = null;
+  const version = document.getElementById("releaseVersion");
+  const versionCode = document.getElementById("releaseVersionCode");
+  const fileSize = document.getElementById("releaseFileSize");
+  const sha = document.getElementById("releaseSha");
+  const changelog = document.getElementById("releaseChangelog");
+  const minVersion = document.getElementById("releaseMinVersion");
+  const mandatory = document.getElementById("releaseMandatory");
+  const channel = document.getElementById("releaseChannel");
+  const status = document.getElementById("releaseStatus");
+  const uploadStatus = document.getElementById("releaseUploadStatus");
+  if (version) { version.value = ""; version.readOnly = false; }
+  if (versionCode) { versionCode.value = ""; versionCode.readOnly = false; }
+  if (fileSize) fileSize.value = "";
+  if (sha) sha.value = "";
+  if (changelog) changelog.value = "";
+  if (minVersion) minVersion.value = "";
+  if (mandatory) mandatory.checked = false;
+  if (channel) channel.value = "stable";
+  if (status) status.value = "draft";
+  if (uploadStatus) { uploadStatus.className = "status info"; uploadStatus.textContent = "Siap upload."; }
+  setAppReleaseEditorMode(false);
+}
+
+async function openAppReleaseEditor(id) {
+  const row = state.appReleases.find((item) => String(item.id) === String(id));
+  if (!row) throw new Error("Release tidak ditemukan. Refresh history lalu coba lagi.");
+  state.appReleaseEditingId = String(row.id);
+  document.getElementById("releaseVersion").value = row.version || "";
+  document.getElementById("releaseVersionCode").value = row.version_code ?? "";
+  document.getElementById("releaseFileSize").value = row.file_size_bytes ?? "";
+  document.getElementById("releaseSha").value = row.sha256 || "";
+  document.getElementById("releaseChangelog").value = Array.isArray(row.changelog) ? row.changelog.join("\n") : "";
+  document.getElementById("releaseMinVersion").value = row.min_supported_version || "";
+  document.getElementById("releaseMandatory").checked = !!row.mandatory_update;
+  document.getElementById("releaseChannel").value = row.release_channel || "stable";
+  document.getElementById("releaseStatus").value = row.status || "draft";
+  setAppReleaseEditorMode(true);
+  const status = document.getElementById("releaseUploadStatus");
+  if (status) { status.className = "status info"; status.textContent = `Mengedit v${row.version} · code ${row.version_code}.`; }
+  document.getElementById("app-release")?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+async function saveAppReleaseEdit() {
+  const session = state.session || await requireSession();
+  if (!session) return;
+  const id = state.appReleaseEditingId;
+  if (!id) throw new Error("Tidak ada release yang sedang diedit.");
+  const fileSizeValue = document.getElementById("releaseFileSize")?.value.trim() || "";
+  const sha256 = document.getElementById("releaseSha")?.value.trim().toLowerCase() || "";
+  const version = document.getElementById("releaseVersion")?.value.trim() || "";
+  const changelog = document.getElementById("releaseChangelog")?.value.split("\n").map(x => x.trim()).filter(Boolean) || [];
+  const minVersion = document.getElementById("releaseMinVersion")?.value.trim() || null;
+  const mandatory = !!document.getElementById("releaseMandatory")?.checked;
+  const channel = document.getElementById("releaseChannel")?.value || "stable";
+  const statusValue = document.getElementById("releaseStatus")?.value || "draft";
+  if (!/^\d+\.\d+\.\d+([+-][0-9A-Za-z.-]+)?$/.test(version)) throw new Error("Version harus mengikuti format X.Y.Z.");
+  if (!/^\d+$/.test(fileSizeValue) || Number(fileSizeValue) < 0) throw new Error("File size tidak valid.");
+  if (!/^[a-f0-9]{64}$/.test(sha256)) throw new Error("SHA-256 harus terdiri dari 64 karakter hex.");
+  if (!['stable', 'beta'].includes(channel)) throw new Error("Channel tidak valid.");
+  if (!['draft', 'published', 'archived'].includes(statusValue)) throw new Error("Status tidak valid.");
+  const payload = {
+    title: "Jyy'R Amprem",
+    changelog,
+    file_size_bytes: Number(fileSizeValue),
+    sha256,
+    min_supported_version: minVersion,
+    mandatory_update: mandatory,
+    release_channel: channel,
+    status: statusValue,
+  };
+  const status = document.getElementById("releaseUploadStatus");
+  if (status) { status.className = "status info"; status.textContent = "Menyimpan perubahan release…"; }
+  const response = await ownerRequest(`/api/owner/app-releases/${encodeURIComponent(id)}`, session, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = await parseJson(response);
+  if (!response.ok) throw new Error(data.error || "Gagal memperbarui release.");
+  if (status) { status.className = "status success"; status.textContent = `Release v${version} berhasil diperbarui.`; }
+  resetAppReleaseEditor();
+  await loadAppReleases(session);
+}
+
+async function loadAppReleases(session) {
+  const response = await ownerRequest("/api/owner/app-releases", session);
+  const data = await parseJson(response);
+  if (!response.ok) throw new Error(data.error || "Gagal membaca release aplikasi.");
+  const container = document.getElementById("ownerReleaseList");
+  if (!container) return;
+  const rows = data.releases || [];
+  state.appReleases = rows;
+  const count = document.getElementById("releaseHistoryCount");
+  if (count) count.textContent = `${rows.length} release`;
+  container.innerHTML = rows.length ? rows.map((r) => {
+    const statusText = r.mandatory_update ? "WAJIB" : String(r.status || "draft").toUpperCase();
+    const size = releaseFileSize(r.file_size_bytes);
+    const sha = r.sha256 ? `${String(r.sha256).slice(0, 12)}…` : "SHA belum diisi";
+    const downloadUrl = r.download_url ? String(r.download_url) : "";
+    return `
+      <article class="app-release-row">
+        <div class="app-release-row-main">
+          <div class="app-release-row-top">
+            <div>
+              <strong class="app-release-version">v${escapeHtml(r.version)} <span>· code ${escapeHtml(r.version_code)}</span></strong>
+              <span class="badge ${releaseStatusClass(r)}">${escapeHtml(statusText)}</span>
+            </div>
+            <span class="app-release-channel">${escapeHtml(String(r.release_channel || "stable"))}</span>
+          </div>
+          <div class="app-release-row-meta">
+            <span>${escapeHtml(releaseDate(r.published_at))}</span>
+            <span>${escapeHtml(size)}</span>
+            <span>${escapeHtml(sha)}</span>
+          </div>
+          <p class="app-release-row-changelog">${escapeHtml(Array.isArray(r.changelog) && r.changelog.length ? r.changelog.join(" · ") : "Tidak ada changelog.")}</p>
+        </div>
+        <div class="app-release-row-actions">
+          <button class="btn app-release-edit-btn" type="button" data-release-edit="${escapeHtml(r.id)}">Edit</button>
+          ${downloadUrl ? `<button class="btn app-release-open-btn" type="button" data-release-open="${escapeHtml(downloadUrl)}">Buka APK</button>` : ""}
+        </div>
+      </article>`;
+  }).join("") : `<div class="status info">Belum ada release.</div>`;
 }
 
 async function loadPage() {

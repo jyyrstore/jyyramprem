@@ -1139,3 +1139,176 @@ body[data-page="owner"] #notifikasi > .grid.grid-2 {
     min-height:35px;
   }
 }
+
+/* ============================================================
+   APP RELEASE — EDITOR + HISTORY POLISH
+   Scoped to #app-release so existing Owner sections remain intact.
+   ============================================================ */
+body[data-page="owner"] #app-release .app-release-layout {
+  align-items: start;
+  gap: 16px;
+}
+body[data-page="owner"] #app-release .app-release-editor-card,
+body[data-page="owner"] #app-release .app-release-history-card {
+  min-width: 0;
+}
+body[data-page="owner"] #app-release .app-release-editor-head,
+body[data-page="owner"] #app-release .app-release-history-head {
+  align-items: flex-start;
+}
+body[data-page="owner"] #app-release .app-release-edit-notice {
+  margin: -2px 0 14px;
+  line-height: 1.45;
+}
+body[data-page="owner"] #app-release .app-release-fields,
+body[data-page="owner"] #app-release .app-release-secondary-fields {
+  gap: 10px;
+}
+body[data-page="owner"] #app-release .field-help {
+  display: block;
+  margin-top: 5px;
+  color: #77717f;
+  font-size: 9px;
+  line-height: 1.4;
+}
+body[data-page="owner"] #app-release .app-release-meta-field {
+  margin-top: 10px;
+}
+body[data-page="owner"] #app-release .app-release-actions {
+  margin-top: 13px;
+  gap: 8px;
+}
+body[data-page="owner"] #app-release .app-release-actions .btn {
+  min-width: 0;
+  flex: 0 1 auto;
+}
+body[data-page="owner"] #app-release .app-release-history-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 2px;
+}
+body[data-page="owner"] #app-release .app-release-row {
+  position: relative;
+  min-width: 0;
+  padding: 13px;
+  border: 1px solid rgba(255,255,255,.075);
+  border-radius: 14px;
+  background: linear-gradient(180deg,#1d1a22,#17151b);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.018);
+}
+body[data-page="owner"] #app-release .app-release-row::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 1px;
+  background: linear-gradient(90deg,transparent,rgba(173,115,255,.30),transparent);
+}
+body[data-page="owner"] #app-release .app-release-row-main { min-width: 0; }
+body[data-page="owner"] #app-release .app-release-row-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+body[data-page="owner"] #app-release .app-release-row-top > div {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+body[data-page="owner"] #app-release .app-release-version {
+  color: #efe8f3;
+  font-size: 13px;
+  font-weight: 850;
+  letter-spacing: -.012em;
+}
+body[data-page="owner"] #app-release .app-release-version span {
+  color: #9d96a5;
+  font-weight: 650;
+}
+body[data-page="owner"] #app-release .app-release-channel {
+  flex: 0 0 auto;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.055);
+  color: #a9a1af;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+body[data-page="owner"] #app-release .app-release-row-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 12px;
+  margin-top: 9px;
+  color: #8f8996;
+  font-size: 9px;
+  line-height: 1.4;
+}
+body[data-page="owner"] #app-release .app-release-row-meta span + span::before {
+  content: "•";
+  margin-right: 12px;
+  color: #615b67;
+}
+body[data-page="owner"] #app-release .app-release-row-changelog {
+  margin: 8px 0 0;
+  color: #b1aab7;
+  font-size: 10px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+body[data-page="owner"] #app-release .app-release-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 11px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255,255,255,.05);
+}
+body[data-page="owner"] #app-release .app-release-row-actions .btn {
+  min-height: 38px;
+  flex: 1 1 0;
+  justify-content: center;
+  padding-inline: 12px;
+  font-size: 10px;
+}
+body[data-page="owner"] #app-release .app-release-edit-btn {
+  border-color: rgba(185,108,255,.25);
+}
+body[data-page="owner"] #app-release .app-release-open-btn {
+  color: #c4bdc9;
+}
+body[data-page="owner"] #app-release .badge {
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  body[data-page="owner"] #app-release .app-release-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  body[data-page="owner"] #app-release .app-release-row-top {
+    flex-direction: column;
+    gap: 7px;
+  }
+  body[data-page="owner"] #app-release .app-release-channel {
+    align-self: flex-start;
+  }
+  body[data-page="owner"] #app-release .app-release-row-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px 10px;
+  }
+  body[data-page="owner"] #app-release .app-release-row-meta span + span::before { display: none; }
+  body[data-page="owner"] #app-release .app-release-row-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+  body[data-page="owner"] #app-release .app-release-row-actions .btn {
+    min-width: 0;
+  }
+}
