@@ -1,8 +1,452 @@
-<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#09070d"><title>Jyy'R Amprem • App Center</title><link rel="stylesheet" href="/css/common.css"><link rel="stylesheet" href="/css/uiux-final.css"><style>
-.app-center{max-width:760px;margin:auto;padding:24px}.hero{padding:26px;border-radius:28px}.hero h1{margin:4px 0 8px}.meta{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}.meta>div{padding:14px;border:1px solid rgba(255,255,255,.08);border-radius:16px;background:rgba(255,255,255,.03)}.meta small{display:block;opacity:.65}.release{margin-top:14px}.release-head{display:flex;justify-content:space-between;gap:12px;align-items:center}.release ul{padding-left:20px}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}.mono{font:12px ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all;opacity:.75}.version-box{padding:12px 14px;border-radius:14px;background:rgba(27,225,255,.07);border:1px solid rgba(27,225,255,.16)}@media(max-width:600px){.meta{grid-template-columns:1fr}.app-center{padding:16px}}
-</style></head><body><main class="app-shell app-center"><section class="card hero"><div class="eyebrow">APP CENTER</div><h1>Jyy'R Amprem</h1><p class="section-note">Aplikasi Android resmi, update, release notes, dan verifikasi file.</p><div id="latest" class="release"><div class="status info">Memuat release terbaru…</div></div></section><section class="card release"><div class="release-head"><div><h2 class="section-title">Riwayat Release</h2><p class="section-note">Versi stable yang pernah dipublikasikan.</p></div></div><div id="history"><div class="status info">Memuat riwayat…</div></div></section></main><script>
-const $=s=>document.querySelector(s); const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-const fmt=n=>{n=Number(n);if(!Number.isFinite(n)||n<=0)return '—';const u=['B','KB','MB','GB'];let i=0;while(n>=1024&&i<u.length-1){n/=1024;i++}return `${n.toFixed(i?1:0)} ${u[i]}`};
-function releaseCard(r,latest=false){const items=(r.changelog||[]).map(x=>`<li>${esc(x)}</li>`).join('');const href=esc(r.download_url);return `<article class="release"><div class="release-head"><div><div class="eyebrow">${esc(r.release_channel||'stable')}</div><h2>${esc(r.version)} ${latest?'<span class="badge green">TERBARU</span>':''}</h2></div><span class="badge ${r.mandatory_update?'red':'blue'}">${r.mandatory_update?'WAJIB UPDATE':'STABLE'}</span></div><div class="meta"><div><small>Version Code</small><strong>${esc(r.version_code)}</strong></div><div><small>Ukuran</small><strong>${fmt(r.file_size_bytes)}</strong></div><div><small>Rilis</small><strong>${r.published_at?esc(new Date(r.published_at).toLocaleDateString('id-ID',{dateStyle:'medium'})):'—'}</strong></div></div>${items?`<ul>${items}</ul>`:''}<div class="actions"><a class="btn primary" href="${href}" download>Download APK ${esc(r.version)}</a><a class="btn" href="/app.html">App Center</a></div>${r.sha256?`<p class="section-note">SHA-256<br><span class="mono">${esc(r.sha256)}</span></p>`:''}${r.min_supported_version?`<p class="section-note">Minimum supported: ${esc(r.min_supported_version)}</p>`:''}</article>`}
-(async()=>{try{const [a,b]=await Promise.all([fetch('/api/app/latest',{cache:'no-store'}).then(r=>r.json()),fetch('/api/app/releases?limit=20',{cache:'no-store'}).then(r=>r.json())]);if(a.ok){$('#latest').innerHTML=releaseCard(a.release,true)}else $('#latest').innerHTML='<div class="status info">Belum ada release terbaru.</div>';$('#history').innerHTML=b.ok&&b.releases.length?b.releases.map(r=>releaseCard(r,false)).join(''):'<div class="status info">Belum ada riwayat release.</div>'}catch(e){$('#latest').innerHTML='<div class="status error">Gagal memuat release.</div>';$('#history').innerHTML='<div class="status error">Gagal memuat riwayat.</div>'}})();
-</script></body></html>
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1b1a1f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Jyy'R Amprem • Download</title>
+<style>
+@font-face{font-family:JyyRBrand;src:url('/assets/Font/jyyramprem.ttf') format('truetype');font-display:swap}
+:root{
+  --bg:#1b1a1f;
+  --panel:#1a191e;
+  --text:#efedf2;
+  --muted:#c9c6cc;
+  --divider:#45434b;
+  --purple:#7638ff;
+  --blue:#0067ff;
+  --green:#31e049;
+  --cyan:#00b6d3;
+  --link:#00d7ef;
+}
+*{box-sizing:border-box}
+html{margin:0;padding:0;background:var(--bg);scroll-behavior:smooth}
+body{
+  margin:0;
+  min-width:320px;
+  min-height:100vh;
+  background:
+    linear-gradient(150deg,rgba(255,255,255,.012),transparent 22%,rgba(0,0,0,.028) 58%,transparent 100%),
+    var(--bg);
+  color:var(--text);
+  font-family:Roboto,Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:geometricPrecision;
+}
+a{color:inherit}
+button{font:inherit}
+.app-page{
+  width:100%;
+  max-width:689px;
+  margin:0 auto;
+  background:var(--bg);
+  overflow-x:hidden;
+  container-type:inline-size;
+}
+
+/* =========================
+   LATEST RELEASE / TOP AREA
+   Geometry follows the 689px reference and scales proportionally on phones.
+   ========================= */
+.release-top{
+  padding:6.24cqw 5.08cqw 5.37cqw;
+  background:linear-gradient(165deg,#1d1c21 0%,#19181d 56%,#1c1b20 100%);
+}
+.app-summary{
+  display:grid;
+  grid-template-columns:21.05cqw minmax(0,1fr);
+  column-gap:3.34cqw;
+  align-items:start;
+}
+.app-icon{
+  width:21.05cqw;height:21.05cqw;display:block;object-fit:cover;
+  border-radius:2.47cqw;
+  border:0.29cqw solid rgba(90,62,255,.72);
+  box-shadow:0 0 0 .15cqw rgba(0,0,0,.18);
+  background:#11131f;
+}
+.app-copy{min-width:0;padding-top:0;position:relative}
+.app-name{
+  margin:0;
+  font-size:6.53cqw;
+  line-height:.9;
+  letter-spacing:-.11cqw;
+  font-weight:700;
+  white-space:nowrap;
+  transform:translateX(-.58cqw);
+}
+.app-version,.app-size{
+  margin:2.18cqw 0 0;
+  font-size:5.22cqw;
+  line-height:1;
+  font-weight:700;
+  letter-spacing:-.06cqw;
+}
+.app-size{margin-top:2.32cqw}
+.latest-badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:23.08cqw;
+  height:7.11cqw;
+  padding:0 2.47cqw;
+  margin-top:0;
+  position:absolute;
+  right:10.74cqw;
+  top:14.22cqw;
+  border:0.29cqw solid var(--green);
+  border-radius:1.45cqw;
+  color:var(--green);
+  background:rgba(24,24,28,.46);
+  font-size:4.64cqw;
+  line-height:1;
+  font-weight:700;
+}
+.action-row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:4.06cqw;
+  margin-top:6.82cqw;
+}
+.action-button{
+  height:12.77cqw;
+  border-radius:6.97cqw;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(29,28,34,.9);
+  border:0.44cqw solid transparent;
+  color:#eee;
+  cursor:pointer;
+  font-size:5.22cqw;
+  line-height:1;
+  font-weight:700;
+  text-decoration:none;
+  box-shadow:inset 0 0 0 .15cqw rgba(255,255,255,.025);
+  transition:transform .16s ease,filter .16s ease,background .16s ease;
+}
+.action-button.download{border-color:var(--purple)}
+.action-button.center{border-color:var(--blue)}
+.action-button:active{transform:scale(.985)}
+.action-button:hover{filter:brightness(1.08)}
+.chip-row{
+  display:flex;
+  gap:3.34cqw;
+  margin-top:4.50cqw;
+  flex-wrap:wrap;
+}
+.chip{
+  min-height:7.11cqw;
+  padding:.73cqw 2.47cqw;
+  border:0.29cqw solid #48464e;
+  border-radius:4.06cqw;
+  background:#29282e;
+  color:#f1eef3;
+  display:inline-flex;
+  align-items:center;
+  font-size:3.34cqw;
+  line-height:1;
+  font-weight:700;
+  white-space:nowrap;
+}
+
+/* =========================
+   SHARED ACCORDION SECTIONS
+   ========================= */
+.section{border-top:1.45cqw solid var(--divider);background:#1a191e}
+.section-header{
+  min-height:13.35cqw;
+  padding:2.32cqw 5.37cqw 2.03cqw 5.51cqw;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:2.61cqw;
+  border-bottom:.73cqw solid var(--divider);
+  background:linear-gradient(165deg,#1c1b20,#19181d);
+}
+.section-heading{display:flex;align-items:center;min-width:0;gap:1.74cqw}
+.section-icon{width:6.97cqw;height:6.97cqw;flex:0 0 6.97cqw;object-fit:contain;display:block}
+.section-title{
+  margin:0;
+  font-size:4.93cqw;
+  line-height:1.05;
+  font-weight:700;
+  letter-spacing:-.05cqw;
+  white-space:nowrap;
+}
+.section-toggle{
+  flex:0 0 auto;
+  color:#ece9ef;
+  font-size:4.64cqw;
+  line-height:1;
+  font-weight:700;
+  transform:translateY(-.15cqw);
+  user-select:none;
+}
+.section-body{background:linear-gradient(158deg,#1b1a1f,#19181e)}
+
+/* support */
+.support-body{padding:.73cqw 4.93cqw 3.19cqw}
+.support-list{display:grid;gap:0}
+.support-row{
+  min-height:9.58cqw;
+  display:flex;
+  align-items:center;
+  gap:2.47cqw;
+  text-decoration:none;
+  color:#d9d6dc;
+}
+.support-row .support-icon{
+  width:6.97cqw;
+  height:6.97cqw;
+  flex:0 0 6.97cqw;
+  object-fit:contain;
+  display:block
+}
+.support-row:last-child .support-icon{filter:grayscale(1) brightness(1.75)}
+.support-row .support-text{
+  font-size:4.50cqw;
+  line-height:1.08;
+  font-weight:400;
+  letter-spacing:-.03cqw;
+  overflow-wrap:anywhere
+}
+.support-row.plain{cursor:default}
+.support-note{
+  margin:4.06cqw .44cqw 0;
+  color:#d5d1d7;
+  font-size:4.21cqw;
+  line-height:1.18;
+  font-weight:400;
+  letter-spacing:-.05cqw;
+}
+.support-note a{
+  color:var(--link);
+  text-decoration:underline;
+  text-decoration-thickness:.15cqw;
+  text-underline-offset:.29cqw
+}
+
+/* info */
+.info-body{padding:1.31cqw 5.08cqw 6.68cqw}
+.info-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  column-gap:5.51cqw;
+  row-gap:8.42cqw
+}
+.info-item{text-align:center;min-width:0}
+.info-item:nth-child(1){justify-self:start;margin-left:3.92cqw}
+.info-item:nth-child(2){justify-self:end;margin-right:6.82cqw}
+.info-item:nth-child(3){justify-self:start;margin-left:-.70cqw}
+.info-item:nth-child(4){justify-self:end;margin-right:6.82cqw; transform:translateX(-7.00cqw)}
+.info-label{
+  margin:0;
+  font-size:5.52cqw;
+  line-height:1;
+  font-weight:700;
+  letter-spacing:-.09cqw
+}
+.info-value{
+  margin:1.60cqw 0 0;
+  font-size:5.08cqw;
+  line-height:1;
+  font-weight:400;
+  letter-spacing:-.04cqw;
+  color:#d5d2d8
+}
+.info-item.sha{
+  grid-column:1/-1;
+  text-align:left;
+  margin-top:-2.47cqw;
+  justify-self:stretch;
+  margin-left:0;
+  margin-right:0
+}
+.info-item.sha .info-label{padding-left:3.92cqw;text-align:left}
+.info-item.sha .info-value{
+  margin-top:1.31cqw;
+  padding:0;
+  text-align:left;
+  font-size:4.64cqw;
+  line-height:1.15;
+  letter-spacing:-.01cqw;
+  overflow-wrap:anywhere;
+  word-break:break-word
+}
+
+.release-history{border-top:1.45cqw solid var(--divider);padding:3.48cqw 4.93cqw 5.80cqw}
+.history-title{margin:0;font-size:4.21cqw;font-weight:700}
+.history-list{margin-top:2.03cqw;display:grid;gap:2.03cqw}
+.history-card{
+  padding:2.32cqw 2.61cqw;
+  border:.15cqw solid rgba(255,255,255,.06);
+  border-radius:2.47cqw;
+  background:#202025
+}
+.history-card .history-row{display:flex;justify-content:space-between;gap:1.74cqw}
+.history-card strong{font-size:3.05cqw}.history-card span{color:#aaa7af;font-size:2.47cqw}
+.status{padding:3.77cqw .29cqw;color:#aaa7af;font-size:2.90cqw}
+</style>
+</head>
+<body>
+<main class="app-page" aria-label="Jyy'R Amprem Download App">
+  <section class="release-top" aria-labelledby="releaseTitle">
+    <div id="latest" class="status">Memuat release terbaru…</div>
+  </section>
+
+  <section class="section support-section" aria-labelledby="supportTitle">
+    <div class="section-header">
+      <div class="section-heading">
+        <img class="section-icon" src="/assets/Icon/Dukungan.png" alt="">
+        <h2 id="supportTitle" class="section-title">Dukungan Aplikasi</h2>
+      </div>
+      <span class="section-toggle" aria-hidden="true">V</span>
+    </div>
+    <div class="section-body support-body">
+      <div class="support-list">
+        <a class="support-row" href="https://jyyramprem.vercel.app" target="_blank" rel="noopener" aria-label="Buka Situs">
+          <img class="support-icon" src="/assets/Icon/Situs.png" alt="">
+          <span class="support-text">Situs</span>
+        </a>
+        <a class="support-row" href="mailto:ajiiriansyah324@gmail.com" aria-label="Kirim E-mail">
+          <img class="support-icon" src="/assets/Icon/e-mail.png" alt="">
+          <span class="support-text">E-mail</span>
+        </a>
+        <div class="support-row plain" aria-label="Application ID">
+          <img class="support-icon" src="/assets/Icon/link.png" alt="">
+          <span class="support-text">com.jyyrstore.jyyramprem</span>
+        </div>
+        <a class="support-row" href="#privacy" aria-label="Buka Kebijakan privasi">
+          <img class="support-icon" src="/assets/Icon/lock-of.png" alt="">
+          <span class="support-text">Kebijakan privasi</span>
+        </a>
+        <a class="support-row" href="https://wa.me/6283890777348" target="_blank" rel="noopener" aria-label="Hubungi melalui WhatsApp">
+          <img class="support-icon" src="/assets/Icon/WhatsApp.png" alt="">
+          <span class="support-text">+6283890777348</span>
+        </a>
+      </div>
+      <p class="support-note">dukungan <a href="mailto:ajiiriansyah324@gmail.com">Jyy'R Amprem</a> Support<br>melalui email di Support jika terjadi<br>masalah <a href="mailto:ajiiriansyah324@gmail.com">ajiiriansyah324@gmail.com</a></p>
+    </div>
+  </section>
+
+  <section class="section info-section" id="privacy" aria-labelledby="infoTitle">
+    <div class="section-header">
+      <div class="section-heading">
+        <img class="section-icon" src="/assets/Icon/FAQ.png" alt="">
+        <h2 id="infoTitle" class="section-title">Informasi Aplikasi</h2>
+      </div>
+      <span class="section-toggle" aria-hidden="true">V</span>
+    </div>
+    <div id="info" class="section-body info-body">
+      <div class="status">Memuat informasi aplikasi…</div>
+    </div>
+  </section>
+
+  <section class="release-history" aria-labelledby="historyTitle">
+    <h2 id="historyTitle" class="history-title">Riwayat Release</h2>
+    <div id="history" class="history-list"><div class="status">Memuat riwayat…</div></div>
+  </section>
+</main>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const fmtTop = (bytes) => {
+  const n = Number(bytes);
+  if (!Number.isFinite(n) || n <= 0) return '—';
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+};
+const fmtInfo = (bytes) => {
+  const n = Number(bytes);
+  if (!Number.isFinite(n) || n <= 0) return '—';
+  return `${(n / (1024 * 1024)).toFixed(2)} MB`;
+};
+const dateParts = (value) => {
+  if (!value) return {d:'—',m:'',y:''};
+  const dt = new Date(value);
+  if (Number.isNaN(dt.getTime())) return {d:'—',m:'',y:''};
+  const months = ['jan','feb','mar','apr','mei','jun','jul','agu','sep','okt','nov','des'];
+  return {d:String(dt.getDate()).padStart(2,'0').replace(/^0/,''),m:months[dt.getMonth()],y:String(dt.getFullYear())};
+};
+const formatSha = (value) => {
+  const sha = String(value || '—');
+  return sha.length === 64 ? `${esc(sha.slice(0,33))}<br>${esc(sha.slice(33))}` : esc(sha);
+};
+const normalizeChips = (items) => {
+  const defaults = ['#Generator Alight Motion','Effect Premium'];
+  const cleaned = Array.isArray(items) ? items.map((x) => String(x ?? '').trim()).filter(Boolean) : [];
+  return cleaned.slice(0,2).length === 2 ? cleaned.slice(0,2) : defaults;
+};
+
+function renderLatest(r){
+  const parts = dateParts(r.published_at);
+  const chips = ['#Generator Alight Motion','Effect Premium'];
+  $('#latest').outerHTML = `
+    <div class="app-summary">
+      <img class="app-icon" src="/assets/Foto/Profil-Apk.png" alt="Jyy'R Amprem">
+      <div class="app-copy">
+        <h1 id="releaseTitle" class="app-name">Jyy'R Amprem</h1>
+        <div class="app-version">V ${esc(r.version)}</div>
+        <div class="app-size">${fmtTop(r.file_size_bytes)}</div>
+        <div class="latest-badge">Terbaru</div>
+      </div>
+    </div>
+    <div class="action-row">
+      <a class="action-button download" href="${esc(r.download_url)}" download aria-label="Download APK Jyy'R Amprem">Download</a>
+      <a class="action-button center" href="/app.html">App Center</a>
+    </div>
+    <div class="chip-row">
+      <span class="chip">${esc(chips[0])}</span>
+      <span class="chip">${esc(chips[1])}</span>
+    </div>`;
+
+  $('#info').innerHTML = `
+    <div class="info-grid">
+      <div class="info-item"><h3 class="info-label">Version</h3><p class="info-value">${esc(r.version)}</p></div>
+      <div class="info-item"><h3 class="info-label">Version Code</h3><p class="info-value">${esc(r.version_code)}</p></div>
+      <div class="info-item"><h3 class="info-label">Rilis</h3><p class="info-value">${esc(parts.d)},${esc(parts.m)},${esc(parts.y)}</p></div>
+      <div class="info-item"><h3 class="info-label">Ukuran</h3><p class="info-value">${fmtInfo(r.file_size_bytes)}</p></div>
+      <div class="info-item sha"><h3 class="info-label">SHA-256</h3><p class="info-value">${formatSha(r.sha256)}</p></div>
+    </div>`;
+}
+
+function renderHistory(rows){
+  if(!Array.isArray(rows) || !rows.length){
+    $('#history').innerHTML='<div class="status">Belum ada riwayat release.</div>';
+    return;
+  }
+  $('#history').innerHTML = rows.map((r) => `
+    <article class="history-card">
+      <div class="history-row"><strong>V ${esc(r.version)}</strong><span>${esc(r.release_channel || 'stable')}</span></div>
+      <div class="history-row" style="margin-top:7px"><span>Version Code ${esc(r.version_code)}</span><span>${fmtInfo(r.file_size_bytes)}</span></div>
+    </article>`).join('');
+}
+
+(async()=>{
+  try{
+    const [latestRes, historyRes] = await Promise.all([
+      fetch('/api/app/latest',{cache:'no-store'}),
+      fetch('/api/app/releases?limit=20',{cache:'no-store'})
+    ]);
+    const latest = await latestRes.json();
+    const history = await historyRes.json();
+    if(latest?.ok && latest.release) renderLatest(latest.release);
+    else {
+      $('#latest').outerHTML='<div class="status">Belum ada release terbaru.</div>';
+      $('#info').innerHTML='<div class="status">Informasi release belum tersedia.</div>';
+    }
+    renderHistory(history?.ok ? history.releases : []);
+  }catch(error){
+    console.error('[APP DOWNLOAD PAGE]', error);
+    $('#latest').outerHTML='<div class="status">Gagal memuat release terbaru.</div>';
+    $('#info').innerHTML='<div class="status">Gagal memuat informasi aplikasi.</div>';
+    $('#history').innerHTML='<div class="status">Gagal memuat riwayat release.</div>';
+  }
+})();
+</script>
+</body>
+</html>

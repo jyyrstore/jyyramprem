@@ -1190,18 +1190,26 @@ async function publishAppRelease() {
   const version = document.getElementById("releaseVersion")?.value.trim();
   const versionCode = Number(document.getElementById("releaseVersionCode")?.value);
   if (!file || !version || !Number.isInteger(versionCode) || versionCode < 1) throw new Error("Version, version code, dan APK wajib diisi.");
-  if (!/\.apk$/i.test(file.name)) throw new Error("File harus APK.");
+  if (!/\.apk$/i.test(file.name)) throw new Error("File harus berekstensi .apk.");
+  const apkContentType = file.type === "application/vnd.android.package-archive" || file.type === "application/octet-stream"
+    ? file.type
+    : "application/vnd.android.package-archive";
   const session = state.session || await requireSession(); if (!session) return;
   status.textContent = "Menyiapkan upload…";
-  const signResp = await ownerRequest("/api/owner/app-releases/sign-upload", session, { method: "POST", body: JSON.stringify({ version, version_code: versionCode, file_name: file.name, content_type: file.type || "application/vnd.android.package-archive" }) });
+  const signResp = await ownerRequest("/api/owner/app-releases/sign-upload", session, { method: "POST", body: JSON.stringify({ version, version_code: versionCode, file_name: file.name, content_type: apkContentType }) });
   const signData = await parseJson(signResp);
   if (!signResp.ok) throw new Error(signData.error || "Gagal menyiapkan upload.");
   status.textContent = "Mengupload APK…";
+  // Supabase signed-upload URLs expect the same multipart body used by uploadToSignedUrl().
+  // Keep the file itself untouched; browsers on Android may report an empty/non-APK MIME type.
   const form = new FormData();
   form.append("cacheControl", "31536000");
   form.append("", file, file.name);
   const uploadResponse = await fetch(signData.upload.signedUrl, { method: "PUT", body: form });
-  if (!uploadResponse.ok) throw new Error("Upload APK gagal.");
+  if (!uploadResponse.ok) {
+    const detail = await uploadResponse.text().catch(() => "");
+    throw new Error(detail ? `Upload APK gagal: ${detail.slice(0, 220)}` : `Upload APK gagal (HTTP ${uploadResponse.status}).`);
+  }
   const digest = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
   const sha256 = Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
   const changelog = document.getElementById("releaseChangelog")?.value.split("\n").map(x => x.trim()).filter(Boolean) || [];

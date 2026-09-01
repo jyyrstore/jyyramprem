@@ -596,8 +596,8 @@
 
         <div id="releaseFileField" class="field">
           <label for="releaseFile">APK File</label>
-          <input id="releaseFile" class="input" type="file" accept=".apk,application/vnd.android.package-archive,application/octet-stream">
-          <small class="field-help">Mode Edit tidak mengupload ulang binary APK.</small>
+          <input id="releaseFile" class="input" type="file" accept=".apk,application/vnd.android.package-archive,application/octet-stream,*/*">
+          <small class="field-help">Pilih file APK. Validasi tetap berdasarkan ekstensi .apk agar browser Android yang tidak mengirim MIME tetap didukung. Mode Edit tidak mengupload ulang binary APK.</small>
         </div>
 
         <div class="field app-release-meta-field" id="releaseFileSizeField" hidden>

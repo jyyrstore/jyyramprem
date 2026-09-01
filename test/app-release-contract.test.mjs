@@ -7,6 +7,7 @@ const root = new URL('../', import.meta.url);
 const server = fs.readFileSync(new URL('server.js', root), 'utf8');
 const app = fs.readFileSync(new URL('public/app.html', root), 'utf8');
 const owner = fs.readFileSync(new URL('public/html/owner.html', root), 'utf8');
+const appIntro = fs.readFileSync(new URL('public/html/app-intro.html', root), 'utf8');
 const ownerJs = fs.readFileSync(new URL('public/js/owner.js', root), 'utf8');
 const nav = fs.readFileSync(new URL('public/js/nav.js', root), 'utf8');
 const apkPath = new URL('public/releases/android/1.0.0/JyyR-Amprem-1.0.0.apk', root);
@@ -49,4 +50,17 @@ test('owner release history exposes edit controls and PATCH metadata flow', () =
   assert.match(ownerJs, /method: "PATCH"/);
   assert.match(ownerJs, /data-release-edit/);
   assert.match(ownerJs, /data-release-open/);
+});
+
+
+
+test('owner APK upload accepts Android browser MIME variations and sends multipart binary', () => {
+  assert.match(owner, /accept="[^"]*\*\/\*"/);
+  assert.match(ownerJs, /method: "PUT"/);
+  assert.match(ownerJs, /form\.append\("", file, file\.name\)/);
+  assert.match(ownerJs, /application\/vnd\.android\.package-archive/);
+});
+
+test('APK intro uses the configured app icon asset', () => {
+  assert.match(appIntro, /\/assets\/Foto\/Profil-Apk\.png/);
 });
