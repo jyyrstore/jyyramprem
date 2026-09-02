@@ -29,45 +29,51 @@
     return host;
   }
 
+  const recentNotifications = new Map();
+
   function notify(message, type = "info", options = {}) {
     const host = root();
+    const normalizedMessage = String(message ?? "").trim();
+    const normalizedTitle = String(options.title || "").trim();
+    const key = `${type}|${normalizedTitle}|${normalizedMessage}`;
+    const now = Date.now();
+    const recent = recentNotifications.get(key);
+    if (recent && now - recent.at < 1800 && recent.toast?.isConnected) return recent.close;
+    recentNotifications.set(key, { at: now, toast: null, close: () => {} });
+
     const toast = document.createElement("div");
     const duration = Number(options.duration ?? 3200);
     const iconName = ICONS[type] || ICONS.info;
+    let closed = false;
+    let removeTimer = 0;
 
     toast.className = `app-toast app-toast-${type}`;
     toast.setAttribute("role", type === "error" || type === "warning" ? "alert" : "status");
     toast.innerHTML = `
-      <span class="app-toast-icon" aria-hidden="true">
-        <img src="${ICON_BASE}${encodeURIComponent(iconName)}" alt="" draggable="false">
-      </span>
+      <span class="app-toast-icon" aria-hidden="true"><img src="${ICON_BASE}${encodeURIComponent(iconName)}" alt="" draggable="false"></span>
       <span class="app-toast-body">
-        <strong>${esc(options.title || ({
-          success: "Berhasil",
-          error: "Gagal",
-          warning: "Peringatan",
-          info: "Informasi"
-        }[type] || "Informasi"))}</strong>
-        <span>${esc(message)}</span>
+        <strong>${esc(options.title || ({ success: "Berhasil", error: "Gagal", warning: "Peringatan", info: "Informasi" }[type] || "Informasi"))}</strong>
+        <span>${esc(normalizedMessage)}</span>
       </span>
       <button class="app-toast-close" type="button" aria-label="Tutup"><img src="${ICON_BASE}cancel.png" alt="" draggable="false"></button>
     `;
 
     const close = () => {
+      if (closed) return;
+      closed = true;
+      if (removeTimer) window.clearTimeout(removeTimer);
       toast.classList.remove("is-visible");
       toast.classList.add("is-closing");
-      window.setTimeout(() => toast.remove(), 180);
+      removeTimer = window.setTimeout(() => { toast.remove(); if (recentNotifications.get(key)?.toast === toast) recentNotifications.delete(key); }, 180);
     };
-
+    recentNotifications.set(key, { at: now, toast, close });
     toast.querySelector(".app-toast-close")?.addEventListener("click", close);
     host.appendChild(toast);
     requestAnimationFrame(() => toast.classList.add("is-visible"));
-
-    if (duration > 0) {
-      window.setTimeout(close, duration);
-    }
+    if (duration > 0) window.setTimeout(close, duration);
     return close;
   }
+
 
   function buttonLoading(button, label = "Memproses…", icon = "loading") {
     if (!button) return () => {};

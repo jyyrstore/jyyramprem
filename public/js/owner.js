@@ -1153,6 +1153,16 @@ function bindEvents() {
     try { await loadPortalTokenHistory(s); } catch (e) { ownerNotice(e.message); }
   });
 
+  document.getElementById("releaseFile")?.addEventListener("change", async (event) => {
+    try { await handleApkSelection(event.target.files?.[0]); }
+    catch (e) {
+      event.target.value = "";
+      const s = document.getElementById("releaseUploadStatus");
+      if (s) { s.className = "status error"; s.textContent = e.message; }
+      ownerNotice(e.message);
+    }
+  });
+
   document.getElementById("releasePublish")?.addEventListener("click", async () => {
     const button = document.getElementById("releasePublish");
     try {
@@ -1188,44 +1198,88 @@ function bindEvents() {
 }
 
 
+async function handleApkSelection(file) {
+  const status = document.getElementById("releaseUploadStatus");
+  if (!file) return;
+  if (!/\.apk$/i.test(file.name)) throw new Error("File harus berekstensi .apk.");
+  if (status) { status.className = "status info"; status.textContent = "Membaca metadata APK…"; }
+  const metadata = await window.JYYRReadApkMetadata(file);
+  if (metadata.packageName !== "com.jyystore.jyyramprem") throw new Error("Package Name tidak sesuai. APK Jyy'R Amprem wajib com.jyystore.jyyramprem.");
+  const digest = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
+  const sha256 = Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
+  document.getElementById("releaseVersion").value = metadata.versionName;
+  document.getElementById("releaseVersionCode").value = metadata.versionCode;
+  document.getElementById("releaseFileSize").value = file.size;
+  document.getElementById("releaseSha").value = sha256;
+  document.getElementById("releasePackageName").value = metadata.packageName;
+  document.getElementById("releaseMinSdk").value = metadata.minSdk;
+  document.getElementById("releaseTargetSdk").value = metadata.targetSdk;
+  document.getElementById("releaseChannel").value = "stable";
+  document.getElementById("releaseStatus").value = "published";
+  document.getElementById("releaseMandatory").checked = false;
+  if (status) { status.className = "status success"; status.textContent = `APK terbaca: v${metadata.versionName} · code ${metadata.versionCode} · ${file.size.toLocaleString("id-ID")} bytes.`; }
+  return metadata;
+}
+
 async function publishAppRelease() {
   const status = document.getElementById("releaseUploadStatus");
   const file = document.getElementById("releaseFile")?.files?.[0];
+  if (!file) throw new Error("Pilih APK terlebih dahulu.");
+  if (!/\.apk$/i.test(file.name)) throw new Error("File harus berekstensi .apk.");
+
+  const session = state.session || await requireSession(); if (!session) return;
+
+  const metadata = await handleApkSelection(file);
   const version = document.getElementById("releaseVersion")?.value.trim();
   const versionCode = Number(document.getElementById("releaseVersionCode")?.value);
-  if (!file || !version || !Number.isInteger(versionCode) || versionCode < 1) throw new Error("Version, version code, dan APK wajib diisi.");
-  if (!/\.apk$/i.test(file.name)) throw new Error("File harus berekstensi .apk.");
+  if (!version || !Number.isInteger(versionCode) || versionCode < 1) {
+    throw new Error("Version, version code, dan APK wajib diisi.");
+  }
+
   const apkContentType = file.type === "application/vnd.android.package-archive" || file.type === "application/octet-stream"
     ? file.type
     : "application/vnd.android.package-archive";
-  const session = state.session || await requireSession(); if (!session) return;
-  status.textContent = "Menyiapkan upload…";
-  const signResp = await ownerRequest("/api/owner/app-releases/sign-upload", session, { method: "POST", body: JSON.stringify({ version, version_code: versionCode, file_name: file.name, content_type: apkContentType }) });
+
+  status.textContent = "Menyiapkan upload aman…";
+  const signResp = await ownerRequest("/api/owner/app-releases/sign-upload", session, {
+    method: "POST",
+    body: JSON.stringify({
+      version,
+      version_code: versionCode,
+      file_name: file.name,
+      content_type: apkContentType
+    })
+  });
   const signData = await parseJson(signResp);
   if (!signResp.ok) throw new Error(signData.error || "Gagal menyiapkan upload.");
+
   status.textContent = "Mengupload APK…";
-  // Supabase signed-upload URLs expect the same multipart body used by uploadToSignedUrl().
-  // Keep the file itself untouched; browsers on Android may report an empty/non-APK MIME type.
+
+  // Supabase signed-upload URLs expect the multipart body used by uploadToSignedUrl().
+  // Keep the APK bytes untouched; browser MIME is not trusted as metadata.
   const form = new FormData();
   form.append("cacheControl", "31536000");
   form.append("", file, file.name);
-  const uploadResponse = await fetch(signData.upload.signedUrl, { method: "PUT", body: form });
+
+  const uploadResponse = await fetch(signData.upload.signedUrl, {
+    method: "PUT",
+    body: form
+  });
   if (!uploadResponse.ok) {
     const detail = await uploadResponse.text().catch(() => "");
     throw new Error(detail ? `Upload APK gagal: ${detail.slice(0, 220)}` : `Upload APK gagal (HTTP ${uploadResponse.status}).`);
   }
-  const digest = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
-  const sha256 = Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
+
   const changelog = document.getElementById("releaseChangelog")?.value.split("\n").map(x => x.trim()).filter(Boolean) || [];
-  const payload = { version, version_code: versionCode, title: "Jyy'R Amprem", changelog, download_url: `${(await AMAuth.getConfig()).supabaseUrl}/storage/v1/object/public/app-releases/${signData.upload.path}`, storage_path: signData.upload.path, file_name: file.name, file_size_bytes: file.size, sha256, min_supported_version: document.getElementById("releaseMinVersion")?.value.trim() || null, mandatory_update: !!document.getElementById("releaseMandatory")?.checked, release_channel: document.getElementById("releaseChannel")?.value || "stable", status: document.getElementById("releaseStatus")?.value || "draft" };
-  status.textContent = "Menyimpan metadata release…";
+  const payload = { storage_path: signData.upload.path, changelog };
+  status.textContent = "Server memverifikasi APK dari Storage…";
   const saveResp = await ownerRequest("/api/owner/app-releases", session, { method: "POST", body: JSON.stringify(payload) });
   const saveData = await parseJson(saveResp);
-  if (!saveResp.ok) throw new Error(saveData.error || "Gagal menyimpan release.");
-  status.className = "status success";
-  status.textContent = `Release v${version} berhasil ${payload.status === "published" ? "dipublikasikan" : "disimpan sebagai draft"}.`;
+  if (!saveResp.ok) throw new Error(saveData.error || "Gagal memverifikasi atau menyimpan release.");
   resetAppReleaseEditor();
   await loadAppReleases(session);
+  window.JYYRNotify?.show(`Release v${saveData.release.version} berhasil dipublikasikan.`, "success", { title: "Release Berhasil" });
+  return metadata;
 }
 
 function releaseDate(value) {
@@ -1269,12 +1323,26 @@ function setAppReleaseEditorMode(editing) {
   if (mode) { mode.textContent = editing ? "Edit" : "Create"; mode.className = `badge ${editing ? "yellow" : "blue"}`; }
   if (notice) notice.hidden = !editing;
   if (fileField) fileField.hidden = editing;
-  if (sizeField) sizeField.hidden = !editing;
-  if (shaField) shaField.hidden = !editing;
-  if (sizeInput) sizeInput.disabled = !editing;
-  if (shaInput) shaInput.disabled = !editing;
-  if (version) version.readOnly = !!editing;
-  if (versionCode) versionCode.readOnly = !!editing;
+  if (sizeField) sizeField.hidden = false;
+  if (shaField) shaField.hidden = false;
+  if (sizeInput) { sizeInput.disabled = true; sizeInput.readOnly = true; }
+  if (shaInput) { shaInput.disabled = true; shaInput.readOnly = true; }
+  if (version) version.readOnly = true;
+  if (versionCode) versionCode.readOnly = true;
+  const packageInput = document.getElementById("releasePackageName");
+  const minSdkInput = document.getElementById("releaseMinSdk");
+  const targetSdkInput = document.getElementById("releaseTargetSdk");
+  if (packageInput) packageInput.readOnly = true;
+  if (minSdkInput) minSdkInput.readOnly = true;
+  if (targetSdkInput) targetSdkInput.readOnly = true;
+  const minVersion = document.getElementById("releaseMinVersion");
+  const mandatory = document.getElementById("releaseMandatory");
+  const channel = document.getElementById("releaseChannel");
+  const releaseStatus = document.getElementById("releaseStatus");
+  if (minVersion) minVersion.readOnly = !editing;
+  if (mandatory) mandatory.disabled = !editing;
+  if (channel) channel.disabled = !editing;
+  if (releaseStatus) releaseStatus.disabled = !editing;
   if (fileInput && !editing) fileInput.value = "";
   if (publishButton) publishButton.textContent = editing ? "Simpan Perubahan" : "Upload & Publish";
   if (cancelButton) cancelButton.hidden = !editing;
@@ -1287,21 +1355,27 @@ function resetAppReleaseEditor() {
   const versionCode = document.getElementById("releaseVersionCode");
   const fileSize = document.getElementById("releaseFileSize");
   const sha = document.getElementById("releaseSha");
+  const packageName = document.getElementById("releasePackageName");
+  const minSdk = document.getElementById("releaseMinSdk");
+  const targetSdk = document.getElementById("releaseTargetSdk");
   const changelog = document.getElementById("releaseChangelog");
   const minVersion = document.getElementById("releaseMinVersion");
   const mandatory = document.getElementById("releaseMandatory");
   const channel = document.getElementById("releaseChannel");
   const status = document.getElementById("releaseStatus");
   const uploadStatus = document.getElementById("releaseUploadStatus");
-  if (version) { version.value = ""; version.readOnly = false; }
-  if (versionCode) { versionCode.value = ""; versionCode.readOnly = false; }
+  if (version) { version.value = ""; version.readOnly = true; }
+  if (versionCode) { versionCode.value = ""; versionCode.readOnly = true; }
   if (fileSize) fileSize.value = "";
   if (sha) sha.value = "";
+  if (packageName) packageName.value = "";
+  if (minSdk) minSdk.value = "";
+  if (targetSdk) targetSdk.value = "";
   if (changelog) changelog.value = "";
   if (minVersion) minVersion.value = "";
   if (mandatory) mandatory.checked = false;
   if (channel) channel.value = "stable";
-  if (status) status.value = "draft";
+  if (status) status.value = "published";
   if (uploadStatus) { uploadStatus.className = "status info"; uploadStatus.textContent = "Siap upload."; }
   setAppReleaseEditorMode(false);
 }
@@ -1314,6 +1388,9 @@ async function openAppReleaseEditor(id) {
   document.getElementById("releaseVersionCode").value = row.version_code ?? "";
   document.getElementById("releaseFileSize").value = row.file_size_bytes ?? "";
   document.getElementById("releaseSha").value = row.sha256 || "";
+  document.getElementById("releasePackageName").value = row.package_name || "";
+  document.getElementById("releaseMinSdk").value = row.min_sdk ?? "";
+  document.getElementById("releaseTargetSdk").value = row.target_sdk ?? "";
   document.getElementById("releaseChangelog").value = Array.isArray(row.changelog) ? row.changelog.join("\n") : "";
   document.getElementById("releaseMinVersion").value = row.min_supported_version || "";
   document.getElementById("releaseMandatory").checked = !!row.mandatory_update;
@@ -1341,15 +1418,11 @@ async function saveAppReleaseEdit() {
   const channel = document.getElementById("releaseChannel")?.value || "stable";
   const statusValue = document.getElementById("releaseStatus")?.value || "draft";
   if (!/^\d+\.\d+\.\d+([+-][0-9A-Za-z.-]+)?$/.test(version)) throw new Error("Version harus mengikuti format X.Y.Z.");
-  if (!/^\d+$/.test(fileSizeValue) || Number(fileSizeValue) < 0) throw new Error("File size tidak valid.");
-  if (!/^[a-f0-9]{64}$/.test(sha256)) throw new Error("SHA-256 harus terdiri dari 64 karakter hex.");
   if (!['stable', 'beta'].includes(channel)) throw new Error("Channel tidak valid.");
   if (!['draft', 'published', 'archived'].includes(statusValue)) throw new Error("Status tidak valid.");
   const payload = {
     title: "Jyy'R Amprem",
     changelog,
-    file_size_bytes: Number(fileSizeValue),
-    sha256,
     min_supported_version: minVersion,
     mandatory_update: mandatory,
     release_channel: channel,
@@ -1364,9 +1437,9 @@ async function saveAppReleaseEdit() {
   });
   const data = await parseJson(response);
   if (!response.ok) throw new Error(data.error || "Gagal memperbarui release.");
-  if (status) { status.className = "status success"; status.textContent = `Release v${version} berhasil diperbarui.`; }
   resetAppReleaseEditor();
   await loadAppReleases(session);
+  window.JYYRNotify?.show(`Release v${version} berhasil diperbarui.`, "success", { title: "Release Diperbarui" });
 }
 
 async function loadAppReleases(session) {

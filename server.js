@@ -16,6 +16,7 @@ import {
 } from "./lib/provider-diagnostic-contract.js";
 import { normalizeMagicLink } from "./lib/magiclink-contract.js";
 import { extractProviderVerified, extractProviderIdToken } from "./lib/provider-verification-contract.js";
+import { inspectApk } from "./lib/apk-manifest.js";
 
 const app = express();
 
@@ -519,7 +520,7 @@ app.get("/api/app/latest", async (req, res) => {
     const channel = String(req.query?.channel || "stable").trim().toLowerCase();
     if (!["stable", "beta"].includes(channel)) return res.status(400).json({ ok: false, error: "Channel tidak valid." });
     const { data, error } = await supabase.from("app_releases")
-      .select("id,app_key,platform,version,version_code,title,changelog,download_url,file_name,file_size_bytes,sha256,min_supported_version,mandatory_update,release_channel,status,published_at,created_at,updated_at")
+      .select("id,app_key,platform,version,version_code,title,changelog,download_url,file_name,file_size_bytes,sha256,package_name,min_sdk,target_sdk,min_supported_version,mandatory_update,release_channel,status,published_at,created_at,updated_at")
       .eq("app_key", "jyyramprem").eq("platform", "android").eq("release_channel", channel).eq("status", "published")
       .order("version_code", { ascending: false }).order("published_at", { ascending: false }).limit(1).maybeSingle();
     if (error) throw error;
@@ -537,7 +538,7 @@ app.get("/api/app/releases", async (req, res) => {
     const channel = String(req.query?.channel || "stable").trim().toLowerCase();
     if (!["stable", "beta"].includes(channel)) return res.status(400).json({ ok: false, error: "Channel tidak valid." });
     const { data, error } = await supabase.from("app_releases")
-      .select("id,app_key,platform,version,version_code,title,changelog,download_url,file_name,file_size_bytes,sha256,min_supported_version,mandatory_update,release_channel,status,published_at,created_at,updated_at")
+      .select("id,app_key,platform,version,version_code,title,changelog,download_url,file_name,file_size_bytes,sha256,package_name,min_sdk,target_sdk,min_supported_version,mandatory_update,release_channel,status,published_at,created_at,updated_at")
       .eq("app_key", "jyyramprem").eq("platform", "android").eq("release_channel", channel).eq("status", "published")
       .order("version_code", { ascending: false }).order("published_at", { ascending: false }).limit(limit);
     if (error) throw error;
@@ -567,21 +568,43 @@ const ownerMemberMutationLimiter = rateLimit({
 });
 
 
-app.post("/api/owner/app-releases/sign-upload", requireAuth, ownerMemberMutationLimiter, requireOwner, async (req, res) => {
+const APP_RELEASE_PACKAGE = "com.jyystore.jyyramprem";
+const APP_RELEASE_BUCKET = "app-releases";
+const APP_RELEASE_MAX_BYTES = 512 * 1024 * 1024;
+
+function releaseDownloadUrl(storagePath) {
+  return `${SUPABASE_URL}/storage/v1/object/public/${APP_RELEASE_BUCKET}/${storagePath}`;
+}
+
+async function readStoredApk(storagePath) {
+  const safePath = String(storagePath || "").trim();
+  if (!/^incoming\/[0-9a-f-]{36}\.apk$/i.test(safePath)) throw new Error("Storage path upload APK tidak valid.");
+  const { data, error } = await supabase.storage.from(APP_RELEASE_BUCKET).download(safePath);
+  if (error) throw error;
+  const arrayBuffer = await data.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+  if (!buffer.length || buffer.length > APP_RELEASE_MAX_BYTES) throw new Error("Ukuran APK tidak valid atau terlalu besar.");
+  return buffer;
+}
+
+async function verifyStoredApk(storagePath) {
+  const buffer = await readStoredApk(storagePath);
+  const metadata = inspectApk(buffer);
+  const sha256 = crypto.createHash("sha256").update(buffer).digest("hex");
+  return { buffer, metadata, fileSizeBytes: buffer.length, sha256 };
+}
+
+async function removeStorageObject(storagePath) {
+  if (!storagePath) return;
+  try { await supabase.storage.from(APP_RELEASE_BUCKET).remove([storagePath]); } catch (error) { console.warn("[APP RELEASE CLEANUP ERROR]", error?.message || error); }
+}
+
+app.post("/api/owner/app-releases/sign-upload", requireAuth, ownerMemberMutationLimiter, requireOwner, async (_req, res) => {
   try {
-    const body = req.body || {};
-    const version = String(body.version || "").trim();
-    const versionCode = Number(body.version_code);
-    const fileName = String(body.file_name || "").trim();
-    const contentType = String(body.content_type || "application/vnd.android.package-archive").trim();
-    if (!semverParts(version)) return res.status(400).json({ ok: false, error: "Version harus mengikuti format X.Y.Z." });
-    if (!Number.isInteger(versionCode) || versionCode < 1) return res.status(400).json({ ok: false, error: "Version code tidak valid." });
-    if (!/^[-_.A-Za-z0-9]{1,180}\.apk$/i.test(fileName)) return res.status(400).json({ ok: false, error: "Nama file APK tidak valid." });
-    if (contentType !== "application/vnd.android.package-archive" && contentType !== "application/octet-stream") return res.status(400).json({ ok: false, error: "Content-Type APK tidak valid." });
-    const path = `android/${version}/JyyR-Amprem-${version}.apk`;
-    const { data, error } = await supabase.storage.from("app-releases").createSignedUploadUrl(path, { upsert: false });
+    const path = `incoming/${crypto.randomUUID()}.apk`;
+    const { data, error } = await supabase.storage.from(APP_RELEASE_BUCKET).createSignedUploadUrl(path, { upsert: false });
     if (error) throw error;
-    return res.json({ ok: true, upload: { path, token: data.token, signedUrl: data.signedUrl, contentType } });
+    return res.json({ ok: true, upload: { path, token: data.token, signedUrl: data.signedUrl, contentType: "application/vnd.android.package-archive" } });
   } catch (error) {
     console.error("[APP RELEASE SIGN UPLOAD ERROR]", error);
     return res.status(500).json({ ok: false, error: "Gagal menyiapkan upload APK." });
@@ -600,34 +623,58 @@ app.get("/api/owner/app-releases", requireAuth, ownerBroadcastReadLimiter, requi
 });
 
 app.post("/api/owner/app-releases", requireAuth, ownerMemberMutationLimiter, requireOwner, async (req, res) => {
+  let incomingPath = "";
   try {
     const b = req.body || {};
-    const version = String(b.version || "").trim();
-    const versionCode = Number(b.version_code);
-    if (!semverParts(version)) return res.status(400).json({ ok: false, error: "Version harus X.Y.Z." });
-    if (!Number.isInteger(versionCode) || versionCode < 1) return res.status(400).json({ ok: false, error: "Version code tidak valid." });
-    if (!String(b.download_url || "").trim()) return res.status(400).json({ ok: false, error: "Download URL wajib diisi." });
+    incomingPath = String(b.storage_path || "").trim();
+    if (!/^incoming\/[0-9a-f-]{36}\.apk$/i.test(incomingPath)) return res.status(400).json({ ok: false, error: "Upload APK belum valid atau sudah kedaluwarsa." });
+
+    const verified = await verifyStoredApk(incomingPath);
+    const m = verified.metadata;
+    if (m.packageName !== APP_RELEASE_PACKAGE) return res.status(400).json({ ok: false, error: `Package Name APK tidak sesuai. Wajib ${APP_RELEASE_PACKAGE}.` });
+    if (!semverParts(m.versionName)) return res.status(400).json({ ok: false, error: "versionName APK harus mengikuti format X.Y.Z." });
+
+    const { data: existing, error: existingError } = await supabase.from("app_releases")
+      .select("id,version,version_code,status,release_channel")
+      .eq("app_key", "jyyramprem").eq("platform", "android")
+      .or(`version.eq.${m.versionName},version_code.eq.${m.versionCode}`);
+    if (existingError) throw existingError;
+    if (existing?.length) return res.status(409).json({ ok: false, error: `Release v${m.versionName} / code ${m.versionCode} sudah ada. Gunakan Edit untuk mengubah metadata release yang existing.` });
+
+    const channel = "stable";
+    const statusValue = "published";
+    const { data: firstStable, error: firstStableError } = await supabase.from("app_releases")
+      .select("version,version_code,published_at").eq("app_key", "jyyramprem").eq("platform", "android").eq("release_channel", "stable").eq("status", "published")
+      .order("version_code", { ascending: true }).order("published_at", { ascending: true }).limit(1).maybeSingle();
+    if (firstStableError) throw firstStableError;
+    const minSupportedVersion = String(b.min_supported_version || "").trim() || firstStable?.version || m.versionName;
+    if (!semverParts(minSupportedVersion)) return res.status(400).json({ ok: false, error: "Minimum Version tidak valid." });
+
+    const canonicalPath = `android/${m.versionName}/JyyR-Amprem-${m.versionName}.apk`;
+    const { error: uploadError } = await supabase.storage.from(APP_RELEASE_BUCKET).upload(canonicalPath, verified.buffer, {
+      contentType: "application/vnd.android.package-archive", cacheControl: "31536000", upsert: false,
+    });
+    if (uploadError) throw uploadError;
+
     const changelog = Array.isArray(b.changelog) ? b.changelog.map((x) => String(x).trim()).filter(Boolean).slice(0, 30) : [];
     const payload = {
-      app_key: "jyyramprem", platform: "android", version, version_code: versionCode,
-      title: String(b.title || "Jyy\'R Amprem").trim().slice(0, 160),
-      changelog, download_url: normalizeReleaseUrl(b.download_url), storage_path: b.storage_path ? String(b.storage_path).trim() : null,
-      file_name: b.file_name ? String(b.file_name).trim().slice(0, 180) : null, file_size_bytes: Number.isInteger(Number(b.file_size_bytes)) ? Number(b.file_size_bytes) : null,
-      sha256: b.sha256 ? String(b.sha256).trim().toLowerCase() : null, min_supported_version: b.min_supported_version ? String(b.min_supported_version).trim() : null,
-      mandatory_update: Boolean(b.mandatory_update), release_channel: ["stable", "beta"].includes(String(b.release_channel || "stable")) ? String(b.release_channel || "stable") : "stable",
-      status: ["draft", "published", "archived"].includes(String(b.status || "draft")) ? String(b.status || "draft") : "draft",
-      published_at: String(b.status || "draft") === "published" ? new Date().toISOString() : null, created_by: req.user.id,
+      app_key: "jyyramprem", platform: "android", version: m.versionName, version_code: m.versionCode,
+      title: "Jyy'R Amprem", changelog, download_url: releaseDownloadUrl(canonicalPath), storage_path: canonicalPath,
+      file_name: `JyyR-Amprem-${m.versionName}.apk`, file_size_bytes: verified.fileSizeBytes, sha256: verified.sha256,
+      package_name: m.packageName, min_sdk: m.minSdk, target_sdk: m.targetSdk,
+      min_supported_version: minSupportedVersion, mandatory_update: false, release_channel: channel,
+      status: statusValue, published_at: new Date().toISOString(), created_by: req.user.id,
     };
-    if (!/^[A-Fa-f0-9]{64}$/.test(payload.sha256 || "")) payload.sha256 = null;
-    const minV = payload.min_supported_version ? semverParts(payload.min_supported_version) : null;
-    if (payload.min_supported_version && !minV) return res.status(400).json({ ok: false, error: "Minimum version tidak valid." });
     const { data, error } = await supabase.from("app_releases").insert(payload).select("*").single();
-    if (error) throw error;
-    return res.status(201).json({ ok: true, owner: true, release: data });
+    if (error) { await removeStorageObject(canonicalPath); throw error; }
+    await removeStorageObject(incomingPath);
+    incomingPath = "";
+    return res.status(201).json({ ok: true, owner: true, release: data, verified: { package_name: m.packageName, version: m.versionName, version_code: m.versionCode, file_size_bytes: verified.fileSizeBytes, sha256: verified.sha256, min_sdk: m.minSdk, target_sdk: m.targetSdk } });
   } catch (error) {
+    await removeStorageObject(incomingPath);
     console.error("[OWNER APP RELEASE CREATE ERROR]", error);
     const duplicate = /duplicate key|unique constraint/i.test(String(error.message));
-    return res.status(duplicate ? 409 : 500).json({ ok: false, error: duplicate ? "Version release tersebut sudah ada." : "Gagal membuat release aplikasi." });
+    return res.status(duplicate ? 409 : 500).json({ ok: false, error: duplicate ? "Release version atau version code tersebut sudah ada." : "APK gagal diverifikasi atau release gagal dibuat." });
   }
 });
 
@@ -636,23 +683,21 @@ app.patch("/api/owner/app-releases/:id", requireAuth, ownerMemberMutationLimiter
     if (!isUuid(req.params.id)) return res.status(400).json({ ok: false, error: "Release ID tidak valid." });
     const b = req.body || {};
     const patch = {};
-    for (const key of ["title","download_url","storage_path","file_name","min_supported_version","sha256"]) if (b[key] !== undefined) patch[key] = String(b[key] || "").trim() || null;
+    for (const key of ["title","min_supported_version"]) if (b[key] !== undefined) patch[key] = String(b[key] || "").trim() || null;
     if (b.changelog !== undefined) patch.changelog = Array.isArray(b.changelog) ? b.changelog.map((x) => String(x).trim()).filter(Boolean).slice(0,30) : [];
     if (b.mandatory_update !== undefined) patch.mandatory_update = Boolean(b.mandatory_update);
     if (b.status !== undefined) patch.status = ["draft","published","archived"].includes(String(b.status)) ? String(b.status) : undefined;
     if (b.release_channel !== undefined) patch.release_channel = ["stable","beta"].includes(String(b.release_channel)) ? String(b.release_channel) : undefined;
-    if (b.file_size_bytes !== undefined) patch.file_size_bytes = Number.isInteger(Number(b.file_size_bytes)) ? Number(b.file_size_bytes) : null;
     if (b.status === "published") patch.published_at = new Date().toISOString();
-    if (patch.download_url) patch.download_url = normalizeReleaseUrl(patch.download_url);
     if (patch.min_supported_version && !semverParts(patch.min_supported_version)) return res.status(400).json({ ok: false, error: "Minimum version tidak valid." });
-    if (patch.sha256 && !/^[A-Fa-f0-9]{64}$/.test(patch.sha256)) return res.status(400).json({ ok: false, error: "SHA-256 tidak valid." });
-    Object.keys(patch).forEach((k) => patch[k] === undefined && delete patch[k]);
+    if (Object.keys(patch).some((key) => patch[key] === undefined)) return res.status(400).json({ ok: false, error: "Metadata release tidak valid." });
     const { data, error } = await supabase.from("app_releases").update(patch).eq("id", req.params.id).select("*").single();
     if (error) throw error;
     return res.json({ ok: true, owner: true, release: data });
   } catch (error) {
     console.error("[OWNER APP RELEASE UPDATE ERROR]", error);
-    return res.status(/no rows|JSON object requested/i.test(String(error.message)) ? 404 : 500).json({ ok: false, error: "Gagal memperbarui release aplikasi." });
+    const duplicate = /duplicate key|unique constraint/i.test(String(error.message));
+    return res.status(duplicate ? 409 : 500).json({ ok: false, error: duplicate ? "Perubahan release melanggar aturan unik database." : "Gagal memperbarui release aplikasi." });
   }
 });
 

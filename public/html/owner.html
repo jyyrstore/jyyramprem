@@ -590,37 +590,43 @@
         <div id="releaseEditNotice" class="status info app-release-edit-notice" hidden>Edit mode aktif. Metadata release yang dipilih sedang diedit.</div>
 
         <div class="grid grid-2 app-release-fields">
-          <div class="field"><label for="releaseVersion">Version</label><input id="releaseVersion" class="input" type="text" placeholder="1.0.1" inputmode="decimal"></div>
-          <div class="field"><label for="releaseVersionCode">Version Code</label><input id="releaseVersionCode" class="input" type="number" min="1" placeholder="2"></div>
+          <div class="field"><label for="releaseVersion">Version</label><input id="releaseVersion" class="input" type="text" placeholder="Otomatis dari APK" readonly></div>
+          <div class="field"><label for="releaseVersionCode">Version Code</label><input id="releaseVersionCode" class="input" type="number" min="1" placeholder="Otomatis dari APK" readonly></div>
         </div>
 
         <div id="releaseFileField" class="field">
           <label for="releaseFile">APK File</label>
           <input id="releaseFile" class="input" type="file" accept=".apk,application/vnd.android.package-archive,application/octet-stream,*/*">
-          <small class="field-help">Pilih file APK. Validasi tetap berdasarkan ekstensi .apk agar browser Android yang tidak mengirim MIME tetap didukung. Mode Edit tidak mengupload ulang binary APK.</small>
+          <small class="field-help">Pilih file APK. Version, Version Code, Package Name, SDK, ukuran binary, dan SHA-256 dibaca otomatis. Validasi tetap berdasarkan ekstensi .apk agar browser Android yang tidak mengirim MIME tetap didukung. Metadata browser bukan sumber kebenaran; server akan mengambil kembali APK dari Storage dan memverifikasinya sebelum release dibuat. Mode Edit tidak mengupload ulang binary APK.</small>
         </div>
 
-        <div class="field app-release-meta-field" id="releaseFileSizeField" hidden>
+        <div class="field app-release-meta-field" id="releaseFileSizeField">
           <label for="releaseFileSize">File Size (bytes)</label>
-          <input id="releaseFileSize" class="input" type="number" min="0" inputmode="numeric" placeholder="8291150">
+          <input id="releaseFileSize" class="input" type="number" min="0" inputmode="numeric" placeholder="Otomatis dari binary APK" readonly>
         </div>
 
-        <div class="field app-release-meta-field" id="releaseShaField" hidden>
+        <div class="field app-release-meta-field" id="releaseShaField">
           <label for="releaseSha">SHA-256</label>
-          <input id="releaseSha" class="input" type="text" maxlength="64" spellcheck="false" autocomplete="off" placeholder="64 karakter hex SHA-256">
+          <input id="releaseSha" class="input" type="text" maxlength="64" spellcheck="false" autocomplete="off" placeholder="Otomatis dari binary APK" readonly>
         </div>
+
+        <div class="grid grid-2 app-release-fields">
+          <div class="field"><label for="releasePackageName">Package Name</label><input id="releasePackageName" class="input" type="text" placeholder="com.jyystore.jyyramprem" readonly></div>
+          <div class="field"><label for="releaseMinSdk">Minimum SDK</label><input id="releaseMinSdk" class="input" type="number" min="1" readonly></div>
+        </div>
+        <div class="field"><label for="releaseTargetSdk">Target SDK</label><input id="releaseTargetSdk" class="input" type="number" min="1" readonly></div>
 
         <div class="field"><label for="releaseChangelog">Changelog (1 baris = 1 item)</label><textarea id="releaseChangelog" class="textarea" rows="7" placeholder="Perbaikan login
 Optimasi WebView"></textarea></div>
 
         <div class="grid grid-2 app-release-secondary-fields">
-          <div class="field"><label for="releaseMinVersion">Minimum Version</label><input id="releaseMinVersion" class="input" type="text" placeholder="1.0.0"></div>
-          <label class="toggle-field"><input id="releaseMandatory" type="checkbox"><span>Mandatory Update</span></label>
+          <div class="field"><label for="releaseMinVersion">Minimum Version</label><input id="releaseMinVersion" class="input" type="text" placeholder="Otomatis dari stable release paling awal" readonly></div>
+          <label class="toggle-field"><input id="releaseMandatory" type="checkbox" disabled><span>Mandatory Update</span></label>
         </div>
 
         <div class="grid grid-2 app-release-secondary-fields">
-          <div class="field"><label for="releaseChannel">Channel</label><select id="releaseChannel" class="input"><option value="stable">Stable</option><option value="beta">Beta</option></select></div>
-          <div class="field"><label for="releaseStatus">Status</label><select id="releaseStatus" class="input"><option value="draft">Draft</option><option value="published">Published</option><option value="archived">Archived</option></select></div>
+          <div class="field"><label for="releaseChannel">Channel</label><select id="releaseChannel" class="input" disabled><option value="stable">Stable</option></select></div>
+          <div class="field"><label for="releaseStatus">Status</label><select id="releaseStatus" class="input" disabled><option value="published">Published</option></select></div>
         </div>
 
         <div id="releaseUploadStatus" class="status info">Siap upload.</div>
@@ -822,7 +828,7 @@ Optimasi WebView"></textarea></div>
 <script src="/js/auth-client.js"></script>
 <script src="/js/icons.js"></script><script src="/js/ui-icons-assets.js"></script>
 <script src="/js/nav.js"></script>
-<script src="/js/notifications.js"></script><script src="/js/owner.js"></script>
+<script src="/js/notifications.js"></script><script src="/js/apk-metadata.js"></script><script src="/js/owner.js"></script>
 
 <script src="/js/ui-protection.js"></script>
 </body>
