@@ -41,6 +41,7 @@ const state = {
   tokenStatusNotified: false,
   generatedPortalTokenId: null,
   appReleaseEditingId: null,
+  appReleaseEditorMode: "create",
   appReleases: [],
 };
 
@@ -1156,8 +1157,11 @@ function bindEvents() {
     const button = document.getElementById("releasePublish");
     try {
       button.disabled = true;
-      if (state.appReleaseEditingId) await saveAppReleaseEdit();
-      else await publishAppRelease();
+      if (state.appReleaseEditorMode === "edit") {
+        await saveAppReleaseEdit();
+      } else {
+        await publishAppRelease();
+      }
     } catch (e) {
       const s = document.getElementById("releaseUploadStatus");
       if (s) { s.className = "status error"; s.textContent = e.message; }
@@ -1249,6 +1253,7 @@ function releaseStatusClass(row) {
 }
 
 function setAppReleaseEditorMode(editing) {
+  state.appReleaseEditorMode = editing ? "edit" : "create";
   const mode = document.getElementById("releaseEditorMode");
   const notice = document.getElementById("releaseEditNotice");
   const fileField = document.getElementById("releaseFileField");
@@ -1277,6 +1282,7 @@ function setAppReleaseEditorMode(editing) {
 
 function resetAppReleaseEditor() {
   state.appReleaseEditingId = null;
+  state.appReleaseEditorMode = "create";
   const version = document.getElementById("releaseVersion");
   const versionCode = document.getElementById("releaseVersionCode");
   const fileSize = document.getElementById("releaseFileSize");
@@ -1323,7 +1329,9 @@ async function saveAppReleaseEdit() {
   const session = state.session || await requireSession();
   if (!session) return;
   const id = state.appReleaseEditingId;
-  if (!id) throw new Error("Tidak ada release yang sedang diedit.");
+  if (state.appReleaseEditorMode !== "edit" || !id) {
+    throw new Error("Tidak ada release yang sedang diedit.");
+  }
   const fileSizeValue = document.getElementById("releaseFileSize")?.value.trim() || "";
   const sha256 = document.getElementById("releaseSha")?.value.trim().toLowerCase() || "";
   const version = document.getElementById("releaseVersion")?.value.trim() || "";
