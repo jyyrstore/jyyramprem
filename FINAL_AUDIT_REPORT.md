@@ -1,49 +1,42 @@
-# Jyy'R Amprem — Final Release Integrity Audit
+# Jyy'R Amprem — Final Technical Audit & Fix
 
 Date: 2026-09-02
 
-## Implemented
+## Root cause of the screenshot error
 
-- APK CREATE flow no longer asks Owner to type Version or Version Code.
-- APK selection reads `versionName`, `versionCode`, package name, min SDK and target SDK from `AndroidManifest.xml`.
-- Browser computes SHA-256 and reads actual File Size for immediate UI feedback.
-- Browser metadata is explicitly non-authoritative.
-- Upload uses the signed Supabase Storage URL with the APK as the raw request body; the old multipart/FormData upload path is removed.
-- Server downloads the uploaded APK back from Supabase Storage before creating a release.
-- Server recomputes binary size and SHA-256, parses AndroidManifest.xml, validates package, versionName, versionCode, minSdk and targetSdk, and uses those verified values for the release row.
-- Package is hard-required to `com.jyystore.jyyramprem`.
-- New releases default to Stable, Mandatory Update OFF, Published.
-- Minimum Version defaults to the earliest published Stable release; if none exists, the new APK version is used.
-- CREATE and EDIT are controlled by explicit editor mode state.
-- EDIT cannot alter binary-derived Version, Version Code, File Size, SHA-256, Package Name, Minimum SDK or Target SDK.
-- Release success uses one primary top notification path.
-- JYYRNotify now suppresses identical notifications within a short interval and guards close/timer execution against repeated calls.
-- Supabase integrity hardening was applied live to project `jfjbdenqepaagxfysaar` without changing or deleting existing releases.
-- Added unique `(app_key, platform, release_channel, version_code)` protection and the published-at integrity check.
-- Existing production releases were preserved: 1.0.0/code 1 and 1.0.1/code 2.
+The exact failure was in the Owner release flow: both JSON POST requests in `public/js/owner.js` were sending `JSON.stringify(...)` without an explicit `Content-Type: application/json`. Express JSON parsing therefore did not populate `req.body`; the server received an empty `storage_path` and returned `Upload APK belum valid atau sudah kedaluwarsa.`
 
-## Verified APK in package
+That is why the APK metadata could already be visible in the form while the final upload step still failed.
 
-- Package: `com.jyystore.jyyramprem`
-- Version: `1.0.0`
-- Version Code: `1`
-- Minimum SDK: `24`
-- Target SDK: `35`
-- File size: `9,229,016` bytes
-- SHA-256: `81fb4e7c46867b13bf1848b110c91fd0ebb4d0aa5b881331f7128e9bb085b69b`
+## Fixes applied
 
-## Test result
+- Added `Content-Type: application/json` to the signed-upload request and final release-finalization request.
+- Changed the Supabase signed upload to send the **raw APK File as the PUT body**, not `FormData`/multipart. Supabase's current JavaScript reference documents `uploadToSignedUrl(path, token, file)` for signed uploads.
+- APK CREATE now reads `versionName`, `versionCode`, package name, minimum SDK and target SDK automatically from `AndroidManifest.xml`.
+- Browser calculates the immediate SHA-256 and actual byte size for UI feedback; these values are non-authoritative.
+- Server re-downloads the incoming APK from Supabase Storage, recomputes SHA-256 and byte size, parses the manifest, validates the required package, version format and version code, and writes only server-verified metadata to `app_releases`.
+- Minimum supported app version is auto-filled from the earliest published Stable release, with the uploaded APK version as fallback. This is intentionally distinct from Android `minSdkVersion`.
+- Stable releases require a monotonically increasing `version_code` relative to the latest published Stable release.
+- CREATE defaults remain Stable + Published + Mandatory Update OFF. Binary-derived fields remain read-only.
+- Final release success/error uses the top notification as the primary user-facing notification; the release form status is kept as progress/help text so the same message is not rendered twice.
+- Notification deduplication and close guards remain active.
+- Reset logic now clears cached selected APK metadata as well.
+- Public release APIs now return `Cache-Control: no-store, max-age=0` so newly published releases are visible immediately instead of waiting behind a 60-second cache.
 
-`npm test` passed completely after the changes.
+## Verification
 
-The runtime verification reports local Supabase environment variables as not configured because the ZIP intentionally contains no production `.env`; live Supabase integrity was verified separately against project `jfjbdenqepaagxfysaar`.
+`npm test` — **PASS**. App-release contract: 13/13 tests passed.
 
-## Production comparison
+`npm run verify` — **PASS** (`ok: true`; local production secrets intentionally absent from the ZIP).
 
-Vercel project `jyyramprem` is connected to GitHub repository `jyyrstore/jyyramprem`. The latest production deployment observed during this audit was READY and corresponded to the earlier commit `0efcc4aac17b6de58b988805d32199bc6449c94f` (`fix: make app release editor mode explicit`). The corrected files in this package are newer local changes and therefore require the corrected source to be committed/deployed before production can be considered fully synchronized with this package.
+`node --check` — **PASS** for the modified JavaScript files.
 
-Historical Vercel runtime errors were also inspected. The reported errors were from earlier deployments (SMTP/provider configuration and older RPC permission issues); they are not evidence that the new APK release code failed. Production deployment itself was READY at audit time.
+Bundled APK metadata validation — **PASS** for `public/releases/android/1.0.0/JyyR-Amprem-1.0.0.apk` (package `com.jyystore.jyyramprem`, version `1.0.0`, code `1`, min SDK `24`, target SDK `35`, size `9229016`, SHA-256 `81fb4e7c46867b13bf1848b110c91fd0ebb4d0aa5b881331f7128e9bb085b69b`).
 
-## Important deployment note
+## Source comparison
 
-The corrected source package is ready. This audit did not claim a production deployment of these local ZIP changes because the available Vercel deploy action could not accept the local filesystem payload in this session, and the GitHub connector could not read the private repository contents. No production release was altered by the code audit.
+The supplied `jyyramprem_github.zip` matches the uploaded project snapshot except for four source additions in the GitHub snapshot: `FINAL_AUDIT_REPORT.md`, `lib/apk-manifest.js`, `public/js/apk-metadata.js`, and `supabase/migrations/20260902210000_app_release_integrity_hardening_v2.sql`. The project snapshot is internally consistent after the fixes above. A direct live GitHub fetch was unavailable in this audit environment, so no unsupported claim of byte-for-byte remote equality is made.
+
+## Deployment readiness
+
+**CODE AUDIT: PASS.** The screenshot's concrete upload failure is fixed in the supplied source. The production site still needs a real deployment of this corrected source and one authenticated Owner smoke test with the actual APK before publishing a new production release.

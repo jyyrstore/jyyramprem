@@ -43,6 +43,8 @@ const state = {
   appReleaseEditingId: null,
   appReleaseEditorMode: "create",
   appReleases: [],
+  appReleaseSelectedFile: null,
+  appReleaseSelectedMetadata: null,
 };
 
 const PORTAL_TOKEN_VAULT_KEY = "jyyramprem.ownerPortalTokens.v2";
@@ -1157,8 +1159,10 @@ function bindEvents() {
     try { await handleApkSelection(event.target.files?.[0]); }
     catch (e) {
       event.target.value = "";
+      state.appReleaseSelectedFile = null;
+      state.appReleaseSelectedMetadata = null;
       const s = document.getElementById("releaseUploadStatus");
-      if (s) { s.className = "status error"; s.textContent = e.message; }
+      if (s) { s.className = "status info"; s.textContent = "APK tidak valid. Lihat notifikasi di bagian atas."; }
       ownerNotice(e.message);
     }
   });
@@ -1174,7 +1178,7 @@ function bindEvents() {
       }
     } catch (e) {
       const s = document.getElementById("releaseUploadStatus");
-      if (s) { s.className = "status error"; s.textContent = e.message; }
+      if (s) { s.className = "status info"; s.textContent = "Proses gagal. Lihat notifikasi di bagian atas."; }
       ownerNotice(e.message);
     } finally { button.disabled = false; }
   });
@@ -1198,13 +1202,23 @@ function bindEvents() {
 }
 
 
+function automaticMinimumVersion(fallbackVersion) {
+  const stablePublished = (Array.isArray(state.appReleases) ? state.appReleases : [])
+    .filter((row) => row?.release_channel === "stable" && row?.status === "published" && /^\d+\.\d+\.\d+([+-][0-9A-Za-z.-]+)?$/.test(String(row.version || "")))
+    .sort((a, b) => Number(a.version_code || 0) - Number(b.version_code || 0));
+  return stablePublished[0]?.version || fallbackVersion;
+}
+
 async function handleApkSelection(file) {
   const status = document.getElementById("releaseUploadStatus");
   if (!file) return;
   if (!/\.apk$/i.test(file.name)) throw new Error("File harus berekstensi .apk.");
   if (status) { status.className = "status info"; status.textContent = "Membaca metadata APK…"; }
+  if (typeof window.JYYRReadApkMetadata !== "function") throw new Error("Pembaca metadata APK belum siap. Muat ulang halaman Owner.");
   const metadata = await window.JYYRReadApkMetadata(file);
   if (metadata.packageName !== "com.jyystore.jyyramprem") throw new Error("Package Name tidak sesuai. APK Jyy'R Amprem wajib com.jyystore.jyyramprem.");
+  if (!/^\d+\.\d+\.\d+([+-][0-9A-Za-z.-]+)?$/.test(String(metadata.versionName || ""))) throw new Error("versionName APK harus mengikuti format X.Y.Z.");
+  if (!Number.isInteger(metadata.versionCode) || metadata.versionCode < 1) throw new Error("versionCode APK tidak valid.");
   const digest = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
   const sha256 = Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
   document.getElementById("releaseVersion").value = metadata.versionName;
@@ -1214,9 +1228,12 @@ async function handleApkSelection(file) {
   document.getElementById("releasePackageName").value = metadata.packageName;
   document.getElementById("releaseMinSdk").value = metadata.minSdk;
   document.getElementById("releaseTargetSdk").value = metadata.targetSdk;
+  document.getElementById("releaseMinVersion").value = automaticMinimumVersion(metadata.versionName);
   document.getElementById("releaseChannel").value = "stable";
   document.getElementById("releaseStatus").value = "published";
   document.getElementById("releaseMandatory").checked = false;
+  state.appReleaseSelectedFile = file;
+  state.appReleaseSelectedMetadata = { ...metadata, sha256, fileSizeBytes: file.size };
   if (status) { status.className = "status success"; status.textContent = `APK terbaca: v${metadata.versionName} · code ${metadata.versionCode} · ${file.size.toLocaleString("id-ID")} bytes.`; }
   return metadata;
 }
@@ -1243,6 +1260,7 @@ async function publishAppRelease() {
   status.textContent = "Menyiapkan upload aman…";
   const signResp = await ownerRequest("/api/owner/app-releases/sign-upload", session, {
     method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       version,
       version_code: versionCode,
@@ -1255,15 +1273,14 @@ async function publishAppRelease() {
 
   status.textContent = "Mengupload APK…";
 
-  // Supabase signed-upload URLs expect the multipart body used by uploadToSignedUrl().
-  // Keep the APK bytes untouched; browser MIME is not trusted as metadata.
-  const form = new FormData();
-  form.append("cacheControl", "31536000");
-  form.append("", file, file.name);
-
+  // Supabase signed upload uses the APK itself as the request body.
+  // Never wrap the APK in multipart/FormData: that would change the stored bytes.
   const uploadResponse = await fetch(signData.upload.signedUrl, {
     method: "PUT",
-    body: form
+    headers: {
+      "Content-Type": "application/vnd.android.package-archive",
+    },
+    body: file
   });
   if (!uploadResponse.ok) {
     const detail = await uploadResponse.text().catch(() => "");
@@ -1273,7 +1290,11 @@ async function publishAppRelease() {
   const changelog = document.getElementById("releaseChangelog")?.value.split("\n").map(x => x.trim()).filter(Boolean) || [];
   const payload = { storage_path: signData.upload.path, changelog };
   status.textContent = "Server memverifikasi APK dari Storage…";
-  const saveResp = await ownerRequest("/api/owner/app-releases", session, { method: "POST", body: JSON.stringify(payload) });
+  const saveResp = await ownerRequest("/api/owner/app-releases", session, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
   const saveData = await parseJson(saveResp);
   if (!saveResp.ok) throw new Error(saveData.error || "Gagal memverifikasi atau menyimpan release.");
   resetAppReleaseEditor();

@@ -525,7 +525,7 @@ app.get("/api/app/latest", async (req, res) => {
       .order("version_code", { ascending: false }).order("published_at", { ascending: false }).limit(1).maybeSingle();
     if (error) throw error;
     if (!data) return res.status(404).json({ ok: false, code: "NO_RELEASE", error: "Belum ada release tersedia." });
-    return res.set("Cache-Control", "public, max-age=60, stale-while-revalidate=300").json({ ok: true, release: data });
+    return res.set("Cache-Control", "no-store, max-age=0").json({ ok: true, release: data });
   } catch (error) {
     console.error("[APP LATEST ERROR]", error);
     return res.status(500).json({ ok: false, error: "Gagal membaca release aplikasi." });
@@ -542,7 +542,7 @@ app.get("/api/app/releases", async (req, res) => {
       .eq("app_key", "jyyramprem").eq("platform", "android").eq("release_channel", channel).eq("status", "published")
       .order("version_code", { ascending: false }).order("published_at", { ascending: false }).limit(limit);
     if (error) throw error;
-    return res.set("Cache-Control", "public, max-age=60, stale-while-revalidate=300").json({ ok: true, releases: data || [] });
+    return res.set("Cache-Control", "no-store, max-age=0").json({ ok: true, releases: data || [] });
   } catch (error) {
     console.error("[APP RELEASES ERROR]", error);
     return res.status(500).json({ ok: false, error: "Gagal membaca riwayat release aplikasi." });
@@ -627,7 +627,8 @@ app.post("/api/owner/app-releases", requireAuth, ownerMemberMutationLimiter, req
   try {
     const b = req.body || {};
     incomingPath = String(b.storage_path || "").trim();
-    if (!/^incoming\/[0-9a-f-]{36}\.apk$/i.test(incomingPath)) return res.status(400).json({ ok: false, error: "Upload APK belum valid atau sudah kedaluwarsa." });
+    try { incomingPath = decodeURIComponent(incomingPath); } catch {}
+    if (!/^incoming\/[0-9a-f-]{36}\.apk$/i.test(incomingPath)) return res.status(400).json({ ok: false, error: "Upload APK belum diterima Storage. Ulangi proses upload dari awal." });
 
     const verified = await verifyStoredApk(incomingPath);
     const m = verified.metadata;
@@ -643,6 +644,14 @@ app.post("/api/owner/app-releases", requireAuth, ownerMemberMutationLimiter, req
 
     const channel = "stable";
     const statusValue = "published";
+    const { data: latestStable, error: latestStableError } = await supabase.from("app_releases")
+      .select("version,version_code").eq("app_key", "jyyramprem").eq("platform", "android")
+      .eq("release_channel", channel).eq("status", "published")
+      .order("version_code", { ascending: false }).limit(1).maybeSingle();
+    if (latestStableError) throw latestStableError;
+    if (latestStable && m.versionCode <= Number(latestStable.version_code || 0)) {
+      return res.status(409).json({ ok: false, error: `Version Code APK harus lebih besar dari release stable terbaru (${latestStable.version_code}).` });
+    }
     const { data: firstStable, error: firstStableError } = await supabase.from("app_releases")
       .select("version,version_code,published_at").eq("app_key", "jyyramprem").eq("platform", "android").eq("release_channel", "stable").eq("status", "published")
       .order("version_code", { ascending: true }).order("published_at", { ascending: true }).limit(1).maybeSingle();

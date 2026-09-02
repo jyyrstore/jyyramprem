@@ -29,14 +29,34 @@ test('owner release flow uses server-verified Storage finalization', () => {
   assert.match(owner, /id=["']releaseFile["']/);
   assert.match(ownerJs, /\/api\/owner\/app-releases\/sign-upload/);
   assert.match(ownerJs, /method: "PUT"/);
+  assert.match(ownerJs, /Content-Type": "application\/vnd\.android\.package-archive"/);
   assert.doesNotMatch(ownerJs, /new FormData\(\)/);
-  assert.match(ownerJs, /method: "POST", body: JSON\.stringify\(payload\)/);
+  assert.match(ownerJs, /Content-Type": "application\/json"/);
+  assert.match(ownerJs, /JSON\.stringify\(payload\)/);
   assert.match(server, /supabase\.storage\.from\(APP_RELEASE_BUCKET\)\.download/);
   assert.match(server, /crypto\.createHash\("sha256"\)\.update\(buffer\)/);
   assert.match(server, /inspectApk\(buffer\)/);
   assert.match(server, /m\.packageName !== APP_RELEASE_PACKAGE/);
+  assert.match(server, /Version Code APK harus lebih besar/);
   assert.match(server, /file_size_bytes: verified\.fileSizeBytes/);
   assert.match(server, /sha256: verified\.sha256/);
+});
+
+test('owner release JSON posts explicitly declare application/json', () => {
+  const publish = ownerJs.slice(ownerJs.indexOf('async function publishAppRelease()'), ownerJs.indexOf('function releaseDate('));
+  assert.match(publish, /sign-upload[\s\S]*headers: \{ "Content-Type": "application\/json" \}/);
+  assert.match(publish, /\/api\/owner\/app-releases[\s\S]*headers: \{ "Content-Type": "application\/json" \}/);
+});
+
+test('public release APIs disable stale response caching', () => {
+  const latestStart = server.indexOf('app.get("/api/app/latest"');
+  const latestEnd = server.indexOf('app.get("/api/app/releases"');
+  const latest = server.slice(latestStart, latestEnd);
+  const releasesStart = latestEnd;
+  const releasesEnd = server.indexOf('const ownerBroadcastReadLimiter', releasesStart);
+  const releases = server.slice(releasesStart, releasesEnd);
+  assert.match(latest, /Cache-Control", "no-store, max-age=0/);
+  assert.match(releases, /Cache-Control", "no-store, max-age=0/);
 });
 
 test('APK metadata is read from the real bundled APK', () => {
@@ -59,6 +79,7 @@ test('owner CREATE metadata is automatic and release defaults are fixed', () => 
   assert.match(owner, /releaseMandatory.*disabled/);
   assert.match(ownerJs, /state\.appReleaseEditorMode === "edit"/);
   assert.match(ownerJs, /state\.appReleaseEditorMode !== "edit"/);
+  assert.match(ownerJs, /automaticMinimumVersion/);
 });
 
 test('edit mode does not allow changing binary-derived integrity fields', () => {
@@ -86,11 +107,11 @@ test('owner release history exposes edit controls and APK metadata fields', () =
   assert.match(ownerJs, /data-release-open/);
 });
 
-test('owner APK upload accepts Android browser MIME variations and sends multipart binary', () => {
+test('owner APK upload accepts Android browser MIME variations and sends raw binary', () => {
   assert.match(owner, /accept="[^"]*\*\/\*"/);
   assert.match(ownerJs, /method: "PUT"/);
-  assert.match(ownerJs, /form\.append\("", file, file\.name\)/);
-  assert.match(ownerJs, /application\/vnd\.android\.package-archive/);
+  assert.match(ownerJs, /Content-Type\": \"application\/vnd\.android\.package-archive\"/);
+  assert.doesNotMatch(ownerJs, /new FormData\(\)/);
 });
 
 test('APK intro uses the configured app icon asset', () => {
