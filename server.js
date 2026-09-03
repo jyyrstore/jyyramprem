@@ -1323,7 +1323,7 @@ app.post("/api/owner/token/generate", requireAuth, ownerMemberMutationLimiter, r
         expires_at: expiresAt,
         created_by: req.user.id,
       })
-      .select("id, expires_at, status, token_encrypted")
+      .select("id, created_at, expires_at, status, token_encrypted")
       .single();
 
     if (error) throw error;
@@ -1350,6 +1350,7 @@ app.post("/api/owner/token/generate", requireAuth, ownerMemberMutationLimiter, r
       owner: true,
       token,
       tokenId: data.id,
+      createdAt: data.created_at || new Date().toISOString(),
       expiresAt: persisted.expires_at || data.expires_at || expiresAt,
     });
   } catch (error) {
@@ -1379,6 +1380,36 @@ app.get("/api/owner/token/history", requireAuth, ownerReadLimiter, requireOwner,
       .select("id", { count: "exact", head: true });
     if (countError) throw countError;
 
+    // The token history UI needs the email of the member who actually used a
+    // token. That relationship lives in portal_access_grants, while emails
+    // live in Supabase Auth, so resolve only the users referenced by the
+    // current page instead of loading the entire Auth user table.
+    const tokenIds = (Array.isArray(rows) ? rows : []).map((row) => row.id).filter(Boolean);
+    const usedEmailByTokenId = new Map();
+    if (tokenIds.length) {
+      const { data: grants, error: grantsError } = await supabase
+        .from("portal_access_grants")
+        .select("token_id, user_id")
+        .in("token_id", tokenIds);
+      if (grantsError) throw grantsError;
+
+      const userIds = [...new Set((Array.isArray(grants) ? grants : []).map((grant) => grant.user_id).filter(Boolean))];
+      const usersById = new Map();
+      for (const userId of userIds) {
+        try {
+          const { data: userData, error: userError } = await supabase.auth.admin.getUserById(userId);
+          if (!userError && userData?.user?.email) usersById.set(userId, userData.user.email);
+        } catch (userError) {
+          console.error("[OWNER TOKEN HISTORY USER LOOKUP ERROR]", { userId, message: userError?.message || "Unknown error" });
+        }
+      }
+
+      for (const grant of Array.isArray(grants) ? grants : []) {
+        const email = usersById.get(grant.user_id);
+        if (email && !usedEmailByTokenId.has(grant.token_id)) usedEmailByTokenId.set(grant.token_id, email);
+      }
+    }
+
     const tokens = (Array.isArray(rows) ? rows : []).map((row) => {
       const safeRow = {
         id: row.id,
@@ -1388,6 +1419,7 @@ app.get("/api/owner/token/history", requireAuth, ownerReadLimiter, requireOwner,
         expires_at: row.expires_at,
         used_at: row.used_at,
         revoked_at: row.revoked_at,
+        used_email: usedEmailByTokenId.get(row.id) || null,
       };
       const encrypted = String(row.token_encrypted || "").trim();
       if (encrypted) {

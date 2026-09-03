@@ -50,3 +50,19 @@ test('owner can revoke any individually active portal token without affecting ot
   assert.match(server, /app\.post\("\/api\/owner\/token\/revoke"/);
   assert.match(server, /owner_revoke_portal_token/);
 });
+
+test('owner portal token result and history usage labels follow the final UI contract', () => {
+  assert.match(html, /Buat Token\.\.\./);
+  for (const id of ['generatedPortalTokenToken','generatedPortalTokenCreated','generatedPortalTokenStatus']) {
+    assert.match(html, new RegExp(`id=["']${id}["']`));
+  }
+  assert.match(js, /Token  : \$\{data\.token\}/);
+  assert.match(js, /Dibuat : \$\{broadcastDate\(data\.createdAt/);
+  assert.match(js, /Status : Active/);
+  assert.match(js, /Belum Digunakan/);
+  assert.match(js, /Digunakan : \$\{t\.used_email\}/);
+  assert.match(js, /Token Expired/);
+  assert.match(js, /Token Revoke/);
+  assert.match(server, /portal_access_grants/);
+  assert.match(server, /used_email: usedEmailByTokenId/);
+});

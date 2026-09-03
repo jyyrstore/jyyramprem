@@ -481,7 +481,15 @@ async function loadPortalTokenHistory(session) {
       const created = escapeHtml(broadcastDate(t.created_at));
       const expires = escapeHtml(broadcastDate(t.expires_at));
       const used = t.used_at ? escapeHtml(broadcastDate(t.used_at)) : "—";
-      const usedBy = t.used_email ? `<small class="token-history-usedby">${escapeHtml(t.used_email)}</small>` : `<small class="token-history-usedby">Belum digunakan</small>`;
+      let usageText = "Belum Digunakan";
+      if (t.status === "used") {
+        usageText = t.used_email ? `Digunakan : ${t.used_email}` : "Digunakan";
+      } else if (t.status === "expired") {
+        usageText = "Token Expired";
+      } else if (t.status === "revoked") {
+        usageText = "Token Revoke";
+      }
+      const usedBy = `<small class="token-history-usedby">${escapeHtml(usageText)}</small>`;
       const canRevoke = t.status === "active" && isPortalTokenId(t.id);
       const action = canRevoke
         ? `<button class="btn danger token-history-revoke" type="button" data-revoke-token-id="${escapeHtml(t.id)}" data-revoke-token="${escapeHtml(tokenValue || t.preview || "token aktif")}">Cabut</button>`
@@ -518,13 +526,12 @@ async function generatePortalToken(session) {
   if (data.token && data.tokenId) rememberPortalTokenOnDevice(session, data.tokenId, data.token, data.expiresAt);
   if (out) {
     out.hidden = false;
-    const text = document.getElementById("generatedPortalTokenText");
-    if (text) text.textContent = data.token
-      ? `${data.token} · berlaku sampai ${broadcastDate(data.expiresAt)}.`
-      : "Token berhasil dibuat, tetapi server tidak mengembalikan plaintext token.";
-    else out.textContent = data.token
-      ? `TOKEN: ${data.token} · berlaku sampai ${broadcastDate(data.expiresAt)}.`
-      : "Token berhasil dibuat, tetapi server tidak mengembalikan plaintext token.";
+    const tokenEl = document.getElementById("generatedPortalTokenToken");
+    const createdEl = document.getElementById("generatedPortalTokenCreated");
+    const statusEl = document.getElementById("generatedPortalTokenStatus");
+    if (tokenEl) tokenEl.textContent = data.token ? `Token  : ${data.token}` : "Token  : —";
+    if (createdEl) createdEl.textContent = `Dibuat : ${broadcastDate(data.createdAt || new Date().toISOString())}`;
+    if (statusEl) statusEl.textContent = "Status : Active";
   }
   state.tokenHistoryPage = 0;
   state.tokenStatusNotified = false;
