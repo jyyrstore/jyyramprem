@@ -35,6 +35,11 @@ const PROVIDER_APPLY_PREMIUM_PATH = process.env.PROVIDER_APPLY_PREMIUM_PATH || "
 const PROVIDER_DIAGNOSTIC_SECRET = process.env.PROVIDER_DIAGNOSTIC_SECRET?.trim() || "";
 const PROVIDER_DELIVERY_WEBHOOK_ENABLED = Boolean(PROVIDER_DIAGNOSTIC_SECRET);
 const PORTAL_TOKEN_TTL_HOURS = Number(process.env.PORTAL_TOKEN_TTL_HOURS || 24);
+const PORTAL_TOKEN_GENERATION_MODES = Object.freeze({
+  "15_days": { label: "15 Hari", days: 15 },
+  "30_days": { label: "30 Hari", days: 30 },
+  permanent: { label: "Permanent", days: null },
+});
 const OWNER_WHATSAPP_URL = String(process.env.OWNER_WHATSAPP_URL || "").trim();
 const PROVIDER_TOKEN_ENCRYPTION_KEY = process.env.PROVIDER_TOKEN_ENCRYPTION_KEY?.trim() || "";
 
@@ -737,6 +742,24 @@ function generatePortalToken() {
   return crypto.randomBytes(10).toString("hex").toUpperCase();
 }
 
+function normalizePortalTokenDuration(value) {
+  const mode = String(value || "").trim().toLowerCase();
+  return Object.prototype.hasOwnProperty.call(PORTAL_TOKEN_GENERATION_MODES, mode) ? mode : null;
+}
+
+function getPortalTokenExpiration(durationMode) {
+  const mode = normalizePortalTokenDuration(durationMode);
+  if (!mode) throw Object.assign(new Error("Mode token tidak valid."), { code: "INVALID_PORTAL_TOKEN_MODE", status: 400 });
+  const config = PORTAL_TOKEN_GENERATION_MODES[mode];
+  if (config.days === null) return null;
+  return new Date(Date.now() + config.days * 24 * 60 * 60 * 1000).toISOString();
+}
+
+function getPortalTokenDurationLabel(durationMode) {
+  const mode = normalizePortalTokenDuration(durationMode);
+  return mode ? PORTAL_TOKEN_GENERATION_MODES[mode].label : "Legacy";
+}
+
 function getPortalTokenEncryptionKey() {
   const secret = String(SUPABASE_SERVICE_ROLE_KEY || "").trim();
   if (secret.length < 32) {
@@ -1303,8 +1326,16 @@ app.get("/api/owner/token/requests", requireAuth, ownerReadLimiter, requireOwner
 
 app.post("/api/owner/token/generate", requireAuth, ownerMemberMutationLimiter, requireOwner, async (req, res) => {
   try {
+    const durationMode = normalizePortalTokenDuration(req.body?.duration_mode || req.body?.durationMode);
+    if (!durationMode) {
+      return res.status(400).json({
+        ok: false,
+        code: "INVALID_PORTAL_TOKEN_MODE",
+        error: "Mode token harus 15 hari, 30 hari, atau permanent.",
+      });
+    }
     const token = generatePortalToken();
-    const expiresAt = new Date(Date.now() + PORTAL_TOKEN_TTL_HOURS * 60 * 60 * 1000).toISOString();
+    const expiresAt = getPortalTokenExpiration(durationMode);
     const tokenHash = hashPortalToken(token);
     const tokenPreview = `${token.slice(0, 4)}••••${token.slice(-4)}`;
     const tokenEncrypted = encryptPortalToken(token);
@@ -1320,10 +1351,11 @@ app.post("/api/owner/token/generate", requireAuth, ownerMemberMutationLimiter, r
         token_preview: tokenPreview,
         token_encrypted: tokenEncrypted,
         status: "active",
+        duration_mode: durationMode,
         expires_at: expiresAt,
         created_by: req.user.id,
       })
-      .select("id, created_at, expires_at, status, token_encrypted")
+      .select("id, created_at, expires_at, status, duration_mode, token_encrypted")
       .single();
 
     if (error) throw error;
@@ -1336,7 +1368,7 @@ app.post("/api/owner/token/generate", requireAuth, ownerMemberMutationLimiter, r
     // immediately instead of allowing a token that disappears after refresh.
     const { data: persisted, error: persistedError } = await supabase
       .from("portal_access_tokens")
-      .select("id, token_encrypted, expires_at")
+      .select("id, token_encrypted, expires_at, duration_mode")
       .eq("id", data.id)
       .single();
     if (persistedError) throw persistedError;
@@ -1344,14 +1376,16 @@ app.post("/api/owner/token/generate", requireAuth, ownerMemberMutationLimiter, r
       throw Object.assign(new Error("Token terenkripsi hilang setelah insert."), { code: "PORTAL_TOKEN_ENCRYPTED_READBACK_FAILED", status: 500 });
     }
 
-    rememberRecentOwnerPortalToken(req.user.id, data.id, token, persisted.expires_at || data.expires_at || expiresAt);
+    rememberRecentOwnerPortalToken(req.user.id, data.id, token, persisted.expires_at || data.expires_at || null);
     return res.status(201).json({
       ok: true,
       owner: true,
       token,
       tokenId: data.id,
       createdAt: data.created_at || new Date().toISOString(),
-      expiresAt: persisted.expires_at || data.expires_at || expiresAt,
+      expiresAt: persisted.expires_at ?? data.expires_at ?? null,
+      durationMode: persisted.duration_mode || data.duration_mode || durationMode,
+      durationLabel: getPortalTokenDurationLabel(persisted.duration_mode || data.duration_mode || durationMode),
     });
   } catch (error) {
     console.error("[OWNER TOKEN GENERATE ERROR]", { code: error?.code || null, message: error?.message || "Unknown error" });
@@ -1370,7 +1404,7 @@ app.get("/api/owner/token/history", requireAuth, ownerReadLimiter, requireOwner,
     // encrypted field and cause a token to disappear after refresh.
     const { data: rows, error } = await supabase
       .from("portal_access_tokens")
-      .select("id, token_preview, token_encrypted, status, created_at, expires_at, used_at, revoked_at")
+      .select("id, token_preview, token_encrypted, duration_mode, status, created_at, expires_at, used_at, revoked_at")
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
     if (error) throw error;
@@ -1414,7 +1448,9 @@ app.get("/api/owner/token/history", requireAuth, ownerReadLimiter, requireOwner,
       const safeRow = {
         id: row.id,
         preview: row.token_preview || null,
-        status: row.status === "active" && new Date(row.expires_at).getTime() <= Date.now() ? "expired" : row.status,
+        duration_mode: row.duration_mode || "legacy",
+        duration_label: getPortalTokenDurationLabel(row.duration_mode),
+        status: row.status === "active" && row.expires_at && new Date(row.expires_at).getTime() <= Date.now() ? "expired" : row.status,
         created_at: row.created_at,
         expires_at: row.expires_at,
         used_at: row.used_at,

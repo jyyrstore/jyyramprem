@@ -657,9 +657,14 @@ $("#ownerDashboardNav")?.addEventListener("click", () => {
   if (!session?.access_token) { location.replace("/login.html"); return; }
   try {
     const { response, data } = await AMAuth.getPortalAccess();
-    if (!response.ok || (data.access !== true && data.owner !== true)) { location.replace("/login.html?token=required"); return; }
+    if (!response.ok || (data.access !== true && data.owner !== true)) {
+      await AMAuth.signOut().catch(() => {});
+      location.replace("/login.html?token=required");
+      return;
+    }
     loadQuota();
   } catch {
+    await AMAuth.signOut().catch(() => {});
     location.replace("/login.html?token=required");
   }
 })();

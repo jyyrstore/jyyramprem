@@ -1312,3 +1312,19 @@ body[data-page="owner"] #app-release .badge {
     min-width: 0;
   }
 }
+
+
+/* Portal token generation mode selector */
+.token-mode-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 14px;
+}
+.token-mode-btn {
+  min-width: 96px;
+}
+.token-mode-btn.active {
+  font-weight: 800;
+  box-shadow: 0 0 0 2px currentColor inset;
+}

@@ -23,3 +23,24 @@ test("portal token gate contract exists", () => {
   assert.match(migration, /portal_token_requests/);
   assert.doesNotMatch(server, /console\.log\([^\n]*\btoken\b[^\n]*\)/i);
 });
+
+
+test("portal token trial modes and permanent mode are wired end-to-end", () => {
+  const migration = fs.readFileSync(new URL("../supabase/migrations/20260903170000_portal_token_trial_modes_v1.sql", import.meta.url), "utf8");
+  const ownerHtml = fs.readFileSync(new URL("../public/html/owner.html", import.meta.url), "utf8");
+  const ownerJs = fs.readFileSync(new URL("../public/js/owner.js", import.meta.url), "utf8");
+  const homeJs = fs.readFileSync(new URL("../public/js/home.js", import.meta.url), "utf8");
+  for (const mode of ["15_days", "30_days", "permanent"]) {
+    assert.match(server, new RegExp(mode));
+    assert.match(ownerHtml, new RegExp(`data-token-duration=["']${mode}["']`));
+  }
+  assert.match(server, /duration_mode: durationMode/);
+  assert.match(server, /getPortalTokenExpiration/);
+  assert.match(server, /expiresAt: persisted\.expires_at \?\? data\.expires_at \?\? null/);
+  assert.match(migration, /ALTER COLUMN expires_at DROP NOT NULL/);
+  assert.match(migration, /g\.expires_at IS NULL OR g\.expires_at > now\(\)/);
+  assert.match(migration, /v_token\.expires_at IS NOT NULL AND v_token\.expires_at <= v_now/);
+  assert.match(ownerJs, /selectedPortalTokenDuration/);
+  assert.match(ownerJs, /duration_mode: durationMode/);
+  assert.match(homeJs, /AMAuth\.signOut\(\)\.catch/);
+});

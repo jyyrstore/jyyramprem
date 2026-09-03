@@ -517,7 +517,12 @@ async function loadPortalTokenRequests(session) {
 }
 
 async function generatePortalToken(session) {
-  const response = await ownerRequest("/api/owner/token/generate", session, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) });
+  const durationMode = state.selectedPortalTokenDuration || "15_days";
+  const response = await ownerRequest("/api/owner/token/generate", session, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ duration_mode: durationMode }),
+  });
   const data = await parseJson(response);
   if (!response.ok) throw new Error(data.error || "Gagal membuat token.");
   const out = document.getElementById("generatedPortalToken");
@@ -1100,9 +1105,21 @@ function bindEvents() {
     try{const r=await ownerRequest("/api/owner/maintenance",s,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({enabled,message:"Jyy'R Amprem Sedang Maintenance"})});const d=await parseJson(r);if(!r.ok)throw new Error(d.error||"Gagal mengubah maintenance.");await loadMaintenance(s);ownerNotice(enabled?"Maintenance diaktifkan.":"Maintenance dimatikan.","success");}catch(e){ownerNotice(e.message);}finally{b.disabled=false;}
   });
 
+  document.querySelectorAll("[data-token-duration]")?.forEach?.((button) => {
+    button.addEventListener("click", () => {
+      state.selectedPortalTokenDuration = String(button.dataset.tokenDuration || "15_days");
+      document.querySelectorAll("[data-token-duration]").forEach((item) => {
+        const active = item === button;
+        item.classList.toggle("active", active);
+        item.setAttribute("aria-pressed", active ? "true" : "false");
+      });
+    });
+  });
+
   document.getElementById("generatePortalToken")?.addEventListener("click", async () => {
     const s = state.session || await requireSession(); if (!s) return;
-    const confirmed = await window.JYYRNotify?.confirm?.("Buat token portal owner baru? Token aktif yang lama dapat tetap digunakan sampai dicabut atau kedaluwarsa.", {
+    const modeLabel = portalTokenDurationLabel(state.selectedPortalTokenDuration);
+    const confirmed = await window.JYYRNotify?.confirm?.(`Buat token portal Owner mode ${modeLabel}? Token aktif lain tetap dapat digunakan sampai dicabut atau kedaluwarsa.`, {
       title: "Generate Token Portal",
       confirmText: "Generate Token",
       cancelText: "Batal",

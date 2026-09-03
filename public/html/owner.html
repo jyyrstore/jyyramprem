@@ -531,6 +531,12 @@
           <span class="badge blue token-server-badge">Server-side</span>
         </div>
 
+        <div class="token-mode-selector" role="group" aria-label="Mode masa berlaku token">
+          <button type="button" class="btn token-mode-btn" data-token-duration="15_days" aria-pressed="false">15 Hari</button>
+          <button type="button" class="btn token-mode-btn" data-token-duration="30_days" aria-pressed="false">30 Hari</button>
+          <button type="button" class="btn token-mode-btn active" data-token-duration="permanent" aria-pressed="true">Permanent</button>
+        </div>
+
         <div id="generatedPortalToken" class="status success token-generated" hidden>
           <button id="copyGeneratedPortalToken" class="icon-btn token-copy" type="button" aria-label="Salin token" title="Salin token"><span id="copyTokenIcon"></span></button>
           <div class="token-generated-copy">
