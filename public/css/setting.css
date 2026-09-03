@@ -555,3 +555,18 @@ body[data-page="setting"] #usedQuota {
   body[data-page="setting"] .quota-grid .metric-value,
   body[data-page="setting"] .grid-3 .metric-value { font-size: 19px; }
 }
+
+/* Setting: explicit status dropdown (replaces the native popup). */
+body[data-page="setting"] .status-dropdown{position:relative;width:100%}
+body[data-page="setting"] .status-dropdown-toggle{width:100%;display:flex;align-items:center;justify-content:space-between;text-align:left;cursor:pointer}
+body[data-page="setting"] .status-dropdown-chevron{font-size:14px;line-height:1;transition:transform .18s ease;transform:translateY(-1px)}
+body[data-page="setting"] .status-dropdown-toggle[aria-expanded="true"] .status-dropdown-chevron{transform:rotate(180deg) translateY(1px)}
+body[data-page="setting"] .status-dropdown-menu{position:absolute;z-index:30;left:0;right:0;top:calc(100% + 6px);padding:5px;border:1px solid rgba(185,108,255,.24);border-radius:11px;background:#18161d;box-shadow:0 14px 32px rgba(0,0,0,.35),0 0 24px rgba(157,92,255,.07)}
+body[data-page="setting"] .status-dropdown-menu[hidden]{display:none}
+body[data-page="setting"] .status-dropdown-option{display:flex;width:100%;align-items:center;justify-content:flex-start;border:0;border-radius:8px;background:transparent;color:#bdb5c7;padding:9px 10px;font:inherit;font-size:10px;cursor:pointer}
+body[data-page="setting"] .status-dropdown-option:hover,.status-dropdown-option.active{background:rgba(157,92,255,.12);color:#fff}
+body[data-page="setting"] .status-dropdown-option.active::after{content:'✓';margin-left:auto}
+body[data-page="setting"] .status-filter-native{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+@media(max-width:520px){
+  body[data-page="setting"] .status-dropdown-menu{top:calc(100% + 5px)}
+}
