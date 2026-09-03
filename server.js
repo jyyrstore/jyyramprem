@@ -1419,15 +1419,17 @@ app.get("/api/owner/token/history", requireAuth, ownerReadLimiter, requireOwner,
     // live in Supabase Auth, so resolve only the users referenced by the
     // current page instead of loading the entire Auth user table.
     const tokenIds = (Array.isArray(rows) ? rows : []).map((row) => row.id).filter(Boolean);
+    let grants = [];
     const usedEmailByTokenId = new Map();
     if (tokenIds.length) {
-      const { data: grants, error: grantsError } = await supabase
+      const { data: grantRows, error: grantsError } = await supabase
         .from("portal_access_grants")
-        .select("token_id, user_id")
+        .select("token_id, user_id, granted_at, expires_at, last_verified_at")
         .in("token_id", tokenIds);
       if (grantsError) throw grantsError;
+      grants = Array.isArray(grantRows) ? grantRows : [];
 
-      const userIds = [...new Set((Array.isArray(grants) ? grants : []).map((grant) => grant.user_id).filter(Boolean))];
+      const userIds = [...new Set(grants.map((grant) => grant.user_id).filter(Boolean))];
       const usersById = new Map();
       for (const userId of userIds) {
         try {
@@ -1438,13 +1440,14 @@ app.get("/api/owner/token/history", requireAuth, ownerReadLimiter, requireOwner,
         }
       }
 
-      for (const grant of Array.isArray(grants) ? grants : []) {
+      for (const grant of grants) {
         const email = usersById.get(grant.user_id);
         if (email && !usedEmailByTokenId.has(grant.token_id)) usedEmailByTokenId.set(grant.token_id, email);
       }
     }
 
     const tokens = (Array.isArray(rows) ? rows : []).map((row) => {
+      const grant = grants.find((item) => item.token_id === row.id) || null;
       const safeRow = {
         id: row.id,
         preview: row.token_preview || null,
@@ -1453,6 +1456,8 @@ app.get("/api/owner/token/history", requireAuth, ownerReadLimiter, requireOwner,
         status: row.status === "active" && row.expires_at && new Date(row.expires_at).getTime() <= Date.now() ? "expired" : row.status,
         created_at: row.created_at,
         expires_at: row.expires_at,
+        access_expires_at: grant?.expires_at || null,
+        access_granted_at: grant?.granted_at || null,
         used_at: row.used_at,
         revoked_at: row.revoked_at,
         used_email: usedEmailByTokenId.get(row.id) || null,

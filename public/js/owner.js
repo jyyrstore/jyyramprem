@@ -40,6 +40,7 @@ const state = {
   tokenHistoryTotal: 0,
   tokenStatusNotified: false,
   generatedPortalTokenId: null,
+  selectedPortalTokenDuration: "permanent",
   appReleaseEditingId: null,
   appReleaseEditorMode: "create",
   appReleases: [],
@@ -112,6 +113,22 @@ function escapeHtml(value) {
 
 function ownerNotice(message, type = "error", title = "") {
   window.JYYRNotify?.show(message, type, title ? { title } : {});
+}
+
+function portalTokenDurationLabel(mode) {
+  return ({
+    "15_days": "15 Hari",
+    "30_days": "30 Hari",
+    permanent: "Permanent",
+    legacy: "Legacy",
+  })[String(mode || "").trim()] || "Permanent";
+}
+
+async function ownerConfirm(message, options = {}) {
+  if (typeof window.JYYRNotify?.confirm === "function") {
+    return Boolean(await window.JYYRNotify.confirm(message, options));
+  }
+  return window.confirm(message);
 }
 
 function memberBadge(status) {
@@ -421,7 +438,7 @@ async function loadPortalTokenStatus(session) {
   if (statusEl) {
     const activeCount = Number(data?.active_count ?? data?.activeCount) || 0;
     statusEl.textContent = token.status === "active"
-      ? `${activeCount} token aktif · token terbaru berlaku sampai ${broadcastDate(token.expires_at)}.`
+      ? `${activeCount} token aktif · masa berlaku token terbaru ${token.duration_mode === "permanent" ? "selamanya" : `sampai ${broadcastDate(token.expires_at)}`}.`
       : activeCount ? `${activeCount} token aktif.` : "Tidak ada token aktif.";
     statusEl.className = `status ${token.status === "active" ? "success" : "info"}`;
     statusEl.hidden = true;
@@ -479,7 +496,20 @@ async function loadPortalTokenHistory(session) {
       const statusLabel = escapeHtml(labels[t.status] || t.status || "UNKNOWN");
       const statusClass = cls[t.status] || "blue";
       const created = escapeHtml(broadcastDate(t.created_at));
-      const expires = escapeHtml(broadcastDate(t.expires_at));
+      const durationLabel = escapeHtml(t.duration_label || (t.duration_mode === "permanent" ? "Permanent" : "Legacy"));
+      // "Masa berlaku" describes the token lifetime (15/30/permanent).
+      // "Expired" in Token History is a separate 24-hour history window:
+      //   - used token: 24h from the actual redemption/grant time
+      //   - unused token: 24h from token creation
+      // This intentionally does NOT use t.expires_at here, because that value
+      // represents the token's own 15/30-day/permanent lifetime.
+      const accessExpiry = t.access_expires_at
+        ? new Date(t.access_expires_at)
+        : new Date(new Date(t.created_at).getTime() + 24 * 60 * 60 * 1000);
+      const historyExpiry = Number.isNaN(accessExpiry.getTime())
+        ? "—"
+        : escapeHtml(broadcastDate(accessExpiry.toISOString()));
+      const expiryText = `Expired ${historyExpiry}`;
       const used = t.used_at ? escapeHtml(broadcastDate(t.used_at)) : "—";
       let usageText = "Belum Digunakan";
       if (t.status === "used") {
@@ -494,7 +524,7 @@ async function loadPortalTokenHistory(session) {
       const action = canRevoke
         ? `<button class="btn danger token-history-revoke" type="button" data-revoke-token-id="${escapeHtml(t.id)}" data-revoke-token="${escapeHtml(tokenValue || t.preview || "token aktif")}">Cabut</button>`
         : "—";
-      return `<tr data-token-id="${escapeHtml(t.id || "")}"><td><div class="token-history-token">${token}</div>${usedBy}</td><td><span class="badge ${statusClass}">${statusLabel}</span></td><td><strong>${created}</strong><small>Expired ${expires}</small></td><td><strong>${used}</strong></td><td class="token-history-action">${action}</td></tr>`;
+      return `<tr data-token-id="${escapeHtml(t.id || "")}"><td><div class="token-history-token">${token}</div>${usedBy}</td><td><span class="badge ${statusClass}">${statusLabel}</span></td><td><strong>${created}</strong><small>Masa berlaku : ${durationLabel}</small><small>${expiryText}</small></td><td><strong>${used}</strong></td><td class="token-history-action">${action}</td></tr>`;
     }).join("");
     list.innerHTML = `<div class="table-wrap token-history-table-wrap"><table class="table token-history-table"><thead><tr><th>Token</th><th>Status</th><th>Dibuat</th><th>Digunakan</th><th>Aksi</th></tr></thead><tbody>${body}</tbody></table></div>`;
   }
@@ -517,7 +547,7 @@ async function loadPortalTokenRequests(session) {
 }
 
 async function generatePortalToken(session) {
-  const durationMode = state.selectedPortalTokenDuration || "15_days";
+  const durationMode = state.selectedPortalTokenDuration || "permanent";
   const response = await ownerRequest("/api/owner/token/generate", session, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -1107,7 +1137,7 @@ function bindEvents() {
 
   document.querySelectorAll("[data-token-duration]")?.forEach?.((button) => {
     button.addEventListener("click", () => {
-      state.selectedPortalTokenDuration = String(button.dataset.tokenDuration || "15_days");
+      state.selectedPortalTokenDuration = String(button.dataset.tokenDuration || "permanent");
       document.querySelectorAll("[data-token-duration]").forEach((item) => {
         const active = item === button;
         item.classList.toggle("active", active);
@@ -1118,15 +1148,34 @@ function bindEvents() {
 
   document.getElementById("generatePortalToken")?.addEventListener("click", async () => {
     const s = state.session || await requireSession(); if (!s) return;
-    const modeLabel = portalTokenDurationLabel(state.selectedPortalTokenDuration);
-    const confirmed = await window.JYYRNotify?.confirm?.(`Buat token portal Owner mode ${modeLabel}? Token aktif lain tetap dapat digunakan sampai dicabut atau kedaluwarsa.`, {
+    const button = document.getElementById("generatePortalToken");
+    if (!button || button.dataset.generating === "1") return;
+    const durationMode = state.selectedPortalTokenDuration || "permanent";
+    const modeLabel = portalTokenDurationLabel(durationMode);
+    const confirmed = await ownerConfirm(`Buat token portal Owner mode ${modeLabel}? Token aktif lain tetap dapat digunakan sampai dicabut atau kedaluwarsa.`, {
       title: "Generate Token Portal",
       confirmText: "Generate Token",
       cancelText: "Batal",
     });
     if (!confirmed) return;
-    const b = document.getElementById("generatePortalToken"); b.disabled = true;
-    try { await generatePortalToken(s); ownerNotice("Token baru berhasil dibuat.", "success"); } catch (e) { ownerNotice(e.message); } finally { b.disabled = false; }
+
+    button.dataset.generating = "1";
+    const stopLoading = window.JYYRNotify?.buttonLoading?.(button, `Generating ${modeLabel}…`, "loading") || (() => {
+      button.disabled = true;
+      button.setAttribute("aria-busy", "true");
+    });
+    try {
+      await generatePortalToken(s);
+      ownerNotice(`Token ${modeLabel} berhasil dibuat.`, "success");
+    } catch (e) {
+      console.error("[OWNER TOKEN GENERATE UI ERROR]", e);
+      ownerNotice(e?.message || "Gagal membuat token.");
+    } finally {
+      try { stopLoading(); } catch {}
+      button.dataset.generating = "0";
+      button.removeAttribute("aria-busy");
+      button.disabled = false;
+    }
   });
   document.getElementById("revokePortalToken")?.addEventListener("click", async () => {
     const s = state.session || await requireSession(); if (!s) return;
