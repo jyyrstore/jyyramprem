@@ -4,7 +4,74 @@
 <body data-page="setting">
 <main class="app-shell">
 <header class="topbar"><div><div class="eyebrow">JYY'R AMPREM</div><h1 class="title">Account</h1><p class="subtitle">Profil, quota, statistik akun, dan riwayat.</p></div><div class="top-actions"><span class="badge green"><span class="backend-dot"></span>Backend Online</span><button id="refreshPage" class="round-btn" type="button" aria-label="Refresh"><span id="refreshIcon"></span></button></div></header>
-<section class="card profile-card"><div class="avatar-large profile-icon-avatar"><span id="userAvatarIcon"></span></div><h2 data-user-name>User</h2><p data-user-email>—</p><div class="profile-meta"><div><span>Status</span><strong>Member</strong></div><div><span>Terdaftar Sejak</span><strong id="registeredAt">—</strong></div><div><span>Login Terakhir</span><strong id="lastLogin">—</strong></div></div><div class="profile-actions"><a class="btn" href="/home.html"><span id="homeIcon"></span>Kembali</a><button id="logoutBtn" class="btn danger" type="button"><span id="logoutIcon"></span>Logout</button></div></section>
+<section class="card profile-card">
+  <div class="profile-card-glow" aria-hidden="true"></div>
+
+  <button id="accessStatusTrigger" class="access-status-trigger" type="button" aria-haspopup="dialog" aria-controls="accessStatusModal" aria-expanded="false" data-tone="purple" disabled>
+    <span id="accessStatusLabel">[ — ]</span><span class="access-status-clock" aria-hidden="true"></span>
+  </button>
+
+  <div class="profile-identity">
+    <div class="profile-avatar-wrap">
+      <div class="avatar-large profile-icon-avatar"><span id="userAvatarIcon"></span></div>
+      <span class="profile-presence" aria-label="Akun aktif"></span>
+    </div>
+    <div class="profile-copy">
+      <span id="profileRole" class="profile-role">ACCOUNT MEMBER</span>
+      <h2 data-user-name>User</h2>
+      <p data-user-email>—</p>
+    </div>
+  </div>
+
+  <div class="profile-meta">
+    <div><span>Status</span><strong id="profileAccessType">Member</strong></div>
+    <div><span>Terdaftar Sejak</span><strong id="registeredAt">—</strong></div>
+    <div><span>Login Terakhir</span><strong id="lastLogin">—</strong></div>
+  </div>
+
+  <div class="profile-actions">
+    <a class="btn" href="/home.html"><span id="homeIcon"></span>Kembali</a>
+    <button id="logoutBtn" class="btn danger" type="button"><span id="logoutIcon"></span>Logout</button>
+  </div>
+</section>
+
+<div id="accessStatusModal" class="access-status-modal" hidden>
+  <div class="access-status-backdrop" data-access-close aria-hidden="true"></div>
+  <section class="access-status-dialog" role="dialog" aria-modal="true" aria-labelledby="accessStatusTitle" tabindex="-1">
+    <header class="access-status-head">
+      <div>
+        <span class="access-status-kicker">ACCOUNT ACCESS</span>
+        <h2 id="accessStatusTitle">ACCESS STATUS</h2>
+      </div>
+      <button id="accessStatusClose" class="access-status-close" type="button" aria-label="Close access status">×</button>
+    </header>
+
+    <div id="accessStatusBody" class="access-status-body" data-tone="purple">
+      <div id="accessStatusState" class="access-status-state"><span class="access-status-state-dot" aria-hidden="true"></span><span id="accessStatusStateText">Loading access…</span></div>
+
+      <div id="accessStatusCountdown" class="access-status-countdown" aria-live="polite">
+        <div><strong id="accessDays">—</strong><span>DAYS</span></div>
+        <div><strong id="accessHours">—</strong><span>HOURS</span></div>
+        <div><strong id="accessMinutes">—</strong><span>MINUTES</span></div>
+      </div>
+
+      <div id="accessStatusUnlimited" class="access-status-unlimited" hidden>
+        <strong>∞</strong>
+        <span>UNLIMITED</span>
+        <small>No expiration</small>
+      </div>
+
+      <div id="accessStatusMessage" class="access-status-message" hidden></div>
+      <div class="access-status-divider" aria-hidden="true"></div>
+
+      <div id="accessStatusExpiry" class="access-status-expiry">
+        <span>Active until</span>
+        <strong id="accessExpiryValue">—</strong>
+      </div>
+    </div>
+  </section>
+</div>
+
 <section class="card"><div class="section-head"><div><h2 class="section-title">Quota Akun</h2><p class="section-note">Batas penggunaan hari ini</p></div></div><div class="grid quota-grid"><div class="metric"><span class="metric-label">Tersedia</span><strong id="activeQuota" class="metric-value">0</strong></div><div class="metric"><span class="metric-label">Limited</span><strong id="limitedQuota" class="metric-value">0</strong></div><div class="metric"><span class="metric-label">Terpakai</span><strong id="usedQuota" class="metric-value">0</strong></div></div></section>
 <section class="card"><div class="section-head"><div><h2 class="section-title">Statistik Akun</h2><p class="section-note">Ringkasan akun yang dibuat dari portal.</p></div><span id="refreshStatus" class="badge blue">Realtime</span></div><div class="grid grid-3"><div class="metric"><span class="metric-label">Akun Dibuat</span><strong id="created" class="metric-value">0</strong></div><div class="metric"><span class="metric-label">Berhasil</span><strong id="success" class="metric-value">0</strong></div><div class="metric"><span class="metric-label">Gagal</span><strong id="failed" class="metric-value">0</strong></div></div></section>
 <section class="card"><div class="section-head"><div><h2 class="section-title">Riwayat Akun</h2><p class="section-note">Riwayat email akun Alight Motion yang pernah dibuat atau diaktivasi oleh akun Anda.</p></div></div><div class="filters"><div class="field"><label for="search">Cari Email Akun</label><input id="search" class="input" placeholder="Cari email akun"></div><div class="field status-filter-field">
@@ -27,6 +94,6 @@
 <footer class="footer">© 2026 Jyy'R Amprem. All Rights Reserved</footer>
 </main>
 <nav class="bottom-nav"><a class="nav-item" data-nav="dashboard" href="/dashboard.html" aria-label="Dashboard"><span id="navDashboard"></span><span>Dashboard</span></a><a class="nav-item" data-nav="home" href="/home.html" aria-label="Home"><span id="navHome"></span><span>Home</span></a><a class="nav-item active" data-nav="setting" href="/setting.html" aria-label="Setting"><span id="navSetting"></span><span>Setting</span></a></nav>
-<script src="/js/auth-client.js"></script><script src="/js/icons.js"></script><script src="/js/ui-icons-assets.js"></script><script src="/js/nav.js"></script><script src="/js/notifications.js"></script><script src="/js/setting.js"></script>
+<script src="/js/auth-client.js"></script><script src="/js/icons.js"></script><script src="/js/ui-icons-assets.js"></script><script src="/js/nav.js"></script><script src="/js/notifications.js"></script><script src="/js/setting.js?v=20260904-token-v4"></script>
 <script src="/js/ui-protection.js"></script>
 </body></html>

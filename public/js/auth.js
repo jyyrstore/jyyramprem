@@ -247,18 +247,18 @@ async function verifyPortalTokenFromGate() {
   }
 }
 
-async function requestPortalTokenFromGate() {
+async function contactOwnerForPortalTokenFromGate() {
   const button = $("#getPortalTokenBtn");
   button.disabled = true;
-  setPortalGateStatus("Mencatat request token…");
+  setPortalGateStatus("Menyiapkan kontak Owner…");
   try {
-    const { response, data } = await AMAuth.requestPortalToken();
-    if (!response.ok) throw new Error(data.error || "Gagal membuat request token.");
-    setPortalGateStatus("Request tercatat. Membuka WhatsApp Owner…", "success");
+    const { response, data } = await AMAuth.contactOwnerForPortalToken();
+    if (!response.ok) throw new Error(data.error || "Gagal membuka kontak Owner.");
+    setPortalGateStatus("Membuka WhatsApp Owner…", "success");
     if (data.whatsappUrl) window.open(data.whatsappUrl, "_blank", "noopener,noreferrer");
     else throw new Error("WhatsApp Owner belum tersedia.");
   } catch (error) {
-    setPortalGateStatus(error.message || "Request token gagal.", "error");
+    setPortalGateStatus(error.message || "Gagal membuka kontak Owner.", "error");
   } finally {
     button.disabled = false;
   }
@@ -266,7 +266,7 @@ async function requestPortalTokenFromGate() {
 
 $("#tokenGateClose")?.addEventListener("click", closePortalTokenGate);
 $("#verifyPortalTokenBtn")?.addEventListener("click", verifyPortalTokenFromGate);
-$("#getPortalTokenBtn")?.addEventListener("click", requestPortalTokenFromGate);
+$("#getPortalTokenBtn")?.addEventListener("click", contactOwnerForPortalTokenFromGate);
 $("#portalTokenInput")?.addEventListener("keydown", (event) => {
   if (event.key === "Enter") {
     event.preventDefault();

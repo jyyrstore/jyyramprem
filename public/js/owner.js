@@ -11,7 +11,7 @@ const icon = (name) => window.icon?.(name) || "";
   ["tabNotifikasiIcon", "bell"], ["tabTokenIcon", "lock"], ["tabSecurityIcon", "shield"], ["tabSistemIcon", "settings"],
   ["statisticsTitleIcon", "chart"], ["memberTitleIcon", "users"], ["broadcastTitleIcon", "broadcast"],
   ["broadcastHistoryTitleIcon", "receipt"], ["messageTitleIcon", "message"], ["faqTitleIcon", "help"], ["helpTitleIcon", "help"],
-  ["portalTokenTitleIcon", "lock"], ["tokenHistoryTitleIcon", "receipt"], ["tokenRequestsTitleIcon", "bell"],
+  ["portalTokenTitleIcon", "lock"], ["tokenHistoryTitleIcon", "receipt"],
   ["securityTitleIcon", "shield"], ["loginTitleIcon", "lock"], ["systemTitleIcon", "settings"], ["healthTitleIcon", "chart"],
   ["closeMemberIcon", "close"], ["saveMemberIcon", "check"], ["sendMessageIcon", "arrowRight"],
   ["generateTokenIcon", "plus"], ["revokeTokenIcon", "lock"],
@@ -234,7 +234,7 @@ function setupTabs() {
         if (btn.dataset.section === "notifikasi") {
           await Promise.all([loadConversations(), loadContentAdmin(session)]);
         } else if (btn.dataset.section === "token") {
-          await Promise.all([loadPortalTokenStatus(session), loadPortalTokenHistory(session), loadPortalTokenRequests(session)]);
+          await Promise.all([loadPortalTokenStatus(session), loadPortalTokenHistory(session)]);
         } else if (btn.dataset.section === "security") {
           await loadLoginActivity(session);
         } else if (btn.dataset.section === "sistem") {
@@ -436,10 +436,11 @@ async function loadPortalTokenStatus(session) {
   const revoke = document.getElementById("revokePortalToken");
   state.activePortalTokenId = token.status === "active" ? token.id : null;
   if (statusEl) {
-    const activeCount = Number(data?.active_count ?? data?.activeCount) || 0;
+    const availableCount = Number(data?.available_count ?? data?.availableCount) || 0;
+    const redemption = token.redemption_expires_at ? broadcastDate(token.redemption_expires_at) : "—";
     statusEl.textContent = token.status === "active"
-      ? `${activeCount} token aktif · masa berlaku token terbaru ${token.duration_mode === "permanent" ? "selamanya" : `sampai ${broadcastDate(token.expires_at)}`}.`
-      : activeCount ? `${activeCount} token aktif.` : "Tidak ada token aktif.";
+      ? `${availableCount} token available · redemption sampai ${redemption}.`
+      : availableCount ? `${availableCount} token available.` : "Tidak ada token available.";
     statusEl.className = `status ${token.status === "active" ? "success" : "info"}`;
     statusEl.hidden = true;
   }
@@ -468,7 +469,7 @@ async function loadPortalTokenHistory(session) {
   const totalEl = document.getElementById("tokenHistoryTotal");
   if (totalEl) totalEl.textContent = `Total Token : ${state.tokenHistoryTotal}`;
   const rows = Array.isArray(data.tokens) ? data.tokens : [];
-  const labels = { active: "ACTIVE", used: "USED", expired: "EXPIRED", revoked: "REVOKED" };
+  const labels = { active: "AVAILABLE", used: "ASSIGNED", expired: "EXPIRED", revoked: "REVOKED" };
   const cls = { active: "green", used: "red", expired: "yellow", revoked: "red" };
   if (!rows.length) {
     list.innerHTML = `<div class="status info">Belum ada history token.</div>`;
@@ -492,28 +493,27 @@ async function loadPortalTokenHistory(session) {
       // only a last-resort display for legacy rows that cannot be recovered.
       const tokenValue = rememberedToken || serverToken || generatedToken || newestToken || null;
       const token = escapeHtml(tokenValue || t.preview || "—");
-      if (tokenValue && t.id) rememberPortalTokenOnDevice(session, t.id, tokenValue, t.expires_at);
+      if (tokenValue && t.id) rememberPortalTokenOnDevice(session, t.id, tokenValue, t.redemption_expires_at);
       const statusLabel = escapeHtml(labels[t.status] || t.status || "UNKNOWN");
       const statusClass = cls[t.status] || "blue";
       const created = escapeHtml(broadcastDate(t.created_at));
       const durationLabel = escapeHtml(t.duration_label || (t.duration_mode === "permanent" ? "Permanent" : "Legacy"));
-      // "Masa berlaku" describes the token lifetime (15/30/permanent).
-      // "Expired" in Token History is a separate 24-hour history window:
-      //   - used token: 24h from the actual redemption/grant time
-      //   - unused token: 24h from token creation
-      // This intentionally does NOT use t.expires_at here, because that value
-      // represents the token's own 15/30-day/permanent lifetime.
+      const redemptionExpiry = t.redemption_expires_at
+        ? new Date(t.redemption_expires_at)
+        : null;
+      const redemptionText = Number.isNaN(redemptionExpiry?.getTime?.()) || !redemptionExpiry
+        ? "—"
+        : escapeHtml(broadcastDate(redemptionExpiry.toISOString()));
       const accessExpiry = t.access_expires_at
         ? new Date(t.access_expires_at)
-        : new Date(new Date(t.created_at).getTime() + 24 * 60 * 60 * 1000);
-      const historyExpiry = Number.isNaN(accessExpiry.getTime())
-        ? "—"
-        : escapeHtml(broadcastDate(accessExpiry.toISOString()));
-      const expiryText = `Expired ${historyExpiry}`;
+        : null;
+      const accessText = accessExpiry && !Number.isNaN(accessExpiry.getTime())
+        ? escapeHtml(broadcastDate(accessExpiry.toISOString()))
+        : (t.duration_mode === "permanent" && t.assigned_user_id ? "PERMANENT" : "—");
       const used = t.used_at ? escapeHtml(broadcastDate(t.used_at)) : "—";
       let usageText = "Belum Digunakan";
       if (t.status === "used") {
-        usageText = t.used_email ? `Digunakan : ${t.used_email}` : "Digunakan";
+        usageText = t.used_email ? `User : ${t.used_email}` : (t.assigned_user_id ? "Sudah digunakan" : "Sudah digunakan");
       } else if (t.status === "expired") {
         usageText = "Token Expired";
       } else if (t.status === "revoked") {
@@ -524,26 +524,19 @@ async function loadPortalTokenHistory(session) {
       const action = canRevoke
         ? `<button class="btn danger token-history-revoke" type="button" data-revoke-token-id="${escapeHtml(t.id)}" data-revoke-token="${escapeHtml(tokenValue || t.preview || "token aktif")}">Cabut</button>`
         : "—";
-      return `<tr data-token-id="${escapeHtml(t.id || "")}"><td><div class="token-history-token">${token}</div>${usedBy}</td><td><span class="badge ${statusClass}">${statusLabel}</span></td><td><strong>${created}</strong><small>Masa berlaku : ${durationLabel}</small><small>${expiryText}</small></td><td><strong>${used}</strong></td><td class="token-history-action">${action}</td></tr>`;
+      const timeline = t.status === "active"
+        ? `<small>Redemption sampai : ${redemptionText}</small>`
+        : t.status === "used"
+          ? `<small>Access sampai : ${accessText}</small>`
+          : `<small>Redemption sampai : ${redemptionText}</small>`;
+      return `<tr data-token-id="${escapeHtml(t.id || "")}"><td><div class="token-history-token">${token}</div>${usedBy}</td><td><span class="badge ${statusClass}">${statusLabel}</span></td><td><strong>${created}</strong><small>Lifetime akses : ${durationLabel}</small>${timeline}</td><td><strong>${used}</strong></td><td class="token-history-action">${action}</td></tr>`;
     }).join("");
-    list.innerHTML = `<div class="table-wrap token-history-table-wrap"><table class="table token-history-table"><thead><tr><th>Token</th><th>Status</th><th>Dibuat</th><th>Digunakan</th><th>Aksi</th></tr></thead><tbody>${body}</tbody></table></div>`;
+    list.innerHTML = `<div class="table-wrap token-history-table-wrap"><table class="table token-history-table"><thead><tr><th>Token</th><th>Status</th><th>Waktu</th><th>Redeem</th><th>Aksi</th></tr></thead><tbody>${body}</tbody></table></div>`;
   }
   renderPaginationControls("tokenHistoryControls", state.tokenHistoryPage, pageCount, async (target) => {
     state.tokenHistoryPage = target;
     await loadPortalTokenHistory(state.session);
   });
-}
-
-async function loadPortalTokenRequests(session) {
-  const response = await ownerRequest("/api/owner/token/requests?limit=50&offset=0", session);
-  const data = await parseJson(response);
-  if (!response.ok) throw new Error(data.error || "Request token gagal dimuat.");
-  const badge = document.getElementById("tokenRequestPending");
-  if (badge) badge.textContent = `${Number(data.pending) || 0} pending`;
-  const list = document.getElementById("tokenRequestList");
-  const rows = Array.isArray(data.requests) ? data.requests : [];
-  if (!list) return;
-  list.innerHTML = rows.length ? rows.map((r) => `<div><strong>${escapeHtml(r.email || r.user_id)}</strong><small>${escapeHtml(r.status)} · ${escapeHtml(broadcastDate(r.created_at))}</small></div>`).join("") : `<div>Belum ada request token.</div>`;
 }
 
 async function generatePortalToken(session) {
@@ -566,13 +559,12 @@ async function generatePortalToken(session) {
     const statusEl = document.getElementById("generatedPortalTokenStatus");
     if (tokenEl) tokenEl.textContent = data.token ? `Token  : ${data.token}` : "Token  : —";
     if (createdEl) createdEl.textContent = `Dibuat : ${broadcastDate(data.createdAt || new Date().toISOString())}`;
-    if (statusEl) statusEl.textContent = "Status : Active";
+    if (statusEl) statusEl.textContent = `Status : AVAILABLE · Redemption sampai ${broadcastDate(data.redemptionExpiresAt || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString())}`;
   }
   state.tokenHistoryPage = 0;
   state.tokenStatusNotified = false;
   await loadPortalTokenStatus(session);
   await loadPortalTokenHistory(session);
-  await loadPortalTokenRequests(session);
 }
 
 async function revokePortalTokenById(session, tokenId) {
@@ -1152,7 +1144,7 @@ function bindEvents() {
     if (!button || button.dataset.generating === "1") return;
     const durationMode = state.selectedPortalTokenDuration || "permanent";
     const modeLabel = portalTokenDurationLabel(durationMode);
-    const confirmed = await ownerConfirm(`Buat token portal Owner mode ${modeLabel}? Token aktif lain tetap dapat digunakan sampai dicabut atau kedaluwarsa.`, {
+    const confirmed = await ownerConfirm(`Buat token portal ${modeLabel}? Token tersedia selama 24 jam untuk redemption pertama. Setelah satu user berhasil redeem, token terkunci ke user tersebut.`, {
       title: "Generate Token Portal",
       confirmText: "Generate Token",
       cancelText: "Batal",
@@ -1589,7 +1581,7 @@ async function loadPage() {
 
   await loadMembers(session).catch((e) => { console.error("[OWNER MEMBERS LOAD ERROR]", e); document.getElementById("memberList").innerHTML = `<div class="member-row"><div><strong>Member gagal dimuat</strong><small>${escapeHtml(e.message)}</small></div></div>`; });
   await loadBroadcasts(session).catch((e) => { console.error("[OWNER BROADCAST LOAD ERROR]", e); document.getElementById("broadcastList").innerHTML = `<div class="broadcast-card"><strong>Broadcast gagal dimuat</strong><p>${escapeHtml(e.message)}</p></div>`; });
-  await Promise.all([loadConversations(), loadContentAdmin(session), loadLoginActivity(session), loadMaintenance(session), loadPortalTokenStatus(session), loadPortalTokenHistory(session), loadPortalTokenRequests(session), loadAppReleases(session)]).catch((e) => console.warn("[OWNER SECONDARY LOAD]", e));
+  await Promise.all([loadConversations(), loadContentAdmin(session), loadLoginActivity(session), loadMaintenance(session), loadPortalTokenStatus(session), loadPortalTokenHistory(session), loadAppReleases(session)]).catch((e) => console.warn("[OWNER SECONDARY LOAD]", e));
 }
 
 bindEvents();

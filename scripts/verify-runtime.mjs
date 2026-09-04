@@ -14,6 +14,7 @@ const requiredFiles = [
   'public/html/setting.html',
   'public/html/owner.html',
   'public/html/reset-password.html',
+  'public/html/help.html',
   'public/js/auth-client.js',
   'public/js/auth.js',
   'public/js/home.js',
@@ -21,6 +22,7 @@ const requiredFiles = [
   'public/js/setting.js',
   'public/js/owner.js',
   'public/js/reset-password.js',
+  'public/js/help.js',
 ];
 
 const missing = requiredFiles.filter((f) => !fs.existsSync(path.join(root, f)));
@@ -144,6 +146,14 @@ if (missingOwnerRoutes.length) {
   process.exit(1);
 }
 
+const requiredPublicRoutes = ['/api/faq', '/api/help', '/help.html'];
+const missingPublicRoutes = requiredPublicRoutes.filter((route) => !routes.has(route));
+if (missingPublicRoutes.length) {
+  console.error('MISSING_PUBLIC_HELP_ROUTES');
+  missingPublicRoutes.forEach((route) => console.error(`- ${route}`));
+  process.exit(1);
+}
+
 const requiredOwnerRpcs = [
   'owner_list_faq', 'owner_create_faq', 'owner_update_faq', 'owner_delete_faq',
   'owner_list_help', 'owner_create_help', 'owner_update_help', 'owner_delete_help',
@@ -177,7 +187,7 @@ function assertBalancedCss(file) {
 
 for (const css of ['public/css/home.css', 'public/css/login.css']) assertBalancedCss(path.join(root, css));
 
-const localPages = ['index.html','login.html','home.html','dashboard.html','setting.html','owner.html','reset-password.html'];
+const localPages = ['index.html','login.html','home.html','dashboard.html','setting.html','owner.html','reset-password.html','help.html'];
 const htmlDir = path.join(root, 'public', 'html');
 for (const page of localPages) {
   if (!fs.existsSync(path.join(htmlDir, page))) throw new Error(`Missing page ${page}`);

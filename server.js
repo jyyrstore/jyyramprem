@@ -34,7 +34,6 @@ const PROVIDER_VERIFY_ACCOUNT_PATH = process.env.PROVIDER_VERIFY_ACCOUNT_PATH ||
 const PROVIDER_APPLY_PREMIUM_PATH = process.env.PROVIDER_APPLY_PREMIUM_PATH || "/api/v1/apply-premium";
 const PROVIDER_DIAGNOSTIC_SECRET = process.env.PROVIDER_DIAGNOSTIC_SECRET?.trim() || "";
 const PROVIDER_DELIVERY_WEBHOOK_ENABLED = Boolean(PROVIDER_DIAGNOSTIC_SECRET);
-const PORTAL_TOKEN_TTL_HOURS = Number(process.env.PORTAL_TOKEN_TTL_HOURS || 24);
 const PORTAL_TOKEN_GENERATION_MODES = Object.freeze({
   "15_days": { label: "15 Hari", days: 15 },
   "30_days": { label: "30 Hari", days: 30 },
@@ -51,7 +50,6 @@ if (!Number.isInteger(MAGIC_LINK_DAILY_LIMIT) || MAGIC_LINK_DAILY_LIMIT < 1) thr
 if (!Number.isInteger(PROVIDER_DAILY_REQUEST_LIMIT) || PROVIDER_DAILY_REQUEST_LIMIT < 1) throw new Error("PROVIDER_DAILY_REQUEST_LIMIT harus berupa integer >= 1.");
 if (!Number.isInteger(PROVIDER_TIMEOUT_MS) || PROVIDER_TIMEOUT_MS < 1000) throw new Error("PROVIDER_TIMEOUT_MS harus berupa integer >= 1000.");
 if (!Number.isInteger(PROVIDER_MAX_RESPONSE_BYTES) || PROVIDER_MAX_RESPONSE_BYTES < 1024 || PROVIDER_MAX_RESPONSE_BYTES > 10 * 1024 * 1024) throw new Error("PROVIDER_MAX_RESPONSE_BYTES harus integer 1024..10485760.");
-if (!Number.isInteger(PORTAL_TOKEN_TTL_HOURS) || PORTAL_TOKEN_TTL_HOURS < 1 || PORTAL_TOKEN_TTL_HOURS > 720) throw new Error("PORTAL_TOKEN_TTL_HOURS harus integer 1..720.");
 if (!PROVIDER_SEND_MAGICLINK_PATH.startsWith("/api/v1/")) throw new Error("PROVIDER_SEND_MAGICLINK_PATH harus endpoint V1.");
 if (!PROVIDER_VERIFY_ACCOUNT_PATH.startsWith("/api/v1/")) throw new Error("PROVIDER_VERIFY_ACCOUNT_PATH harus endpoint V1.");
 if (!PROVIDER_APPLY_PREMIUM_PATH.startsWith("/api/v1/")) throw new Error("PROVIDER_APPLY_PREMIUM_PATH harus endpoint V1.");
@@ -299,20 +297,47 @@ function publicUser(data) {
   return data ? { id: data.id, email: data.email, email_confirmed_at: data.email_confirmed_at || null, user_metadata: data.user_metadata || {} } : null;
 }
 
-async function findAuthUserByEmail(email) {
-  const target = String(email || "").toLowerCase();
-  for (let page = 1; page <= 100; page += 1) {
-    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage: 1000 });
-    if (error) throw error;
-    const users = Array.isArray(data?.users) ? data.users : [];
-    const found = users.find((u) => String(u.email || "").toLowerCase() === target);
-    if (found) return found;
-    if (users.length < 1000) break;
-  }
-  return null;
+async function findPendingEmailVerification(email) {
+  const target = String(email || "").trim().toLowerCase();
+  if (!target) return null;
+  const { data, error } = await supabase
+    .from("am_email_verifications")
+    .select("id,user_id,email,expires_at,used_at,attempt_count,created_at")
+    .eq("email", target)
+    .is("used_at", null)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data || null;
 }
 
-app.post("/api/auth/register", async (req, res) => {
+
+const authRegisterLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { ok: false, code: "AUTH_RATE_LIMIT", error: "Terlalu banyak percobaan registrasi. Coba lagi nanti." },
+});
+
+const authResendLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 5,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { ok: false, code: "AUTH_RATE_LIMIT", error: "Terlalu banyak permintaan kode verifikasi. Coba lagi nanti." },
+});
+
+const authVerifyLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  limit: 15,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { ok: false, code: "AUTH_RATE_LIMIT", error: "Terlalu banyak percobaan verifikasi. Coba lagi nanti." },
+});
+
+app.post("/api/auth/register", authRegisterLimiter, async (req, res) => {
   try {
     const parsed = normalizeUserEmail(req.body?.email);
     if (!parsed.valid) return res.status(400).json({ ok: false, code: "INVALID_EMAIL", error: "Masukkan alamat email yang valid." });
@@ -322,26 +347,6 @@ app.post("/api/auth/register", async (req, res) => {
     assertEmailVerificationConfig();
 
     const metadata = (req.body?.data && typeof req.body.data === "object") ? req.body.data : {};
-
-    const existingUser = await findAuthUserByEmail(email);
-    if (existingUser) {
-      if (existingUser.email_confirmed_at) {
-        return res.status(409).json({
-          ok: false,
-          code: "EMAIL_EXISTS",
-          error: "Email sudah terdaftar. Silakan masuk.",
-        });
-      }
-
-      return res.status(409).json({
-        ok: false,
-        code: "EMAIL_PENDING_VERIFICATION",
-        stage: "pending_email",
-        user: publicUser(existingUser),
-        email,
-        error: "Email sudah digunakan tetapi belum terverifikasi. Masukkan code 6 digit atau kirim ulang code.",
-      });
-    }
 
     const { data: signupData, error: signupError } = await supabaseAuth.auth.signUp({
       email,
@@ -361,14 +366,31 @@ app.post("/api/auth/register", async (req, res) => {
     }
 
     const user = signupData?.user;
-    if (!user?.id) {
-      return res.status(502).json({ ok: false, code: "SIGNUP_USER_MISSING", error: "Registrasi dibuat tanpa data akun yang valid." });
+    const signupIdentities = Array.isArray(user?.identities) ? user.identities : null;
+    // Supabase may intentionally return an obfuscated user object for an
+    // already-registered email. Never create verification state for that
+    // ambiguous object; only treat an explicitly empty identities array as
+    // an obfuscated existing-user response.
+    const signupIdentitiesObfuscated = signupIdentities !== null && signupIdentities.length === 0;
+    if (!user?.id || signupIdentitiesObfuscated) {
+      const pending = await findPendingEmailVerification(email);
+      if (pending) {
+        return res.status(409).json({
+          ok: false,
+          code: "EMAIL_PENDING_VERIFICATION",
+          stage: "pending_email",
+          email,
+          error: "Email sudah digunakan tetapi belum terverifikasi. Masukkan code 6 digit atau kirim ulang code.",
+        });
+      }
+      return res.status(409).json({ ok: false, code: "EMAIL_EXISTS", error: "Email sudah terdaftar. Silakan masuk." });
     }
 
-    const requestHash = verificationRequestHash(user.id);
-    await supabase.from("am_email_verifications").delete().eq("user_id", user.id).is("used_at", null);
+    const userId = user.id;
+    const requestHash = verificationRequestHash(userId);
+    await supabase.from("am_email_verifications").delete().eq("user_id", userId).is("used_at", null);
     const { error: insertError } = await supabase.from("am_email_verifications").insert({
-      user_id: user.id,
+      user_id: userId,
       email,
       token_hash: requestHash,
       expires_at: new Date(Date.now() + AUTH_EMAIL_VERIFICATION_TTL_MINUTES * 60000).toISOString(),
@@ -391,27 +413,25 @@ app.post("/api/auth/register", async (req, res) => {
 
 
 
-app.post("/api/auth/resend-verification", async (req, res) => {
+app.post("/api/auth/resend-verification", authResendLimiter, async (req, res) => {
   try {
     const parsed = normalizeUserEmail(req.body?.email);
     if (!parsed.valid) return res.status(400).json({ ok: false, code: "INVALID_EMAIL", error: "Masukkan alamat email yang valid." });
     assertEmailVerificationConfig();
     const email = parsed.value;
-    const user = await findAuthUserByEmail(email);
-    if (!user) return res.status(404).json({ ok: false, code: "USER_NOT_FOUND", error: "Akun dengan email tersebut belum terdaftar." });
-    if (user.email_confirmed_at) return res.status(409).json({ ok: false, code: "ALREADY_VERIFIED", error: "Email sudah terverifikasi. Silakan masuk." });
-
-    const { data: recent } = await supabase.from("am_email_verifications").select("created_at,expires_at,used_at").eq("user_id", user.id).is("used_at", null).order("created_at", { ascending: false }).limit(1).maybeSingle();
+    const recent = await findPendingEmailVerification(email);
+    if (!recent) return res.status(404).json({ ok: false, code: "USER_NOT_FOUND", error: "Akun belum memiliki code verifikasi aktif. Silakan daftar atau masuk." });
     const retryAt = recent?.created_at ? new Date(new Date(recent.created_at).getTime() + AUTH_EMAIL_RESEND_COOLDOWN_SECONDS * 1000) : null;
     if (retryAt && retryAt.getTime() > Date.now()) {
       const retryAfter = Math.ceil((retryAt.getTime() - Date.now()) / 1000);
       return res.status(429).json({ ok: false, code: "RESEND_COOLDOWN", retryAfter, error: `Tunggu ${retryAfter} detik sebelum mengirim ulang code.` });
     }
 
-    const requestHash = verificationRequestHash(user.id);
-    await supabase.from("am_email_verifications").delete().eq("user_id", user.id).is("used_at", null);
+    const userId = recent.user_id;
+    const requestHash = verificationRequestHash(userId);
+    await supabase.from("am_email_verifications").delete().eq("user_id", userId).is("used_at", null);
     const { error: insertError } = await supabase.from("am_email_verifications").insert({
-      user_id: user.id,
+      user_id: userId,
       email,
       token_hash: requestHash,
       expires_at: new Date(Date.now() + AUTH_EMAIL_VERIFICATION_TTL_MINUTES * 60000).toISOString(),
@@ -420,7 +440,7 @@ app.post("/api/auth/resend-verification", async (req, res) => {
     try {
       await sendSignupVerificationEmail(email);
     } catch (mailError) {
-      await supabase.from("am_email_verifications").delete().eq("user_id", user.id).is("used_at", null);
+      await supabase.from("am_email_verifications").delete().eq("user_id", userId).is("used_at", null);
       throw mailError;
     }
     return res.json({ ok: true, email, resendAvailableAt: new Date(Date.now() + AUTH_EMAIL_RESEND_COOLDOWN_SECONDS * 1000).toISOString() });
@@ -430,21 +450,28 @@ app.post("/api/auth/resend-verification", async (req, res) => {
   }
 });
 
-app.post("/api/auth/verify-email", async (req, res) => {
+app.post("/api/auth/verify-email", authVerifyLimiter, async (req, res) => {
   try {
     const parsed = normalizeUserEmail(req.body?.email);
     if (!parsed.valid) return res.status(400).json({ ok: false, code: "INVALID_EMAIL", error: "Email tidak valid." });
     const code = String(req.body?.code || "").replace(/\D/g, "");
     if (!/^\d{6}$/.test(code)) return res.status(400).json({ ok: false, code: "INVALID_CODE", error: "Masukkan 6 digit code verifikasi." });
     const email = parsed.value;
-    const user = await findAuthUserByEmail(email);
-    if (!user) return res.status(404).json({ ok: false, code: "USER_NOT_FOUND", error: "Akun tidak ditemukan." });
-    if (user.email_confirmed_at) {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password: String(req.body?.password || "") });
-      if (!error && data?.session) return res.json({ ok: true, stage: "email_verified", ...data });
+    const rowBase = await findPendingEmailVerification(email);
+    if (!rowBase) {
+      const password = String(req.body?.password || "");
+      if (password) {
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (!error && data?.session) return res.json({ ok: true, stage: "email_verified", ...data });
+      }
+      return res.status(404).json({ ok: false, code: "USER_NOT_FOUND", error: "Code verifikasi aktif tidak ditemukan." });
+    }
+    const userId = rowBase.user_id;
+    const user = { id: userId, email };
+    if (rowBase.used_at) {
       return res.status(409).json({ ok: false, code: "ALREADY_VERIFIED", error: "Email sudah terverifikasi. Silakan masuk." });
     }
-    const { data: row, error: rowError } = await supabase.from("am_email_verifications").select("id,expires_at,used_at,attempt_count").eq("user_id", user.id).eq("email", email).is("used_at", null).order("created_at", { ascending: false }).limit(1).maybeSingle();
+    const { data: row, error: rowError } = await supabase.from("am_email_verifications").select("id,expires_at,used_at,attempt_count").eq("id", rowBase.id).maybeSingle();
     if (rowError) throw rowError;
     if (!row || row.expires_at <= new Date().toISOString()) return res.status(410).json({ ok: false, code: "CODE_EXPIRED", error: "Code verifikasi sudah kedaluwarsa. Kirim ulang code baru." });
 
@@ -500,23 +527,6 @@ function semverParts(value) {
   return match ? [Number(match[1]), Number(match[2]), Number(match[3])] : null;
 }
 
-function compareSemver(a, b) {
-  const aa = semverParts(a) || [0, 0, 0];
-  const bb = semverParts(b) || [0, 0, 0];
-  for (let i = 0; i < 3; i += 1) {
-    if (aa[i] !== bb[i]) return aa[i] - bb[i];
-  }
-  return 0;
-}
-
-function normalizeReleaseUrl(value) {
-  const raw = String(value || "").trim();
-  if (!raw) return "";
-  if (raw.startsWith("/releases/")) return raw;
-  const url = new URL(raw, SUPABASE_URL);
-  if (!["http:", "https:"].includes(url.protocol)) throw new Error("URL download tidak valid.");
-  return url.toString();
-}
 
 app.get("/app", (_req, res) => res.redirect(302, "/app.html"));
 
@@ -696,6 +706,12 @@ app.patch("/api/owner/app-releases/:id", requireAuth, ownerMemberMutationLimiter
   try {
     if (!isUuid(req.params.id)) return res.status(400).json({ ok: false, error: "Release ID tidak valid." });
     const b = req.body || {};
+    const { data: current, error: currentError } = await supabase.from("app_releases")
+      .select("id,version,version_code,release_channel,status,min_supported_version")
+      .eq("id", req.params.id).eq("app_key", "jyyramprem").eq("platform", "android").maybeSingle();
+    if (currentError) throw currentError;
+    if (!current) return res.status(404).json({ ok: false, error: "Release tidak ditemukan." });
+
     const patch = {};
     for (const key of ["title","min_supported_version"]) if (b[key] !== undefined) patch[key] = String(b[key] || "").trim() || null;
     if (b.changelog !== undefined) patch.changelog = Array.isArray(b.changelog) ? b.changelog.map((x) => String(x).trim()).filter(Boolean).slice(0,30) : [];
@@ -705,6 +721,20 @@ app.patch("/api/owner/app-releases/:id", requireAuth, ownerMemberMutationLimiter
     if (b.status === "published") patch.published_at = new Date().toISOString();
     if (patch.min_supported_version && !semverParts(patch.min_supported_version)) return res.status(400).json({ ok: false, error: "Minimum version tidak valid." });
     if (Object.keys(patch).some((key) => patch[key] === undefined)) return res.status(400).json({ ok: false, error: "Metadata release tidak valid." });
+
+    const nextChannel = patch.release_channel ?? current.release_channel;
+    const nextStatus = patch.status ?? current.status;
+    if (nextChannel === "stable" && nextStatus === "published") {
+      const { data: newer, error: newerError } = await supabase.from("app_releases")
+        .select("id,version_code").eq("app_key","jyyramprem").eq("platform","android")
+        .eq("release_channel","stable").eq("status","published")
+        .neq("id", current.id).order("version_code",{ascending:false}).limit(1).maybeSingle();
+      if (newerError) throw newerError;
+      if (newer && Number(current.version_code || 0) <= Number(newer.version_code || 0)) {
+        return res.status(409).json({ ok:false, error:`Release stable published harus memiliki Version Code lebih besar dari stable terbaru (${newer.version_code}).` });
+      }
+    }
+
     const { data, error } = await supabase.from("app_releases").update(patch).eq("id", req.params.id).select("*").single();
     if (error) throw error;
     return res.json({ ok: true, owner: true, release: data });
@@ -725,7 +755,7 @@ app.patch("/api/owner/app-releases/:id", requireAuth, ownerMemberMutationLimiter
 
 const PORTAL_ACCESS_EXEMPT_PATHS = new Set([
   "/api/access/status",
-  "/api/access/request",
+  "/api/access/contact-owner",
   "/api/access/verify",
 ]);
 
@@ -747,17 +777,19 @@ function normalizePortalTokenDuration(value) {
   return Object.prototype.hasOwnProperty.call(PORTAL_TOKEN_GENERATION_MODES, mode) ? mode : null;
 }
 
-function getPortalTokenExpiration(durationMode) {
-  const mode = normalizePortalTokenDuration(durationMode);
-  if (!mode) throw Object.assign(new Error("Mode token tidak valid."), { code: "INVALID_PORTAL_TOKEN_MODE", status: 400 });
-  const config = PORTAL_TOKEN_GENERATION_MODES[mode];
-  if (config.days === null) return null;
-  return new Date(Date.now() + config.days * 24 * 60 * 60 * 1000).toISOString();
-}
-
 function getPortalTokenDurationLabel(durationMode) {
   const mode = normalizePortalTokenDuration(durationMode);
   return mode ? PORTAL_TOKEN_GENERATION_MODES[mode].label : "Legacy";
+}
+
+async function getPortalTokenLifetime(userId) {
+  // Canonical source: the RPC resolves this exact user's assigned token and current access grant.
+  // The redemption window is not the user access lifetime.
+  const { data, error } = await supabase.rpc("portal_get_token_lifetime", {
+    p_user_id: userId,
+  });
+  if (error) throw error;
+  return data?.token || null;
 }
 
 function getPortalTokenEncryptionKey() {
@@ -793,7 +825,7 @@ function rememberRecentOwnerPortalToken(ownerUserId, tokenId, token, expiresAt) 
   if (!ownerUserId || !tokenId || !token) return;
   recentOwnerPortalTokens.set(`${ownerUserId}:${tokenId}`, {
     token: normalizePortalToken(token),
-    expiresAt: Date.parse(expiresAt || '') || (Date.now() + PORTAL_TOKEN_TTL_HOURS * 60 * 60 * 1000),
+    expiresAt: Date.parse(expiresAt || '') || (Date.now() + RECENT_OWNER_TOKEN_TTL_MS),
     rememberedAt: Date.now(),
   });
 }
@@ -963,15 +995,6 @@ async function requireAuth(
     });
   }
 }
-
-const portalTokenRequestLimiter = rateLimit({
-  windowMs: 10 * 60 * 1000,
-  limit: 3,
-  standardHeaders: "draft-8",
-  legacyHeaders: false,
-  keyGenerator: (req) => req.user?.id ? `user:${req.user.id}` : "unauthenticated",
-  message: { ok: false, error: "Terlalu banyak request token. Coba lagi nanti." },
-});
 
 const portalTokenVerifyLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
@@ -1252,30 +1275,44 @@ app.get("/api/access/status", requireAuth, async (req, res) => {
     const status = await getMemberStatus(req.user.id);
     const access = status.status === "active" && await hasPortalAccess(req.user.id);
     const owner = await isOwner(req.user.id);
-    return res.json({ ok: true, access, owner, status: status.status, reason: status.status_reason || null });
+
+    // Token lifetime is read from the token itself. The grant has a separate
+    // The RPC returns the user's access expiry, not the token redemption window.
+    const tokenLifetime = await getPortalTokenLifetime(req.user.id);
+
+
+    return res.json({
+      ok: true,
+      access,
+      owner,
+      status: status.status,
+      reason: status.status_reason || null,
+      tokenLifetime,
+      token_lifetime: tokenLifetime,
+    });
   } catch (error) {
     console.error("[PORTAL ACCESS STATUS ERROR]", error);
-    return res.status(500).json({ ok: false, access: false, error: "Gagal memeriksa akses portal." });
+    return res.status(500).json({ ok: false, access: false, tokenLifetime: null, token_lifetime: null, error: "Gagal memeriksa akses portal." });
   }
 });
 
-app.post("/api/access/request", requireAuth, portalTokenRequestLimiter, async (req, res) => {
+app.get("/api/access/contact-owner", requireAuth, async (req, res) => {
   try {
-    const { data, error } = await supabase.rpc("portal_request_token", { p_user_id: req.user.id });
-    if (error) throw error;
-
     if (!OWNER_WHATSAPP_URL) {
-      return res.status(503).json({ ok: false, request: data, error: "WhatsApp Owner belum dikonfigurasi di server." });
+      return res.status(503).json({ ok: false, error: "WhatsApp Owner belum dikonfigurasi di server." });
     }
 
-    const message = `Halo Owner, saya meminta Token Akses Portal Jyy'R Amprem. Request ID: ${data.request_id}`;
     const url = new URL(OWNER_WHATSAPP_URL);
+    const user = String(req.user?.email || "").trim();
+    const message = user
+      ? `Halo Owner, saya membutuhkan Token Akses Portal Jyy'R Amprem. Email akun: ${user}`
+      : "Halo Owner, saya membutuhkan Token Akses Portal Jyy'R Amprem.";
     url.searchParams.set("text", message);
 
-    return res.status(201).json({ ok: true, request: data, whatsappUrl: url.toString() });
+    return res.json({ ok: true, whatsappUrl: url.toString() });
   } catch (error) {
-    console.error("[PORTAL TOKEN REQUEST ERROR]", { code: error?.code || null, message: error?.message || "Unknown error" });
-    return res.status(500).json({ ok: false, error: "Gagal mencatat request token." });
+    console.error("[PORTAL OWNER CONTACT ERROR]", { code: error?.code || null, message: error?.message || "Unknown error" });
+    return res.status(500).json({ ok: false, error: "Gagal menyiapkan kontak Owner." });
   }
 });
 
@@ -1289,7 +1326,14 @@ app.post("/api/access/verify", requireAuth, portalTokenVerifyLimiter, async (req
       const invalid = /invalid|expired/i.test(String(error.message || ""));
       return res.status(invalid ? 401 : 500).json({ ok: false, valid: false, error: invalid ? "Token salah atau sudah kedaluwarsa." : "Gagal memverifikasi token." });
     }
-    return res.json({ ok: true, valid: data?.valid === true, expiresAt: data?.expires_at || null });
+    return res.json({
+      ok: true,
+      valid: data?.valid === true,
+      redemptionExpiresAt: data?.redemption_expires_at || null,
+      accessExpiresAt: data?.access_expires_at || null,
+      durationMode: data?.duration_mode || "legacy",
+      assignedUserId: data?.assigned_user_id || null,
+    });
   } catch (error) {
     console.error("[PORTAL TOKEN VERIFY ERROR]", { code: error?.code || null, message: error?.message || "Unknown error" });
     return res.status(500).json({ ok: false, valid: false, error: "Gagal memverifikasi token." });
@@ -1304,23 +1348,14 @@ app.get("/api/owner/token/status", requireAuth, ownerReadLimiter, requireOwner, 
   try {
     const { data, error } = await supabase.rpc("owner_get_portal_token_status", { p_owner_user_id: req.user.id });
     if (error) throw error;
-    return res.json({ ok: true, owner: true, token: data });
+    return res.json({
+      ok: true,
+      owner: true,
+      token: data?.token || { status: "none" },
+      available_count: Number(data?.available_count || 0),
+    });
   } catch (error) {
     return res.status(500).json({ ok: false, owner: true, error: "Gagal membaca status token." });
-  }
-});
-
-app.get("/api/owner/token/requests", requireAuth, ownerReadLimiter, requireOwner, async (req, res) => {
-  try {
-    const limit = parsePositiveInt(req.query.limit, 20, 50);
-    const offset = parsePositiveInt(req.query.offset, 0, 1000000);
-    if (limit === null || offset === null) return res.status(400).json({ ok: false, error: "Pagination tidak valid." });
-    const { data, error } = await supabase.rpc("owner_list_token_requests", { p_owner_user_id: req.user.id, p_limit: limit, p_offset: offset });
-    if (error) throw error;
-    return res.json({ ok: true, owner: true, ...data });
-  } catch (error) {
-    const status = /Owner access required/i.test(String(error?.message || "")) ? 403 : 500;
-    return res.status(status).json({ ok: false, error: status === 403 ? "Akses Owner diperlukan." : "Gagal membaca request token." });
   }
 });
 
@@ -1334,58 +1369,56 @@ app.post("/api/owner/token/generate", requireAuth, ownerMemberMutationLimiter, r
         error: "Mode token harus 15 hari, 30 hari, atau permanent.",
       });
     }
+
     const token = generatePortalToken();
-    const expiresAt = getPortalTokenExpiration(durationMode);
     const tokenHash = hashPortalToken(token);
     const tokenPreview = `${token.slice(0, 4)}••••${token.slice(-4)}`;
     const tokenEncrypted = encryptPortalToken(token);
 
-    // IMPORTANT: persist the full owner token directly through the trusted
-    // server client. Do not rely on overloaded/legacy RPC signatures here;
-    // several historical versions of owner_create_portal_token exist in
-    // production and some of them silently omit token_encrypted.
-    const { data, error } = await supabase
-      .from("portal_access_tokens")
-      .insert({
-        token_hash: tokenHash,
-        token_preview: tokenPreview,
-        token_encrypted: tokenEncrypted,
-        status: "active",
-        duration_mode: durationMode,
-        expires_at: expiresAt,
-        created_by: req.user.id,
-      })
-      .select("id, created_at, expires_at, status, duration_mode, token_encrypted")
-      .single();
+    // Owner-generated tokens are unassigned at creation. The first successful
+    // redemption transaction assigns the token to exactly one member.
+    const { data, error } = await supabase.rpc("owner_create_portal_token", {
+      p_owner_user_id: req.user.id,
+      p_token_hash: tokenHash,
+      p_token_preview: tokenPreview,
+      p_token_encrypted: tokenEncrypted,
+      p_duration_mode: durationMode,
+    });
 
     if (error) throw error;
     if (!data?.id) throw Object.assign(new Error("Token ID tidak dikembalikan database."), { code: "PORTAL_TOKEN_ID_MISSING", status: 500 });
+
+    if (!data.redemption_expires_at) {
+      throw Object.assign(new Error("Database tidak mengembalikan redemption_expires_at canonical."), { code: "PORTAL_TOKEN_REDEMPTION_EXPIRY_MISSING", status: 500 });
+    }
     if (!data.token_encrypted) {
-      throw Object.assign(new Error("Token terenkripsi tidak tersimpan di database."), { code: "PORTAL_TOKEN_ENCRYPTED_NOT_PERSISTED", status: 500 });
+      throw Object.assign(new Error("Database tidak mengembalikan token_encrypted canonical."), { code: "PORTAL_TOKEN_ENCRYPTED_NOT_PERSISTED", status: 500 });
     }
 
-    // Read-after-write verification. This catches a wrong database/schema
-    // immediately instead of allowing a token that disappears after refresh.
-    const { data: persisted, error: persistedError } = await supabase
-      .from("portal_access_tokens")
-      .select("id, token_encrypted, expires_at, duration_mode")
-      .eq("id", data.id)
-      .single();
-    if (persistedError) throw persistedError;
-    if (!persisted?.token_encrypted) {
-      throw Object.assign(new Error("Token terenkripsi hilang setelah insert."), { code: "PORTAL_TOKEN_ENCRYPTED_READBACK_FAILED", status: 500 });
+    const persisted = {
+      id: data.id,
+      created_at: data.created_at,
+      redemption_expires_at: data.redemption_expires_at,
+      duration_mode: data.duration_mode,
+      token_encrypted: data.token_encrypted,
+    };
+
+    if (!persisted.created_at || !persisted.duration_mode) {
+      throw Object.assign(new Error("Database tidak mengembalikan metadata token canonical lengkap."), { code: "PORTAL_TOKEN_CANONICAL_METADATA_MISSING", status: 500 });
     }
 
-    rememberRecentOwnerPortalToken(req.user.id, data.id, token, persisted.expires_at || data.expires_at || null);
+    rememberRecentOwnerPortalToken(req.user.id, data.id, token, persisted.redemption_expires_at);
     return res.status(201).json({
       ok: true,
       owner: true,
       token,
       tokenId: data.id,
-      createdAt: data.created_at || new Date().toISOString(),
-      expiresAt: persisted.expires_at ?? data.expires_at ?? null,
-      durationMode: persisted.duration_mode || data.duration_mode || durationMode,
-      durationLabel: getPortalTokenDurationLabel(persisted.duration_mode || data.duration_mode || durationMode),
+      createdAt: persisted.created_at,
+      redemptionExpiresAt: persisted.redemption_expires_at,
+      accessExpiresAt: null,
+      durationMode: persisted.duration_mode,
+      durationLabel: getPortalTokenDurationLabel(persisted.duration_mode),
+      assignedUserId: data.assigned_user_id || null,
     });
   } catch (error) {
     console.error("[OWNER TOKEN GENERATE ERROR]", { code: error?.code || null, message: error?.message || "Unknown error" });
@@ -1404,7 +1437,7 @@ app.get("/api/owner/token/history", requireAuth, ownerReadLimiter, requireOwner,
     // encrypted field and cause a token to disappear after refresh.
     const { data: rows, error } = await supabase
       .from("portal_access_tokens")
-      .select("id, token_preview, token_encrypted, duration_mode, status, created_at, expires_at, used_at, revoked_at")
+      .select("id, token_preview, token_encrypted, duration_mode, status, created_at, redemption_expires_at, assigned_user_id, used_at, revoked_at")
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
     if (error) throw error;
@@ -1424,7 +1457,7 @@ app.get("/api/owner/token/history", requireAuth, ownerReadLimiter, requireOwner,
     if (tokenIds.length) {
       const { data: grantRows, error: grantsError } = await supabase
         .from("portal_access_grants")
-        .select("token_id, user_id, granted_at, expires_at, last_verified_at")
+        .select("token_id, user_id, granted_at, access_expires_at, last_verified_at")
         .in("token_id", tokenIds);
       if (grantsError) throw grantsError;
       grants = Array.isArray(grantRows) ? grantRows : [];
@@ -1453,10 +1486,12 @@ app.get("/api/owner/token/history", requireAuth, ownerReadLimiter, requireOwner,
         preview: row.token_preview || null,
         duration_mode: row.duration_mode || "legacy",
         duration_label: getPortalTokenDurationLabel(row.duration_mode),
-        status: row.status === "active" && row.expires_at && new Date(row.expires_at).getTime() <= Date.now() ? "expired" : row.status,
+        status: row.status === "active" && row.redemption_expires_at && new Date(row.redemption_expires_at).getTime() <= Date.now() ? "expired" : row.status,
         created_at: row.created_at,
-        expires_at: row.expires_at,
-        access_expires_at: grant?.expires_at || null,
+        redemption_expires_at: row.redemption_expires_at,
+        assigned_user_id: row.assigned_user_id || null,
+        assigned_email: usedEmailByTokenId.get(row.id) || null,
+        access_expires_at: grant?.access_expires_at || null,
         access_granted_at: grant?.granted_at || null,
         used_at: row.used_at,
         revoked_at: row.revoked_at,
@@ -1937,6 +1972,31 @@ app.get('/api/owner/login-activity', requireAuth, ownerBroadcastReadLimiter, req
 app.get('/api/owner/maintenance', requireAuth, ownerBroadcastReadLimiter, requireOwner, async(req,res)=>{try{const {data,error}=await supabase.rpc('owner_get_system_settings',{p_owner_user_id:req.user.id});if(error)throw error;return res.json({ok:true,owner:true,settings:data});}catch(e){const st=ownerCrudError(e);return res.status(st).json({ok:false,error:st===500?'Gagal membaca maintenance.':e.message});}});
 app.patch('/api/owner/maintenance', requireAuth, ownerMemberMutationLimiter, requireOwner, async(req,res)=>{try{const enabled=Boolean(req.body?.enabled),message=typeof req.body?.message==='string'?req.body.message:'';if(message.length>500)return res.status(400).json({ok:false,error:'Pesan maintenance terlalu panjang.'});const {data,error}=await supabase.rpc('owner_set_maintenance',{p_owner_user_id:req.user.id,p_enabled:enabled,p_message:message});if(error)throw error;return res.json({ok:true,owner:true,settings:data});}catch(e){const st=ownerCrudError(e);return res.status(st).json({ok:false,error:st===500?'Gagal mengubah maintenance.':e.message});}});
 app.get('/api/maintenance', async(_req,res)=>{try{const {data,error}=await supabase.rpc('public_get_maintenance');if(error)throw error;return res.json({ok:true,...data});}catch(e){console.error('[MAINTENANCE ERROR]',e);return res.status(500).json({ok:false,error:'Maintenance status unavailable.'});}});
+
+/* =========================================================
+   PUBLIC HELP / FAQ
+========================================================= */
+app.get('/api/faq', ownerBroadcastReadLimiter, async (_req, res) => {
+  try {
+    const { data, error } = await supabase.rpc('public_list_faq');
+    if (error) throw error;
+    return res.json({ ok: true, faq: Array.isArray(data?.faq) ? data.faq : Array.isArray(data) ? data : [] });
+  } catch (e) {
+    console.error('[PUBLIC FAQ ERROR]', e);
+    return res.status(500).json({ ok: false, error: 'FAQ belum dapat dimuat.' });
+  }
+});
+
+app.get('/api/help', ownerBroadcastReadLimiter, async (_req, res) => {
+  try {
+    const { data, error } = await supabase.rpc('public_list_help');
+    if (error) throw error;
+    return res.json({ ok: true, help: Array.isArray(data?.help) ? data.help : Array.isArray(data) ? data : [] });
+  } catch (e) {
+    console.error('[PUBLIC HELP ERROR]', e);
+    return res.status(500).json({ ok: false, error: 'Help Center belum dapat dimuat.' });
+  }
+});
 
 /* =========================================================
    MEMBER-SIDE NOTIFICATIONS / MESSAGING
@@ -3490,6 +3550,23 @@ async function sendSignupVerificationEmail(email) {
 
 
 /* =========================================================
+   INTERNAL MAINTENANCE
+========================================================= */
+app.post('/api/internal/maintenance/cleanup-idempotency', async (req, res) => {
+  const expected = String(process.env.CRON_SECRET || '').trim();
+  const provided = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '').trim();
+  if (!expected || !timingSafeSecretEquals(provided, expected)) return res.status(401).json({ ok:false, error:'Unauthorized.' });
+  try {
+    const { data, error } = await supabase.rpc('cleanup_am_generation_idempotency');
+    if (error) throw error;
+    return res.json({ ok:true, removed:Number(data||0) });
+  } catch (e) {
+    console.error('[IDEMPOTENCY CLEANUP ERROR]', e);
+    return res.status(500).json({ ok:false, error:'Cleanup gagal.' });
+  }
+});
+
+/* =========================================================
    HTML PAGE ROUTES
 
    Keep the public URLs stable while the source files live under
@@ -3513,6 +3590,7 @@ app.get("/home.html", sendPage("home.html"));
 app.get("/dashboard.html", sendPage("dashboard.html"));
 app.get("/setting.html", sendPage("setting.html"));
 app.get("/reset-password.html", sendPage("reset-password.html"));
+app.get("/help.html", sendPage("help.html"));
 
 /* =========================================================
    AUTH PAGES

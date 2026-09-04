@@ -203,8 +203,8 @@
     return portalRequest("/api/access/status");
   }
 
-  async function requestPortalToken() {
-    return portalRequest("/api/access/request", { method: "POST", body: JSON.stringify({}) });
+  async function contactOwnerForPortalToken() {
+    return portalRequest("/api/access/contact-owner");
   }
 
   async function verifyPortalToken(token) {
@@ -226,5 +226,5 @@
     return user;
   }
 
-  window.AMAuth = { getConfig, getSession, signIn, signUp, resendSignupCode, verifyOtp, signOut, resetPassword, getUser, getPortalAccess, requestPortalToken, verifyPortalToken };
+  window.AMAuth = { getConfig, getSession, signIn, signUp, resendSignupCode, verifyOtp, signOut, resetPassword, getUser, getPortalAccess, contactOwnerForPortalToken, verifyPortalToken };
 })();

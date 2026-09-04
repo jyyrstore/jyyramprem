@@ -10,4 +10,41 @@ function renderLog(usage){const today=new Date().toISOString().slice(0,10);const
 function renderPagination(id,current,totalPages,onPage){const el=document.querySelector('#'+id);if(!el)return;el.innerHTML='';if(totalPages<=1)return;const add=(label,page,disabled=false,aria='')=>{const b=document.createElement('button');b.type='button';b.className='btn';b.textContent=label;b.disabled=disabled;if(aria)b.setAttribute('aria-label',aria);if(!disabled)b.addEventListener('click',()=>onPage(page));el.appendChild(b)};const maxVisible=3;let start;if(current<=3){start=1}else{start=current}let end=Math.min(totalPages,start+maxVisible-1);if(end-start+1<maxVisible)start=Math.max(1,end-maxVisible+1);if(current>=4)add('‹',current-1,false,'Halaman sebelumnya');if(current>=5)add('«',1,false,'Halaman pertama');for(let p=start;p<=end;p++)add(String(p),p,p===current,`Halaman ${p}`);if(current<totalPages)add('›',current+1,false,'Halaman berikutnya');if(current<totalPages)add('»',totalPages,false,'Halaman terakhir')}
 function formatDate(v){if(!v)return'—';return new Date(v).toLocaleString('id-ID',{dateStyle:'medium',timeStyle:'short'})}function esc(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 document.querySelector('#refreshPage')?.addEventListener('click',()=>{const e=document.querySelector('#refreshIcon');e?.classList.add('spin');load().finally(()=>setTimeout(()=>e?.classList.remove('spin'),350))});
+async function loadInbox(h){
+  const [nr, mr] = await Promise.all([
+    fetch('/api/notifications?limit=20&offset=0',{headers:h,cache:'no-store'}),
+    fetch('/api/messages?limit=20&offset=0',{headers:h,cache:'no-store'})
+  ]);
+  const notifications = await nr.json().catch(()=>({}));
+  const messages = await mr.json().catch(()=>({}));
+  const nitems=Array.isArray(notifications.notifications)?notifications.notifications:[];
+  const citems=Array.isArray(messages.conversations)?messages.conversations:[];
+  const unread=nitems.filter(x=>!x.read_at&&x.read!==true).length;
+  const unreadMsg=citems.reduce((n,x)=>n+Number(x.unread_count||0),0);
+  const nb=document.querySelector('#notificationBadge'); if(nb) nb.textContent=String(unread);
+  const mb=document.querySelector('#messageBadge'); if(mb) mb.textContent=String(unreadMsg);
+  const nl=document.querySelector('#notificationList');
+  if(nl) nl.innerHTML=nitems.map(x=>`<button class="inbox-item${x.read_at?'':' unread'}" type="button" data-notification-id="${esc(x.id)}"><strong>${esc(x.title||'Notifikasi')}</strong><span>${esc(x.body||'')}</span><small>${esc(formatDate(x.created_at))}</small></button>`).join('')||'<div class="log muted">Belum ada notifikasi.</div>';
+  const cl=document.querySelector('#conversationList');
+  if(cl) cl.innerHTML=citems.map(x=>`<button class="inbox-item${Number(x.unread_count||0)?' unread':''}" type="button" data-conversation-id="${esc(x.conversation_id||x.id)}"><strong>Pesan Owner</strong><span>${esc(x.last_message||'Belum ada pesan.')}</span><small>${Number(x.unread_count||0)?`${Number(x.unread_count)} belum dibaca · `:''}${esc(formatDate(x.last_message_at||x.updated_at))}</small></button>`).join('')||'<div class="log muted">Belum ada percakapan.</div>';
+}
+async function openConversation(id,h){
+  const r=await fetch(`/api/messages/${encodeURIComponent(id)}`,{headers:h,cache:'no-store'});
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(d.error||'Percakapan tidak dapat dimuat.');
+  const panel=document.querySelector('#memberThread'); panel.hidden=false;
+  const member=d.member||{}; const head=document.querySelector('#memberThreadHead'); if(head) head.textContent=`Owner · ${member.display_name||member.email||'Support'}`;
+  const list=document.querySelector('#memberThreadList'); if(list) list.innerHTML=(d.messages||[]).map(m=>`<div class="message-bubble${m.sender_user_id===member.user_id?' owner-message':''}"><strong>${m.sender_user_id===member.user_id?'Owner':'Anda'}</strong><p>${esc(m.body||'')}</p><small>${esc(formatDate(m.sent_at))}</small></div>`).join('')||'<div class="log muted">Belum ada pesan.</div>';
+  panel.dataset.conversationId=id; list?.scrollTo?.({top:list.scrollHeight,behavior:'smooth'});
+}
+async function bindInbox(){
+  try{
+    const h=await authHeaders();
+    await loadInbox(h);
+    document.querySelector('#notificationList')?.addEventListener('click',async e=>{const b=e.target.closest('[data-notification-id]');if(!b)return;const id=b.dataset.notificationId;await fetch(`/api/notifications/${encodeURIComponent(id)}/read`,{method:'POST',headers:h});await loadInbox(h).catch(()=>{});});
+    document.querySelector('#conversationList')?.addEventListener('click',async e=>{const b=e.target.closest('[data-conversation-id]');if(!b)return;try{const id=b.dataset.conversationId;await openConversation(id,h);await fetch(`/api/messages/${encodeURIComponent(id)}/read`,{method:'POST',headers:h});await loadInbox(h)}catch(err){console.error('[MESSAGE]',err);}});
+    document.querySelector('#memberMessageSend')?.addEventListener('click',async()=>{const panel=document.querySelector('#memberThread');const id=panel?.dataset.conversationId;const body=document.querySelector('#memberMessageBody')?.value.trim()||'';if(!id||!body)return;const r=await fetch(`/api/messages/${encodeURIComponent(id)}`,{method:'POST',headers:{...h,'Content-Type':'application/json'},body:JSON.stringify({body})});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Pesan gagal dikirim.');document.querySelector('#memberMessageBody').value='';await openConversation(id,h);await loadInbox(h);});
+  }catch(e){console.error('[INBOX]',e);} 
+}
+bindInbox();
 load().catch(e=>{console.error('[DASHBOARD]',e);const n=document.querySelector('#dailyLog');if(n)n.innerHTML='<div class="log muted">Data dashboard tidak dapat dimuat.</div>'});

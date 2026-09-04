@@ -526,7 +526,7 @@
         <div class="section-head portal-token-head">
           <div>
             <h2 class="section-title"><span class="owner-title-icon" aria-hidden="true" id="portalTokenTitleIcon"></span><span>Portal Access Token</span></h2>
-            <p class="section-note">Token disimpan terenkripsi di database. Plaintext hanya dibuka server-side untuk Owner.</p>
+            <p class="section-note">Token disimpan terenkripsi di database. Setiap token tersedia 24 jam untuk redemption pertama. Setelah satu user berhasil redeem, token terkunci ke user tersebut.</p>
           </div>
           <span class="badge blue token-server-badge">Server-side</span>
         </div>
@@ -567,16 +567,6 @@
           <span id="tokenHistoryTotal">Total Token : —</span>
           <div class="pagination-controls" id="tokenHistoryControls"></div>
         </div>
-      </article>
-      <article class="card">
-        <div class="section-head">
-          <div>
-            <h2 class="section-title"><span class="owner-title-icon" aria-hidden="true" id="tokenRequestsTitleIcon"></span><span>Token Requests</span></h2>
-            <p class="section-note">Request dari user setelah Auth berhasil.</p>
-          </div>
-          <span id="tokenRequestPending" class="badge yellow">0 pending</span>
-        </div>
-        <div id="tokenRequestList" class="login-list"><div>Memuat request…</div></div>
       </article>
     </div>
   </section>

@@ -1,0 +1,59 @@
+FINAL REPAIR NOTES — SUPPLIED jyyramprem.zip
+==============================================
+
+Source baseline
+---------------
+Only the supplied `jyyramprem.zip` was used as the code baseline in this task.
+No previous ZIP or previous implementation was used as a code source.
+
+Final token contract
+--------------------
+1 TOKEN = 1 USER.
+
+Owner generation:
+- token starts unassigned (`assigned_user_id = NULL`);
+- token is AVAILABLE for a 24-hour redemption window;
+- any member may attempt redemption;
+- the first successful redemption wins and locks the token to that user.
+
+After redemption:
+- `15_days` => access expires 15 days after redemption;
+- `30_days` => access expires 30 days after redemption;
+- `permanent` => access has no expiry.
+
+The 24-hour value is never used as the member access lifetime. A redeemed token never becomes available again.
+
+Source/runtime repairs
+----------------------
+- Added `supabase/migrations/20260904150000_canonical_single_user_token_redemption_v7.sql`.
+- Replaced legacy runtime assumptions with canonical `redemption_expires_at` and `access_expires_at`.
+- Owner generation now sends only the duration mode; database owns the 24-hour redemption deadline.
+- Redemption uses `FOR UPDATE` and an atomic assignment update so concurrent users have one winner.
+- Owner cannot redeem portal tokens; Owner bypasses the member token gate.
+- Portal access authorization checks the assigned token plus `access_expires_at`.
+- Settings uses the assigned user's actual access expiry.
+- Added a protected-page access watchdog for home/dashboard/setting.
+- Owner token history now distinguishes AVAILABLE, ASSIGNED, EXPIRED, and REVOKED.
+- Rewrote stale token tests, production verification SQL, and current token documentation.
+
+Historical data handling
+-------------------------
+The V7 migration keeps token/grant history. A historical token with exactly one distinct redeemer may be associated with that user. A token demonstrably shared by multiple historical users is revoked rather than inventing a new owner.
+
+Legacy `expires_at` columns are retained as compatibility mirrors during migration; canonical runtime authorization uses `redemption_expires_at` and `access_expires_at`.
+
+Verification
+------------
+- `node --check` passed for modified JavaScript files.
+- `npm test` passed after the final repairs.
+- `npm run verify` passed; it reports Supabase as not configured in this environment.
+- Live Supabase execution was not performed from this ZIP-only environment.
+- Interactive browser verification was not performed because the `agent-browser` binary is unavailable.
+
+Deployment requirement
+----------------------
+Apply V7 to the real Supabase project, then run:
+
+`supabase/VERIFY_PRODUCTION_PORTAL_TOKEN_CONTRACT.sql`
+
+against a privileged connection. The production database remains the final authority for live schema/RPC state.

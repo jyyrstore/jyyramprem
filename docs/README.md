@@ -63,6 +63,10 @@ The full suite validates provider contracts, diagnostic normalization, magic-lin
 
 The portal does not create or authenticate a separate mailbox. The browser uses the configured Supabase publishable key; service-role credentials, provider API credentials, and encrypted provider tokens remain server-side.
 
+## Portal token access
+
+The canonical portal access contract is `1 TOKEN = 1 USER`: a newly generated token is unassigned and redeemable by any member for 24 hours. The first successful redemption locks the token to that user. Access then lasts 15 days, 30 days, or permanently according to the token mode. Logout preserves active access; expired access is denied by the backend and the protected-page watchdog redirects the member to the token gate. See `PORTAL_TOKEN_LIFETIME_ACCESS_CONTRACT.md`.
+
 ## Migration note
 
 `supabase/migrations/` is the canonical migration set included in this package. The repository preserves the migration files available in this snapshot; historical production migration history must not be inferred from older audit reports.

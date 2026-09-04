@@ -1,25 +1,25 @@
 {
-  "generated_at": "2026-09-02",
+  "generated_at": "2026-09-04",
   "package_version": "4.2.3",
+  "source_of_truth": "supplied jyyramprem.zip only",
   "node_syntax_ok": true,
-  "server_lines": 3556,
-  "server_sha256": "570303ecd7d721f3bf584df4fe516995f65b3acad4ab965a855d2ed74cfaaae4",
-  "runtime_verify_ok": true,
-  "npm_test_executed_after_fix": true,
-  "npm_test_result": "PASS",
-  "app_release_root_cause_fixed": "owner JSON POSTs were missing Content-Type: application/json, so Express did not populate req.body and server received empty storage_path.",
-  "app_release_upload_body": "raw APK File bytes to Supabase signed upload URL (no FormData/multipart)",
-  "browser_metadata": "versionName, versionCode, packageName, minSdk, targetSdk, file size, SHA-256",
-  "server_authoritative_verification": "downloads incoming APK from Storage, recomputes size/SHA-256, parses AndroidManifest.xml, verifies package/version/code/SDK before DB insert",
-  "minimum_supported_version": "auto-derived from earliest published stable release, falling back to the uploaded APK version",
-  "release_defaults": {
-    "channel": "stable",
-    "status": "published",
-    "mandatory_update": false
+  "npm_test": "PASS",
+  "npm_test_command": "npm test",
+  "runtime_verify": "PASS_WITH_SUPABASE_NOT_CONFIGURED",
+  "portal_token_contract": "1 token = 1 user; 24h redemption window; 15/30/permanent access after redemption",
+  "canonical_migration": "20260904150000_canonical_single_user_token_redemption_v7.sql",
+  "browser_e2e": "NOT_RUN_AGENT_BROWSER_UNAVAILABLE",
+  "live_supabase_e2e": "NOT_RUN_NO_LIVE_CREDENTIALS",
+  "security_model": {
+    "token_tables_rls": true,
+    "direct_browser_table_access_revoked": true,
+    "privileged_token_rpcs_service_role_only": true,
+    "redeem_row_lock": "FOR UPDATE"
   },
-  "notification": "single top toast as primary final/error notification; identical toast dedupe window and close guard enabled",
-  "remote_repository_comparison": "direct GitHub web fetch unavailable in this environment; comparison source supplied as jyyramprem_github.zip",
-  "migration_note": "historical production migration source is incomplete; release integrity migration remains idempotent and existing releases are preserved.",
-  "public_release_cache": "no-store, max-age=0",
-  "app_release_contract_tests": 13
+  "final_health_status": "READY_FOR_DEPLOYMENT_VERIFICATION",
+  "remaining_attention": [
+    "Apply V7 to the live Supabase project.",
+    "Run supabase/VERIFY_PRODUCTION_PORTAL_TOKEN_CONTRACT.sql against the live database.",
+    "Perform real browser/auth concurrency tests in the deployed environment."
+  ]
 }

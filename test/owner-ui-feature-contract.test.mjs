@@ -41,7 +41,7 @@ test('server disables stale caching for HTML, API, CSS and JS while preserving c
   assert.ok(server.includes("no-cache, no-store, must-revalidate"));
 });
 
-test('owner can revoke any individually active portal token without affecting other active tokens', () => {
+test('owner can revoke any available or assigned portal token', () => {
   assert.match(html, /id=["']portalTokenHistory["']/);
   assert.match(js, /token-history-revoke/);
   assert.match(js, /revokePortalTokenById/);
@@ -58,11 +58,17 @@ test('owner portal token result and history usage labels follow the final UI con
   }
   assert.match(js, /Token  : \$\{data\.token\}/);
   assert.match(js, /Dibuat : \$\{broadcastDate\(data\.createdAt/);
-  assert.match(js, /Status : Active/);
+  assert.match(js, /Status : AVAILABLE/);
   assert.match(js, /Belum Digunakan/);
-  assert.match(js, /Digunakan : \$\{t\.used_email\}/);
+  assert.match(js, /User : \$\{t\.used_email\}/);
   assert.match(js, /Token Expired/);
   assert.match(js, /Token Revoke/);
+  assert.doesNotMatch(js, /selectedPortalTokenRequestId/);
+  assert.doesNotMatch(js, /data-token-request-id/);
+  assert.doesNotMatch(js, /request_id: requestId/);
+  assert.doesNotMatch(html, /Pilih request pending tertentu sebelum Generate/);
+  assert.doesNotMatch(js, /digunakan berulang kali oleh semua user/i);
+  assert.match(js, /reusable|terkunci ke user/i);
   assert.match(server, /portal_access_grants/);
   assert.match(server, /used_email: usedEmailByTokenId/);
 });
