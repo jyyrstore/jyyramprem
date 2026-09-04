@@ -114,6 +114,12 @@ test('owner APK upload accepts Android browser MIME variations and sends raw bin
   assert.doesNotMatch(ownerJs, /new FormData\(\)/);
 });
 
+test('release source package does not require a bundled APK artifact', () => {
+  const readme = fs.readFileSync(new URL('APP_RELEASE_README.md', root), 'utf8');
+  assert.equal(apk, null, 'The supplied source package should not silently acquire a release APK dependency.');
+  assert.match(readme, /APK binaries are not bundled in this source package/);
+});
+
 test('APK intro uses the configured app icon asset', () => {
   assert.match(appIntro, /\/assets\/Foto\/Profil-Apk\.png/);
 });

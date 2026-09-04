@@ -468,9 +468,6 @@ app.post("/api/auth/verify-email", authVerifyLimiter, async (req, res) => {
     }
     const userId = rowBase.user_id;
     const user = { id: userId, email };
-    if (rowBase.used_at) {
-      return res.status(409).json({ ok: false, code: "ALREADY_VERIFIED", error: "Email sudah terverifikasi. Silakan masuk." });
-    }
     const { data: row, error: rowError } = await supabase.from("am_email_verifications").select("id,expires_at,used_at,attempt_count").eq("id", rowBase.id).maybeSingle();
     if (rowError) throw rowError;
     if (!row || row.expires_at <= new Date().toISOString()) return res.status(410).json({ ok: false, code: "CODE_EXPIRED", error: "Code verifikasi sudah kedaluwarsa. Kirim ulang code baru." });

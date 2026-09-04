@@ -14,13 +14,11 @@ This package adds the website-side Android release center and Owner release mana
 Owner Panel → App Release → choose APK → choose version/version code → upload → publish.
 The server issues a Supabase signed upload URL, the browser uploads the APK, computes SHA-256, and stores release metadata in `public.app_releases`.
 
-## Current bundled release
+## Release artifact storage
 
-- Version: 1.0.0
-- Version code: 1
-- File: `public/releases/android/1.0.0/JyyR-Amprem-1.0.0.apk`
-- Size: 9,229,016 bytes
-- SHA-256: `81fb4e7c46867b13bf1848b110c91fd0ebb4d0aa5b881331f7128e9bb085b69b`
+APK binaries are not bundled in this source package. The Owner Release Center uploads APK files to the configured Supabase Storage bucket and stores verified metadata in `public.app_releases`. The App Center reads the current published release through `/api/app/latest`.
+
+This keeps the source repository independent of large binary release artifacts and avoids claiming that a local APK exists when the release binary is stored remotely.
 
 ## Verification
 

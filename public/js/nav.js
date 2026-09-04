@@ -1,7 +1,6 @@
 (function () {
   const LOGO = 'https://i.ibb.co.com/YFKtw7Pk/LOGO-PROFIL.png';
   const BRAND = 'https://i.ibb.co.com/1GwwBB5W/LOGO-NAMA.png';
-  const BANNER = 'https://uploadin.web.id/f/jyybanner.mp4';
   const DONATE = 'https://sociabuzz.com/ajirhs/tribe';
   const APP_NAME = "Jyy'R Amprem";
 
@@ -546,64 +545,49 @@
       .join('');
   }
 
-  /*
-   * Setup brand banner video.
-   */
-  function setupBrandBanner() {
-    const video = q('#brandBanner');
+  /**
+ * Setup brand banner video.
+ */
+function setupBrandBanner() {
+  const video = q('#brandBanner');
+
+  if (
+    !video ||
+    video.dataset.bannerReady === '1'
+  ) {
+    return;
+  }
+
+  video.dataset.bannerReady = '1';
+
+  video.autoplay = true;
+  video.muted = true;
+  video.defaultMuted = true;
+  video.loop = true;
+  video.playsInline = true;
+  video.preload = 'auto';
+
+  const start = () => {
+    const attempt = video.play();
 
     if (
-      !video ||
-      video.dataset.bannerReady === '1'
+      attempt &&
+      typeof attempt.catch === 'function'
     ) {
-      return;
+      attempt.catch(() => {});
     }
+  };
 
-    video.dataset.bannerReady = '1';
-
-    video.autoplay = true;
-    video.muted = true;
-    video.defaultMuted = true;
-    video.loop = true;
-    video.playsInline = true;
-    video.preload = 'metadata';
-
-    const start = () => {
-      const attempt = video.play();
-
-      if (
-        attempt &&
-        typeof attempt.catch === 'function'
-      ) {
-        attempt.catch(() => {});
-      }
-    };
-
-    video.addEventListener(
-      'loadeddata',
-      start,
-      { once: true }
-    );
-
+  if (video.readyState >= 2) {
+    start();
+  } else {
     video.addEventListener(
       'canplay',
       start,
       { once: true }
     );
-
-    video.addEventListener(
-      'playing',
-      () => {},
-      { once: true }
-    );
-
-    video.src = BANNER;
-    video.load();
-
-    if (video.readyState >= 2) {
-      start();
-    }
   }
+}
 
   /*
    * Render shared page elements.
@@ -663,7 +647,6 @@
     userName,
     LOGO,
     BRAND,
-    BANNER,
     DONATE
   };
 

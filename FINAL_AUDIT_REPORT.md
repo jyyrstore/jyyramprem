@@ -74,8 +74,15 @@ Migration V7 does not delete portal-token history. Historical token rows with ex
 
 Legacy `expires_at` columns are retained only as compatibility mirrors during migration. Canonical runtime authorization uses `redemption_expires_at` and `access_expires_at`.
 
+## Audit cleanup
+
+- Removed the unreachable `rowBase.used_at` branch from `verify-email`; the query explicitly filters `used_at IS NULL`, so that branch could never execute.
+- Removed obsolete Gmail SMTP/SMTP-secret examples from `.env.example`; active registration delivery uses Supabase Auth resend/OTP, not local SMTP.
+- Corrected release documentation so it no longer claims a bundled APK exists in the source package. The live release artifacts are in Supabase Storage.
+- Added one canonical source migration for the live database cleanup: redundant `app_releases` unique indexes, FK covering indexes, and the duplicate timestamp trigger cleanup.
+
 ## Verification status
 
 Static JavaScript syntax checks passed for the modified server, owner, settings, and access-watchdog files. The Node test suite is used as the repository-level regression gate.
 
-A live production database execution was not performed from this ZIP-only audit environment; `supabase` CLI is not installed here and no live Supabase credential/configuration was supplied for this run. The included production verification SQL must be run against the actual Supabase project after deployment of V7.
+Live Supabase was directly inspected during this audit. The project is ACTIVE_HEALTHY, PostgreSQL 17.6, and the live migration ledger contains the V7 portal-token contract. Two safe cleanup migrations were also applied: redundant app-release indexes were removed and missing FK covering indexes were added; the duplicate app-release timestamp trigger was removed. The supplied source package was then re-verified with the full Node test suite and runtime verifier. Browser-level E2E could not be run because `agent-browser` is not installed in this execution environment.

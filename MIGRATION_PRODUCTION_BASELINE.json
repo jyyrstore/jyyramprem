@@ -2,9 +2,9 @@
   "generated_at": "2026-09-04",
   "project_ref": "jfjbdenqepaagxfysaar",
   "source_zip": "jyyramprem.zip",
-  "source_migration_file_count": 41,
-  "production_migration_count": 76,
-  "production_latest_version": "20260904065623",
+  "source_migration_file_count": 43,
+  "production_migration_count": 79,
+  "production_latest_version": "20260904122452",
   "production_versions": [
     "20260819020746",
     "20260819033352",
@@ -81,7 +81,10 @@
     "20260904050709",
     "20260904055646",
     "20260904055710",
-    "20260904065623"
+    "20260904065623",
+    "20260904083839",
+    "20260904122213",
+    "20260904122452"
   ],
-  "interpretation": "Production migration history is historically divergent from the supplied ZIP. This file records the verified production baseline; it is not a replacement for missing historical SQL. The live schema was converged by the final V6 migration."
+  "interpretation": "Production migration history is historically divergent from the supplied ZIP. Live Supabase was re-verified on 2026-09-04 and now records 79 migrations, including the live V7 portal-token contract and two audit cleanup migrations applied during this audit. The supplied source package contains the semantic V7 source migration plus the combined cleanup migration; live ledger timestamps are generated independently and must not be renamed retroactively."
 }

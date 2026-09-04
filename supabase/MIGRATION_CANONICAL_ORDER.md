@@ -4,7 +4,7 @@ The migration directory contains historical migrations from iterative portal-tok
 
 ## Final portal-token contract
 
-`20260904150000_canonical_single_user_token_redemption_v7.sql` is the final corrective migration for the portal-token system and supersedes the earlier V4/V5/V6 portal-token semantics.
+`20260904150000_canonical_single_user_token_redemption_v7.sql` is the source-package final corrective migration for the portal-token system and supersedes the earlier V4/V5/V6 portal-token semantics.
 
 The final contract is:
 
@@ -20,4 +20,4 @@ The final contract is:
 
 ## Production note
 
-The production project currently stops at the V6 migration (`20260904065623`). The V7 migration must therefore be applied after V6. The application/server contract must also use the V7 canonical RPC signature and redemption/access fields; V6-era code that computes a 15/30-day token `expires_at` is incompatible with this final contract.
+Live production was re-verified on 2026-09-04. The Supabase migration ledger currently reaches version `20260904083839`, whose recorded name corresponds to the live application of the V7 semantic contract. The supplied source package contains the semantically equivalent V7 file under `20260904150000`; do not rename already-applied migration history. The application/server contract uses the V7 canonical RPC signature and redemption/access fields; V6-era code that computes a 15/30-day token `expires_at` is incompatible with this final contract.
