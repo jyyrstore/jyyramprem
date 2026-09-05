@@ -12,6 +12,8 @@ const appIntro = fs.readFileSync(new URL('public/html/app-intro.html', root), 'u
 const ownerJs = fs.readFileSync(new URL('public/js/owner.js', root), 'utf8');
 const notifyJs = fs.readFileSync(new URL('public/js/notifications.js', root), 'utf8');
 const apkMetaJs = fs.readFileSync(new URL('public/js/apk-metadata.js', root), 'utf8');
+const appConfig = fs.readFileSync(new URL('lib/config/app.config.js', root), 'utf8');
+const runtime = fs.readFileSync(new URL('lib/runtime/app-runtime.js', root), 'utf8');
 const nav = fs.readFileSync(new URL('public/js/nav.js', root), 'utf8');
 const apkPath = new URL('public/releases/android/1.0.0/JyyR-Amprem-1.0.0.apk', root);
 const apk = fs.existsSync(apkPath) ? fs.readFileSync(apkPath) : null;
@@ -73,6 +75,13 @@ test('PWA root assets are available from the public static root and explicit rou
   assert.match(server, /app\.get\("\/service-worker\.js",[\s\S]*sendFile\("service-worker\.js", \{ root: path\.join\(__dirname, "public"\) \}\)/);
   assert.match(server, /req\.path === "\/manifest\.webmanifest"/);
   assert.match(server, /req\.path === "\/service-worker\.js"/);
+});
+
+
+test('PUBLIC_DIR uses filesystem-safe URL decoding and quota config is exported canonically', () => {
+  assert.match(appConfig, /import \{fileURLToPath\} from "node:url"/);
+  assert.match(appConfig, /PUBLIC_DIR=fileURLToPath\(new URL\("\.\.\/\.\.\/public\/",import.meta.url\)\)/);
+  assert.match(runtime, /MAGIC_LINK_DAILY_LIMIT/);
 });
 
 test('APK metadata is read from the real bundled APK', () => {

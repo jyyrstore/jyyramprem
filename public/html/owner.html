@@ -537,6 +537,17 @@
           <button type="button" class="btn token-mode-btn active" data-token-duration="permanent" aria-pressed="true">Permanent</button>
         </div>
 
+        <div class="field">
+          <label for="portalTokenGenerateQuantity">Jumlah Generate</label>
+          <select id="portalTokenGenerateQuantity" class="input">
+            <option value="1">1 Token</option>
+            <option value="10">10 Token</option>
+            <option value="100">100 Token</option>
+            <option value="1000">1000 Token</option>
+          </select>
+          <small>Generate menambah inventory saja. Tidak mengurangi quota distribusi.</small>
+        </div>
+
         <div id="generatedPortalToken" class="status success token-generated" hidden>
           <button id="copyGeneratedPortalToken" class="icon-btn token-copy" type="button" aria-label="Salin token" title="Salin token"><span id="copyTokenIcon"></span></button>
           <div class="token-generated-copy">
@@ -548,6 +559,8 @@
         </div>
 
         <div id="ownerTokenStatus" class="status info" hidden aria-hidden="true">Memuat status token…</div>
+        <div id="portalTokenDistributionStatus" class="status success">Memuat distribusi hari ini…</div>
+        <div id="portalTokenInventoryCount" class="status info">Inventory belum disebar : —</div>
 
         <div class="btn-row token-actions">
           <button id="generatePortalToken" class="btn primary" type="button"><span id="generateTokenIcon"></span><span>Generate Token</span></button>
@@ -557,8 +570,8 @@
       <article class="card token-history-card">
         <div class="section-head">
           <div>
-            <h2 class="section-title"><span class="owner-title-icon" aria-hidden="true" id="tokenHistoryTitleIcon"></span><span>Token History</span></h2>
-            <p class="section-note">Riwayat semua token Owner. Token disimpan terenkripsi dan ditampilkan hanya untuk Owner.</p>
+            <h2 class="section-title"><span class="owner-title-icon" aria-hidden="true" id="tokenHistoryTitleIcon"></span><span>Token Inventory & Distribution</span></h2>
+            <p class="section-note">Generate tidak sama dengan publish. Pilih Sebarkan untuk memasukkan token ke JYY'R Token. Maksimal 5 distribusi sukses per calendar day.</p>
           </div>
           <button id="refreshPortalTokenHistory" class="round-btn token-history-refresh" type="button" aria-label="Refresh token history" title="Refresh"><span id="refreshTokenHistoryIcon"></span></button>
         </div>

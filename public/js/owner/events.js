@@ -126,7 +126,8 @@ function bindEvents() {
     if (!button || button.dataset.generating === "1") return;
     const durationMode = state.selectedPortalTokenDuration || "permanent";
     const modeLabel = portalTokenDurationLabel(durationMode);
-    const confirmed = await ownerConfirm(`Buat token portal ${modeLabel}? Token tersedia selama 24 jam untuk redemption pertama. Setelah satu user berhasil redeem, token terkunci ke user tersebut.`, {
+    const quantity = Math.max(1, Math.min(1000, Number(document.getElementById("portalTokenGenerateQuantity")?.value || 1)));
+    const confirmed = await ownerConfirm(`Buat ${quantity} token portal ${modeLabel}? Generate hanya menambah inventory dan tidak mengurangi quota distribusi.`, {
       title: "Generate Token Portal",
       confirmText: "Generate Token",
       cancelText: "Batal",
@@ -140,7 +141,7 @@ function bindEvents() {
     });
     try {
       await generatePortalToken(s);
-      ownerNotice(`Token ${modeLabel} berhasil dibuat.`, "success");
+      ownerNotice(`${quantity} token ${modeLabel} berhasil dibuat ke inventory.`, "success");
     } catch (e) {
       console.error("[OWNER TOKEN GENERATE UI ERROR]", e);
       ownerNotice(e?.message || "Gagal membuat token.");
@@ -173,27 +174,30 @@ function bindEvents() {
   });
 
   document.getElementById("portalTokenHistory")?.addEventListener("click", async (event) => {
-    const button = event.target.closest("[data-revoke-token-id]");
-    if (!button) return;
+    const publish = event.target.closest(".token-history-publish");
+    const unpublish = event.target.closest(".token-history-unpublish");
+    const revoke = event.target.closest(".token-history-revoke");
+    if (!publish && !unpublish && !revoke) return;
     const s = state.session || await requireSession(); if (!s) return;
-    const tokenId = button.dataset.revokeTokenId;
-    const tokenText = button.dataset.revokeToken || "token aktif";
-    if (!isPortalTokenId(tokenId)) return;
-    const confirmed = await window.JYYRNotify?.confirm?.(`Verifikasi pencabutan\n\nToken ${tokenText} akan dicabut dan tidak dapat digunakan lagi.\nToken lain yang masih aktif tetap dapat digunakan.\n\nLanjutkan?`, {
-      title: "Verifikasi Pencabutan Token",
-      confirmText: "Cabut Token",
-      cancelText: "Batal",
-      danger: true,
-    });
-    if (!confirmed) return;
+    const button = publish || unpublish || revoke;
+    const tokenId = button.dataset.publishTokenId || button.dataset.unpublishTokenId || button.dataset.revokeTokenId;
     button.disabled = true;
     try {
-      await revokePortalToken(s, tokenId);
-      ownerNotice("Token berhasil dicabut.", "success");
-    } catch (e) {
-      button.disabled = false;
-      ownerNotice(e.message);
-    }
+      if (publish) {
+        const data = await publishPortalTokenById(s, tokenId);
+        ownerNotice(`Token berhasil disebarkan. Distribusi: ${Number(data.publish_count || 0)}/5.`, "success");
+      } else if (unpublish) {
+        await unpublishPortalTokenById(s, tokenId);
+        ownerNotice("Publikasi token dihentikan.", "success");
+      } else {
+        const confirmed = await window.JYYRNotify?.confirm?.(`Cabut token ini? Token tidak dapat digunakan lagi.`, { title: "Cabut Token", confirmText: "Cabut", cancelText: "Batal", danger: true });
+        if (!confirmed) return;
+        await revokePortalTokenById(s, tokenId);
+        ownerNotice("Token berhasil dicabut.", "success");
+      }
+      state.tokenHistoryPage = 0;
+      await Promise.all([loadPortalTokenHistory(s), loadPortalTokenStatus(s), loadPortalTokenDistributionStatus(s)]);
+    } catch (e) { ownerNotice(e.message); } finally { button.disabled = false; }
   });
 
   document.getElementById("copyGeneratedPortalToken")?.addEventListener("click", copyGeneratedPortalToken);

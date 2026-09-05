@@ -266,6 +266,7 @@ async function contactOwnerForPortalTokenFromGate() {
 
 $("#tokenGateClose")?.addEventListener("click", closePortalTokenGate);
 $("#verifyPortalTokenBtn")?.addEventListener("click", verifyPortalTokenFromGate);
+$("#getPortalTokenCenterBtn")?.addEventListener("click", openTokenCenterFromGate);
 $("#getPortalTokenBtn")?.addEventListener("click", contactOwnerForPortalTokenFromGate);
 $("#portalTokenInput")?.addEventListener("keydown", (event) => {
   if (event.key === "Enter") {
@@ -475,6 +476,38 @@ $("#resendCode").onclick = async () => {
 };
 
 
+function adoptTokenCenterRegisterContext() {
+  const params = new URLSearchParams(window.location.search);
+  const username = String(params.get("username") || "").trim();
+  const tokenId = String(params.get("token_id") || "").trim();
+  if (username && /^@[a-z0-9](?:[a-z0-9._-]{2,28})$/i.test(username)) {
+    const input = $("#username");
+    if (input) input.value = username.toLowerCase();
+    setMode("register");
+  }
+  if (/^[0-9a-f-]{36}$/i.test(tokenId)) sessionStorage.setItem("jyyr:selected_token_id", tokenId);
+  if (username || tokenId) {
+    history.replaceState({}, document.title, "/login.html");
+  }
+  return Boolean(username || tokenId);
+}
+
+async function openTokenCenterFromGate() {
+  const button = $("#getPortalTokenCenterBtn");
+  if (!button) return;
+  button.disabled = true;
+  setPortalGateStatus("Menyiapkan JYY'R Token…");
+  try {
+    const { response, data } = await AMAuth.getTokenCenterLink();
+    if (!response.ok || !data.url) throw new Error(data.error || "JYY'R Token belum tersedia.");
+    window.location.assign(data.url);
+  } catch (error) {
+    setPortalGateStatus(error.message || "Gagal membuka JYY'R Token.", "error");
+  } finally { button.disabled = false; }
+}
+
+const hasTokenCenterRegisterContext = adoptTokenCenterRegisterContext();
+
 /* =========================================================
    SESSION CHECK
 ========================================================= */
@@ -494,7 +527,7 @@ $("#resendCode").onclick = async () => {
    INITIAL MODE
 ========================================================= */
 
-setMode("login");
+if (!hasTokenCenterRegisterContext) setMode("login");
 
 /* =========================================================
    LOGIN BRAND — LETTER WAVE + HOME-MATCHED GRADIENT

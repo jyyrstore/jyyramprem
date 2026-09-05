@@ -26,3 +26,12 @@ test('member quota is not consumed in generate', () => {
   const generate = server.slice(generateStart, generateEnd);
   assert.doesNotMatch(generate, /consumeMagicLinkQuota\(/);
 });
+
+test('MAGIC_LINK_DAILY_LIMIT is backed by the canonical runtime export', () => {
+  const config = fs.readFileSync(new URL('../lib/config/app.config.js', import.meta.url), 'utf8');
+  const runtime = fs.readFileSync(new URL('../lib/runtime/app-runtime.js', import.meta.url), 'utf8');
+  const member = fs.readFileSync(new URL('../api/routes/member.routes.js', import.meta.url), 'utf8');
+  assert.match(config, /export const MAGIC_LINK_DAILY_LIMIT/);
+  assert.match(runtime, /MAGIC_LINK_DAILY_LIMIT/);
+  assert.match(member, /MAGIC_LINK_DAILY_LIMIT/);
+});

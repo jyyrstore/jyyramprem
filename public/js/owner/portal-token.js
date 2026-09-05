@@ -92,9 +92,15 @@ async function loadPortalTokenHistory(session) {
       }
       const usedBy = `<small class="token-history-usedby">${escapeHtml(usageText)}</small>`;
       const canRevoke = t.status === "active" && isPortalTokenId(t.id);
+      const isPublished = Boolean(t.published_at);
+      const publishButton = t.status === "active" && isPortalTokenId(t.id)
+        ? (isPublished
+          ? `<button class="btn token-history-unpublish" type="button" data-unpublish-token-id="${escapeHtml(t.id)}">Hentikan</button>`
+          : `<button class="btn primary token-history-publish" type="button" data-publish-token-id="${escapeHtml(t.id)}">Sebarkan</button>`)
+        : "";
       const action = canRevoke
-        ? `<button class="btn danger token-history-revoke" type="button" data-revoke-token-id="${escapeHtml(t.id)}" data-revoke-token="${escapeHtml(tokenValue || t.preview || "token aktif")}">Cabut</button>`
-        : "—";
+        ? `${publishButton}<button class="btn danger token-history-revoke" type="button" data-revoke-token-id="${escapeHtml(t.id)}" data-revoke-token="${escapeHtml(tokenValue || t.preview || "token aktif")}">Cabut</button>`
+        : publishButton || "—";
       const timeline = t.status === "active"
         ? `<small>Redemption sampai : ${redemptionText}</small>`
         : t.status === "used"
@@ -110,32 +116,62 @@ async function loadPortalTokenHistory(session) {
   });
 }
 
+async function loadPortalTokenDistributionStatus(session) {
+  const response = await ownerRequest("/api/owner/token/distribution-status", session);
+  const data = await parseJson(response);
+  if (!response.ok) throw new Error(data.error || "Quota distribusi gagal dimuat.");
+  const el = document.getElementById("portalTokenDistributionStatus");
+  if (el) {
+    el.textContent = `${Number(data.publishedToday || 0)} / ${Number(data.limit || 5)} distribusi hari ini · Sisa ${Number(data.remaining || 0)}`;
+    el.className = `status ${Number(data.remaining || 0) > 0 ? "success" : "error"}`;
+  }
+  const inventory = document.getElementById("portalTokenInventoryCount");
+  if (inventory) inventory.textContent = `Inventory belum disebar : ${Number(data.unpublishedInventory || 0)}`;
+  return data;
+}
+
 async function generatePortalToken(session) {
   const durationMode = state.selectedPortalTokenDuration || "permanent";
-  const response = await ownerRequest("/api/owner/token/generate", session, {
+  const quantity = Math.max(1, Math.min(1000, Number(document.getElementById("portalTokenGenerateQuantity")?.value || 1)));
+  const response = await ownerRequest("/api/owner/token/generate-batch", session, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ duration_mode: durationMode }),
+    body: JSON.stringify({ duration_mode: durationMode, quantity }),
   });
   const data = await parseJson(response);
   if (!response.ok) throw new Error(data.error || "Gagal membuat token.");
   const out = document.getElementById("generatedPortalToken");
   state.generatedPortalToken = data.token || null;
   state.generatedPortalTokenId = data.tokenId || null;
-  if (data.token && data.tokenId) rememberPortalTokenOnDevice(session, data.tokenId, data.token, data.expiresAt);
+  if (data.token && data.tokenId) rememberPortalTokenOnDevice(session, data.tokenId, data.token, data.redemptionExpiresAt);
   if (out) {
     out.hidden = false;
     const tokenEl = document.getElementById("generatedPortalTokenToken");
     const createdEl = document.getElementById("generatedPortalTokenCreated");
     const statusEl = document.getElementById("generatedPortalTokenStatus");
-    if (tokenEl) tokenEl.textContent = data.token ? `Token  : ${data.token}` : "Token  : —";
-    if (createdEl) createdEl.textContent = `Dibuat : ${broadcastDate(data.createdAt || new Date().toISOString())}`;
-    if (statusEl) statusEl.textContent = `Status : AVAILABLE · Redemption sampai ${broadcastDate(data.redemptionExpiresAt || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString())}`;
+    if (tokenEl) tokenEl.textContent = data.token ? `Token terakhir : ${data.token}` : "Token terakhir : —";
+    if (createdEl) createdEl.textContent = `Dibuat ${Number(data.createdCount || 1)} token · ${broadcastDate(data.createdAt || new Date().toISOString())}`;
+    if (statusEl) statusEl.textContent = `Inventory : BELUM DISEBAR · Redemption sampai ${broadcastDate(data.redemptionExpiresAt || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString())}`;
   }
   state.tokenHistoryPage = 0;
   state.tokenStatusNotified = false;
-  await loadPortalTokenStatus(session);
-  await loadPortalTokenHistory(session);
+  await Promise.all([loadPortalTokenStatus(session), loadPortalTokenHistory(session), loadPortalTokenDistributionStatus(session)]);
+}
+
+async function publishPortalTokenById(session, tokenId) {
+  if (!isPortalTokenId(tokenId)) throw new Error("Token ID tidak valid.");
+  const response = await ownerRequest("/api/owner/token/publish", session, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token_id: tokenId }) });
+  const data = await parseJson(response);
+  if (!response.ok) throw new Error(data.error || "Gagal menyebarkan token.");
+  return data;
+}
+
+async function unpublishPortalTokenById(session, tokenId) {
+  if (!isPortalTokenId(tokenId)) throw new Error("Token ID tidak valid.");
+  const response = await ownerRequest("/api/owner/token/unpublish", session, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token_id: tokenId }) });
+  const data = await parseJson(response);
+  if (!response.ok) throw new Error(data.error || "Gagal menghentikan publikasi token.");
+  return data;
 }
 
 async function revokePortalTokenById(session, tokenId) {

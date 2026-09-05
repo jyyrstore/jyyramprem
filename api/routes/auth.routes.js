@@ -109,10 +109,22 @@ export function registerAuthRoutes(app, deps) {
       if (!parsed.valid) return res.status(400).json({ ok: false, code: "INVALID_EMAIL", error: "Masukkan alamat email yang valid." });
       const email = parsed.value;
       const password = String(req.body?.password || "");
+      const rawUsername = String(req.body?.data?.username || "").trim();
+      if (!rawUsername) return res.status(400).json({ ok: false, code: "USERNAME_REQUIRED", error: "Username wajib diisi." });
+      const normalizedUsername = rawUsername.startsWith("@") ? `@${rawUsername.slice(1).toLowerCase()}` : `@${rawUsername.toLowerCase()}`;
+      if (!/^@[a-z0-9](?:[a-z0-9._-]{2,28})$/.test(normalizedUsername)) {
+        return res.status(422).json({ ok: false, code: "INVALID_USERNAME", error: "Username harus 3–29 karakter: huruf, angka, titik, underscore, atau strip." });
+      }
+      const { data: existingUsername, error: usernameLookupError } = await db.from("member_profiles")
+        .select("user_id")
+        .eq("username", normalizedUsername)
+        .maybeSingle();
+      if (usernameLookupError) throw usernameLookupError;
+      if (existingUsername?.user_id) return res.status(409).json({ ok: false, code: "USERNAME_EXISTS", error: "Username sudah digunakan." });
       if (password.length < 8) return res.status(422).json({ ok: false, code: "WEAK_PASSWORD", error: "Password minimal 8 karakter." });
       assertEmailVerificationConfig();
 
-      const metadata = (req.body?.data && typeof req.body.data === "object") ? req.body.data : {};
+      const metadata = (req.body?.data && typeof req.body.data === "object") ? { ...req.body.data, username: normalizedUsername, nickname: normalizedUsername } : { username: normalizedUsername, nickname: normalizedUsername };
 
       const { data: signupData, error: signupError } = await supabaseAuth.auth.signUp({
         email,
@@ -153,6 +165,11 @@ export function registerAuthRoutes(app, deps) {
       }
 
       const userId = user.id;
+      const { error: profileError } = await db.from("member_profiles").upsert({ user_id: userId, username: normalizedUsername }, { onConflict: "user_id" });
+      if (profileError) {
+        if (profileError.code === "23505") return res.status(409).json({ ok: false, code: "USERNAME_EXISTS", error: "Username sudah digunakan." });
+        throw profileError;
+      }
       const requestHash = verificationRequestHash(userId);
       await db.from("am_email_verifications").delete().eq("user_id", userId).is("used_at", null);
       const { error: insertError } = await db.from("am_email_verifications").insert({
