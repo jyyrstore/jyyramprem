@@ -214,7 +214,17 @@ function closePortalTokenGate() {
   setPortalGateStatus("");
 }
 
+function wantsTokenCenterReturn() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("return_to") === "token-center";
+}
+
 async function continueAfterAuth() {
+  if (wantsTokenCenterReturn()) {
+    await openTokenCenterFromGate();
+    return false;
+  }
+
   const { response, data } = await AMAuth.getPortalAccess();
   if (response.ok && (data.access === true || data.owner === true)) {
     location.replace("/home.html");
