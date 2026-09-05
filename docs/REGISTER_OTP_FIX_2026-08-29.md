@@ -27,7 +27,7 @@ The Generate/Magic-Link/provider implementation is intentionally unchanged by th
   - OTP input is explicitly constrained to six digits and exposes accessible guidance.
 - `test/signup-otp-contract.test.mjs`
   - Adds regression coverage for signup, resend, six-digit verification, OTP UI gating, and provider-flow preservation.
-- `docs/SUPABASE_AUTH_SIGNUP_OTP_TEMPLATE.html`
+- `docs/templates/SUPABASE_AUTH_SIGNUP_OTP_TEMPLATE.html`
   - Hosted Supabase Confirm signup template to paste into Auth Email Templates.
 
 ## Validation

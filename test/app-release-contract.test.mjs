@@ -59,6 +59,22 @@ test('public release APIs disable stale response caching', () => {
   assert.match(releases, /Cache-Control", "no-store, max-age=0/);
 });
 
+
+
+test('PWA root assets are available from the public static root and explicit routes', () => {
+  const manifest = new URL('public/manifest.webmanifest', root);
+  const serviceWorker = new URL('public/service-worker.js', root);
+  assert.equal(fs.existsSync(manifest), true);
+  assert.equal(fs.existsSync(serviceWorker), true);
+  assert.match(fs.readFileSync(manifest, 'utf8'), /\"start_url\"\s*:\s*\"\/app-intro\.html\"/);
+  assert.match(fs.readFileSync(serviceWorker, 'utf8'), /self\.addEventListener\('fetch'/);
+
+  assert.match(server, /app\.get\("\/manifest\.webmanifest",[\s\S]*sendFile\("manifest\.webmanifest", \{ root: path\.join\(__dirname, "public"\) \}\)/);
+  assert.match(server, /app\.get\("\/service-worker\.js",[\s\S]*sendFile\("service-worker\.js", \{ root: path\.join\(__dirname, "public"\) \}\)/);
+  assert.match(server, /req\.path === "\/manifest\.webmanifest"/);
+  assert.match(server, /req\.path === "\/service-worker\.js"/);
+});
+
 test('APK metadata is read from the real bundled APK', () => {
   if (!apk) return;
   const metadata = inspectApk(apk);

@@ -127,10 +127,13 @@ function walk(dir) {
 walk(path.join(root, 'public'));
 
 const server = fs.readFileSync(path.join(root, 'server.js'), 'utf8');
-const routeMatches = [...server.matchAll(/app\.(?:get|post|patch|put|delete)\(\s*['"]([^'"]+)/g)].map((m) => m[1]);
+const routeFiles = fs.readdirSync(path.join(root, 'api', 'routes')).filter((name) => name.endsWith('.routes.js')).map((name) => path.join(root, 'api', 'routes', name));
+const routeSource = routeFiles.map((file) => fs.readFileSync(file, 'utf8')).join('\n');
+const routeMatches = [...routeSource.matchAll(/app\.(?:get|post|patch|put|delete)\(\s*['"]([^'"]+)/g)].map((m) => m[1]);
 const routes = new Set(routeMatches);
 const apiRoutes = new Set(routeMatches.filter((route) => route.startsWith('/api/')));
-const rpcNames = new Set([...server.matchAll(/\.rpc\(\s*['"]([^'"]+)/g)].map((m) => m[1]));
+const jsSourceForRpcs = [server, routeSource, fs.readFileSync(path.join(root, 'lib', 'runtime', 'app-runtime.js'), 'utf8')].join('\n');
+const rpcNames = new Set([...jsSourceForRpcs.matchAll(/\.rpc\(\s*['"]([^'"]+)/g)].map((m) => m[1]));
 
 const requiredOwnerRoutes = [
   '/api/owner/faq',
@@ -222,6 +225,7 @@ console.log(JSON.stringify({
   jsFiles: jsFiles.length,
   routePathCount: routes.size,
   apiRouteHandlerCount: routeMatches.filter((route) => route.startsWith('/api/')).length,
+  routeFiles: routeFiles.map((file) => path.relative(root, file)),
   apiUniquePathCount: apiRoutes.size,
   rpcReferenceCount: rpcNames.size,
   localFrontendReferences: 'ok',
