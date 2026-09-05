@@ -26,6 +26,19 @@ function balancedCss(relative) {
   assert.equal(depth, 0, `${relative}: unclosed CSS brace`);
 }
 
+
+test("Vercel proxy trust is bounded to one hop", () => {
+  assert.match(server, /if\(process\.env\.VERCEL\)app\.set\("trust proxy",1\);/);
+});
+
+test("Amprem exposes both health routes without duplicating the handler", () => {
+  assert.match(server, /registerPublicRoutes/);
+  const source = fs.readFileSync(path.join(root, "api/routes/public.routes.js"), "utf8");
+  assert.match(source, /const healthHandler = async/);
+  assert.match(source, /app\.get\("\/api\/health", healthHandler\);/);
+  assert.match(source, /app\.get\("\/health", healthHandler\);/);
+});
+
 test("Owner API surface is connected to its required runtime routes", () => {
   const r = routes(server);
   for (const route of [

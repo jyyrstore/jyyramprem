@@ -249,9 +249,7 @@ export function registerPublicRoutes(app, deps) {
     }
   });
 
-  app.get(
-    "/api/health",
-    async (_req, res) => {
+  const healthHandler = async (_req, res) => {
       try {
         const {
           error,
@@ -292,9 +290,10 @@ export function registerPublicRoutes(app, deps) {
               "error",
           });
       }
-    }
-  );
+  };
 
+  app.get("/api/health", healthHandler);
+  app.get("/health", healthHandler);
   app.post('/api/internal/maintenance/cleanup-idempotency', async (req, res) => {
     const expected = String(process.env.CRON_SECRET || '').trim();
     const provided = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '').trim();
