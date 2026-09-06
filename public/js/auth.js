@@ -214,17 +214,7 @@ function closePortalTokenGate() {
   setPortalGateStatus("");
 }
 
-function wantsTokenCenterReturn() {
-  const params = new URLSearchParams(window.location.search);
-  return params.get("return_to") === "token-center";
-}
-
 async function continueAfterAuth() {
-  if (wantsTokenCenterReturn()) {
-    await openTokenCenterFromGate();
-    return false;
-  }
-
   const { response, data } = await AMAuth.getPortalAccess();
   if (response.ok && (data.access === true || data.owner === true)) {
     location.replace("/home.html");
@@ -276,7 +266,6 @@ async function contactOwnerForPortalTokenFromGate() {
 
 $("#tokenGateClose")?.addEventListener("click", closePortalTokenGate);
 $("#verifyPortalTokenBtn")?.addEventListener("click", verifyPortalTokenFromGate);
-$("#getPortalTokenCenterBtn")?.addEventListener("click", openTokenCenterFromGate);
 $("#getPortalTokenBtn")?.addEventListener("click", contactOwnerForPortalTokenFromGate);
 $("#portalTokenInput")?.addEventListener("keydown", (event) => {
   if (event.key === "Enter") {
@@ -500,20 +489,6 @@ function adoptTokenCenterRegisterContext() {
     history.replaceState({}, document.title, "/login.html");
   }
   return Boolean(username || tokenId);
-}
-
-async function openTokenCenterFromGate() {
-  const button = $("#getPortalTokenCenterBtn");
-  if (!button) return;
-  button.disabled = true;
-  setPortalGateStatus("Menyiapkan JYY'R Token…");
-  try {
-    const { response, data } = await AMAuth.getTokenCenterLink();
-    if (!response.ok || !data.url) throw new Error(data.error || "JYY'R Token belum tersedia.");
-    window.location.assign(data.url);
-  } catch (error) {
-    setPortalGateStatus(error.message || "Gagal membuka JYY'R Token.", "error");
-  } finally { button.disabled = false; }
 }
 
 const hasTokenCenterRegisterContext = adoptTokenCenterRegisterContext();
