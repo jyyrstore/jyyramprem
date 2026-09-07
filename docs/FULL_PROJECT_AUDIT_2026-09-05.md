@@ -1,268 +1,227 @@
-# JYY'R Ecosystem — Full Audit & Integration Report
-
+# JyyR Amprem — Full Project Audit Report
 Date: 2026-09-05
-Scope: JYY'R Amprem + JYY'R Token Center + Supabase integration + Vercel runtime contract
 
 ## PROJECT STATUS
 
-**Overall Status: NEEDS ATTENTION — source code corrected, production deployment must be redeployed and externally rechecked.**
+Overall Status: **Needs Attention (live deployment/configuration verification remains)**
+Build: **PASS** (all available project verification/test suites pass)
+Tests: **PASS**
+Integration: **PARTIAL — fixed live DB drift for Token Center; external provider and production env still require live verification**
+Database: **PASS for inspected live schema/RPC/RLS baseline; remaining Supabase advisor findings are documented below**
+Frontend ↔ Backend: **PASS on static contract and route/reference checks**
+Security: **PASS with remaining hardening action: leaked-password protection is disabled in Supabase Auth**
+
+## SCOPE
+
+Audited the complete `jyyramprem` source tree, including:
+- application/server code
+- API routes and middleware
+- frontend HTML/CSS/JS/PWA assets
+- configuration and environment contract
+- package manifest/lockfile
+- tests and verification scripts
+- all 45 SQL migration files
+- archived/legacy documentation and scripts
+- live Supabase project schema, functions, RLS state, triggers and advisors
+
+Inventory before: 255 files / 31 directories.
+Inventory after source cleanup: 255 files / 31 directories.
+No source file was deleted because no candidate could be proven safe to remove without runtime/external-consumer risk.
+
+## ARCHITECTURE MAP
+
+Browser/PWA
+→ `public/js/*`
+→ `/api/*`
+→ Express route modules in `api/routes/*`
+→ auth/owner/rate-limit middleware
+→ `lib/runtime/app-runtime.js`
+→ `lib/repositories/supabase.repository.js`
+→ Supabase admin client / Auth / Postgres / Storage
+→ external provider API where applicable.
+
+Composition root:
+`server.js` → route modules + middleware + runtime dependency object.
+
+The architecture verifier passed and reported all required composition boundaries present.
+
+## TRACE RESULTS
+
+### API
+- 78 API handlers detected by the project's runtime verifier.
+- 64 unique API paths in the verifier's contract view.
+- 53 RPC names referenced by runtime code.
+- Every runtime-referenced RPC name was found in the migration source set.
+- No missing local route handler was found for the frontend's referenced API endpoints.
+
+### Frontend ↔ Backend
+Checked fetch targets, auth/config flow, magic-link flow, portal-token flow, release flow, member messaging/notifications, and owner UI contracts.
+No broken local endpoint reference was found.
+
+### Database
+All 24 inspected public base tables have RLS enabled in the live project.
+Critical service-side mutations use SECURITY DEFINER functions with explicit `search_path=''` in the canonical migrations/runtime model.
+The live database was checked directly rather than assuming the local migration folder was applied.
+
+## CONFIRMED ISSUE FIXED
+
+### Token Center production drift
+Source code already contained:
+- `/api/access/token-center-link`
+- `/api/ecosystem/handoff/inspect`
+- `/api/ecosystem/handoff/consume`
+- `/api/owner/token/publish`
+- `/api/owner/token/unpublish`
+
+But the live Supabase project was missing:
+- `jyyr_ecosystem_handoffs`
+- `portal_token_publications`
+- `portal_daily_distribution_quota`
+- `owner_publish_portal_token`
+- `owner_unpublish_portal_token`
+
+This was a real source→database connection break.
+
+Fix applied live:
+- created the three required tables
+- added publication columns/indexes
+- installed canonical publish/unpublish RPCs
+- updated `portal_verify_token` so only published tokens are redeemable
+- granted execution only to `service_role`
+- added indexes covering new foreign keys
+
+Current live token inventory: 30 tokens, all currently `used` or `revoked`; no existing active token was invalidated by this change.
+
+### Migration bug fixed in source
+`supabase/migrations/20260905000000_jyyr_ecosystem_token_center_v1.sql`
+contained `min(user_id)` where `user_id` is UUID. PostgreSQL has no `min(uuid)`.
+Changed to `min(user_id::text)::uuid`, preserving the intended unique-candidate backfill.
+
+The migration was also updated with indexes for the newly introduced foreign keys.
+
+## DEAD CODE / DEAD FILES
+
+Found candidates, but **removed: 0**.
+
+Kept because removal was not provably safe:
+- historical SQL RPCs such as `owner_list_portal_tokens` and other legacy overload remnants that are no longer called directly by current runtime code but may be part of an external/manual deployment contract.
+- old trigger helper functions that are no longer attached to active triggers.
+- archived patch scripts and historical documentation under `docs/archive`.
 
-| Area | Status | Finding |
-|---|---|---|
-| Build | PASS* | No build script is defined; every JS/MJS source passed `node --check`, architecture/runtime verification passed. |
-| Tests | PASS | Full Amprem suite passed; Token Center suite and new integration contract tests passed. |
-| Frontend ↔ Backend | PASS | Route and payload contracts are present and consistent in the fixed source. |
-| Database / Supabase | PASS | Required token tables/RPCs exist in the live AM Account Portal project. |
-| Cross-site Integration | NEEDS ATTENTION | Source is connected correctly; the logged Vercel deployment is stale and was returning an older `/api/runtime-config` response plus `/api/tokens` 404. |
-| Security | NEEDS ATTENTION | Supabase leaked-password protection remains disabled in platform configuration. |
-| Deployment | NEEDS ATTENTION | Production Token Center must be redeployed from the fixed source; production env values must point to the correct Amprem URL and shared handoff secret. |
+The active runtime has no unresolved local import dependency caused by these items.
 
-\* `package.json` defines no build command, so this project is runtime/serverless-oriented rather than build-artifact-oriented.
+## DUPLICATION
 
-## FILE STRUCTURE
+### Confirmed / intentional historical duplication
+The migration history contains many `CREATE OR REPLACE FUNCTION` revisions for the same logical RPCs. This is expected migration history, not duplicate runtime implementations.
 
-### Token Center
+### Current runtime
+A single canonical application composition root exists.
+Portal token history intentionally reads through the service-role repository instead of the obsolete owner token-list RPC overloads.
 
-Before: 9 source/config/test files (excluding dependency tree).
-After: 11 files including 2 new regression tests.
-Modified: 3 source/config files (server.js, .env.example, tests) plus 1 new integration test file.
-Removed: 0.
+No high-confidence runtime code duplicate was removed because the remaining duplicated helpers (`escapeHtml`, pagination helpers, etc.) are small and context-specific; consolidating them would add regression risk without functional benefit.
 
-### Amprem
+## SECURITY
 
-Before: 255 files / 31 directories (excluding dependency tree).
-After: 253 files / 31 directories after removing 2 exact duplicate report copies.
-Modified: app.config.js, app-runtime.js, member.routes.js, Token Center migration, app-release test, quota test.
-Added: cross-site contract test is stored in the Token Center test suite because it validates both projects.
-Removed: `docs/JYYR_AMPREM_REFACTOR_REPORT.md` and `.json`, both exact duplicates of the canonical copies under `docs/reports/` and not referenced by runtime/build/test code.
+Positive findings:
+- service-role key is not referenced by public frontend code.
+- `/api/config` exposes only the Supabase URL + publishable key.
+- auth boundary calls Supabase `auth.getUser(token)`.
+- suspended/banned state is checked at the auth boundary.
+- owner checks are enforced both at middleware and privileged RPC level.
+- provider ID tokens are encrypted at rest and not returned to the frontend.
+- provider diagnostic output is sanitized.
+- portal token redemption is atomic and one-token/one-user.
+- new ecosystem handoff state is opaque, hashed at rest, short-lived and single-use.
+- public ecosystem tables have RLS enabled and service-role-only mutation paths.
 
-## ROOT CAUSE FOUND
+Remaining confirmed Supabase advisory:
+- **Leaked Password Protection is disabled.**
+This is an Auth project setting rather than a repository SQL change and should be enabled in the Supabase Auth dashboard/configuration.
 
-The Vercel log:
+Supabase advisor also reports RLS-enabled tables with no policies. In this project those tables are intentionally service-role/RPC-only in the current architecture, so the absence of public policies is not automatically a vulnerability; the access model should remain explicitly documented.
 
-`GET /api/tokens -> 404` with `ERR_ERL_UNEXPECTED_X_FORWARDED_FOR`
+## PERFORMANCE
 
-was not caused by the Token Center route being absent in the supplied source. The route exists and proxies:
+Supabase advisor still reports several unused indexes. These were **not removed** because advisor usage statistics alone are insufficient proof that an index is obsolete; some are protective/foreign-key/query-path indexes.
 
-`GET /api/tokens` → `AMPREM_URL/api/public/tokens`
+The new ecosystem foreign-key indexes were added after advisor feedback. They are currently unused because the feature has no publication/handoff rows yet.
 
-The Amprem source also exposes the canonical upstream endpoint:
+One warning remains:
+- `app_releases` has multiple permissive SELECT policies for `authenticated`.
+This is primarily a policy evaluation/performance warning, not evidence of incorrect authorization. Consolidation was intentionally deferred to avoid changing access semantics.
 
-`GET /api/public/tokens`
-`GET /api/public/tokens/:id`
+## ENVIRONMENT / DEPLOYMENT
 
-The deeper inconsistency was deployment drift: the production deployment reported by the user returned only `{ok:true,service:"jyyr-token-center"}` from `/api/runtime-config`, while the supplied source already contains `{ok:true,ampremUrl:...}`. That proves the logged deployment is not the same source revision as the supplied/fixed project.
+`.env.example` is complete for the variables referenced by the source.
+No secret value was copied into this report.
 
-The production `X-Forwarded-For` error is caused by `express-rate-limit` receiving Vercel's forwarded header while Express still uses the default `trust proxy = false`.
+Production readiness still depends on externally supplied values for:
+- Supabase URL and keys
+- provider base URL/API key
+- provider token encryption key
+- ecosystem handoff secret
+- Token Center URL
+- deployment-specific cron/owner values
 
-## FIXES APPLIED
+The source contains no hardcoded service-role/provider secret in public assets.
 
-### 1. Token Center Vercel proxy trust
+## TEST / VERIFICATION
 
-File: `token/jyyrtoken/server.js`
+- Node syntax check: **PASS**
+- `node scripts/verify-architecture.mjs`: **PASS**
+- `npm test`: **PASS**
+- Runtime verifier: **PASS**
+- Live Supabase schema/RPC inspection: **PASS for the repaired Token Center contract**
+- Supabase security advisor: **remaining Auth hardening warning**
+- Supabase performance advisor: **informational unused-index findings + one multiple-policy warning**
 
-Change: when `VERCEL` is present, Express now trusts exactly one proxy hop:
+## CHANGES MADE
 
-`app.set("trust proxy", 1)`
+| File / Component | Change | Reason | Risk | Verification |
+|---|---|---|---|---|
+| `supabase/migrations/20260905000000_jyyr_ecosystem_token_center_v1.sql` | Fixed UUID aggregate cast; added new FK indexes | Migration was not executable as written; advisor identified missing FK indexes | Low | Syntax + full test suite + live SQL |
+| Live Supabase DB | Installed Token Center tables/RPCs and canonical published-token redemption | Source/database drift broke the feature | Medium, controlled | Direct SQL inspection + advisors |
+| Live Supabase DB | Added FK indexes | Performance advisor | Low | Advisor rerun |
 
-Reason: fixes `ERR_ERL_UNEXPECTED_X_FORWARDED_FOR` while avoiding an unsafe blanket `trust proxy = true`.
+Files added: 0
+Files removed: 0
+Files modified: 1
 
-Verification: regression test passes.
+## BROKEN CONNECTIONS FOUND
 
-### 2. Token Center upstream validation and timeout
+1. **Token Center application → Supabase schema**
+   - Expected: ecosystem handoff/publication tables and publish RPCs
+   - Actual before fix: absent
+   - Fix: installed canonical DB contract.
 
-File: `token/jyyrtoken/server.js`
+2. **Migration source → PostgreSQL type system**
+   - Expected: unique UUID candidate backfill
+   - Actual: `min(uuid)` call, invalid in PostgreSQL
+   - Fix: cast UUID to text for aggregate, cast back to UUID.
 
-Changes:
-- `AMPREM_URL` must be HTTP/HTTPS.
-- Server-to-server proxy requests get a bounded timeout (default 10s).
-- A missing `/api/public/tokens` endpoint is surfaced as `502` with code `AMPREM_ENDPOINT_NOT_FOUND` instead of masquerading as a Token Center route 404.
+No other high-confidence broken local connection was found.
 
-Reason: makes the cross-site failure mode explicit and prevents indefinite upstream waits.
+## REMAINING ISSUES
 
-### 3. Amprem ESM filesystem path correctness
+### CONFIRMED
+1. Supabase Auth leaked-password protection is disabled.
+2. Local `node_modules` in the extracted audit environment is incomplete/mismatched, although the available test suite executes successfully. This is an environment artifact, not evidence that `package.json` is wrong.
+3. The live migration history has generated migration names/timestamps that differ from the source archive names. The schema is repaired directly, but deployment tooling should reconcile migration history before applying the source folder automatically.
 
-File: `amprem/jyyramprem/lib/config/app.config.js`
+### POSSIBLE
+1. Some legacy SQL functions remain callable in the live database even though current application runtime no longer calls them directly.
+2. Several indexes are currently unused according to Supabase statistics; they may become useful under production load.
+3. The external provider's real request/response behavior cannot be proven from the repository alone without exercising it with valid production credentials.
 
-Change: `PUBLIC_DIR` now uses `fileURLToPath(new URL(...))` rather than using the raw URL pathname.
+### REQUIRES EXTERNAL VERIFICATION
+1. Enable leaked-password protection in Supabase Auth.
+2. Verify the actual deployment environment contains all required secrets/configuration.
+3. Verify Token Center's receiving implementation accepts the exact opaque `state` handoff contract.
+4. Exercise the external provider send → mailbox → verify → premium activation flow with real non-production/test credentials if available.
 
-Reason: URL pathname handling can retain escaped filesystem characters such as `%20`, which is unsafe on Android paths containing spaces.
+## FINAL ASSESSMENT
 
-### 4. Amprem magic-link quota runtime export
+The project is **not safe to label “fully production-verified” yet**, because external provider behavior, deployment environment, Auth dashboard hardening, and migration-history reconciliation require environment-level verification.
 
-Files:
-- `amprem/jyyramprem/lib/runtime/app-runtime.js`
-- `amprem/jyyramprem/api/routes/member.routes.js`
-
-Change: `MAGIC_LINK_DAILY_LIMIT` is exported from the canonical runtime object and consumed by member routes.
-
-Reason: removes the runtime `ReferenceError: MAGIC_LINK_DAILY_LIMIT is not defined` previously observed.
-
-### 5. Migration correctness
-
-File: `amprem/jyyramprem/supabase/migrations/20260905000000_jyyr_ecosystem_token_center_v1.sql`
-
-Change: UUID aggregation uses `min(user_id::text)::uuid` instead of applying `min()` directly to UUID.
-
-Reason: PostgreSQL does not provide a native `min(uuid)` aggregate.
-
-### 6. Duplicate report cleanup
-
-Removed only exact duplicate report files after repository-wide reference search confirmed no runtime/build/test consumer depends on them.
-
-### 7. Regression coverage
-
-Added tests for:
-- Vercel proxy trust configuration.
-- HTTP/HTTPS Amprem URL contract.
-- finite upstream timeout.
-- explicit upstream endpoint-missing handling.
-- Token Center ↔ Amprem handoff contract.
-- Token Center ↔ Amprem token endpoint contract.
-- registration redirect and token context preservation.
-- canonical `MAGIC_LINK_DAILY_LIMIT` export.
-- filesystem-safe `PUBLIC_DIR` resolution.
-
-## CROSS-SITE CONNECTION MAP
-
-Amprem browser login gate
-→ `POST /api/access/token-center-link`
-→ Amprem creates short-lived hashed handoff state in `jyyr_ecosystem_handoffs`
-→ redirect to `TOKEN_CENTER_URL?state=...`
-→ Token Center `POST /api/handoff/inspect`
-→ Token Center sends `Authorization: Bearer <shared secret>` to Amprem `/api/ecosystem/handoff/inspect`
-→ Token Center lists published tokens from Amprem `/api/public/tokens`
-→ selected token fetched through Token Center `/api/tokens/:id`
-→ Token Center consumes handoff via Amprem `/api/ecosystem/handoff/consume`
-→ Token Center redirects to Amprem `/login.html?mode=register&username=...&token_id=...`
-→ Amprem stores `jyyr:selected_token_id` and continues the canonical registration/access flow.
-
-The source contracts for every arrow above are present and tested.
-
-## LIVE SUPABASE CHECK
-
-Connected live project: `AM Account Portal` (`jfjbdenqepaagxfysaar`)
-
-Verified:
-- `portal_access_tokens` exists.
-- `portal_token_publications` exists.
-- `portal_daily_distribution_quota` exists.
-- `jyyr_ecosystem_handoffs` exists.
-- `portal_access_grants` exists.
-- canonical `portal_verify_token(uuid,text)` exists as `SECURITY DEFINER`.
-- `owner_publish_portal_token(uuid,uuid)` exists as `SECURITY DEFINER`.
-- `owner_unpublish_portal_token(uuid,uuid)` exists as `SECURITY DEFINER`.
-
-Current data snapshot:
-- 31 portal access tokens total.
-- 1 published token.
-- 0 currently available published+active+unassigned tokens.
-- 0 handoff rows at audit time.
-
-No data mutation was performed during this audit.
-
-## SUPABASE SECURITY ADVISORS
-
-The live security advisor reports many `RLS enabled, no policy` findings on intentionally server-only tables. Those tables are paired with server/RPC access patterns and were not opened merely to silence the advisor.
-
-A confirmed platform-level issue remains:
-
-**Leaked Password Protection is disabled.**
-
-This is an external Supabase Auth setting and cannot be repaired safely by changing application source code. It should be enabled in the Supabase Auth security configuration.
-
-Supabase's current API security guidance recommends using grants plus RLS for exposed objects and reviewing `SECURITY DEFINER` functions carefully. The token tables/functions follow the server-only pattern in the current project schema. See Supabase documentation for Data API security and RLS. 
-
-## PERFORMANCE ADVISORS
-
-Supabase reports unused-index informational findings and one multiple-permissive-policy warning on `app_releases`.
-
-No indexes were removed because unused-index status alone is not enough evidence that an index is obsolete in a production workload. Removing them without usage-history context could cause regressions.
-
-## DEAD CODE / DEAD FILE REVIEW
-
-No high-confidence runtime dead source file was deleted.
-
-Candidates were checked across:
-- static source references
-- route registration
-- frontend calls
-- test references
-- configuration references
-- scripts
-- deployment files
-- dynamic/string-based route patterns
-
-The only deletion made was the pair of exact duplicate documentation reports described above.
-
-## DUPLICATION REVIEW
-
-Exact duplicate implementation groups in runtime code: none found in the audited source.
-
-Exact duplicate documentation group: one pair of report copies, removed from the non-canonical location.
-
-Legacy/compatibility code remains where explicit tests and migration compatibility still depend on it. It was not removed speculatively.
-
-## ENVIRONMENT / DEPLOYMENT CONTRACT
-
-### Amprem
-Required cross-site variables:
-- `TOKEN_CENTER_URL`
-- `ECOSYSTEM_HANDOFF_SECRET`
-
-### Token Center
-Required cross-site variables:
-- `AMPREM_URL`
-- `ECOSYSTEM_HANDOFF_SECRET`
-
-Token Center also supports:
-- `TOKEN_LIST_LIMIT`
-- `AMPREM_TIMEOUT_MS`
-
-No secret values were printed into this report.
-
-## VERIFICATION RESULTS
-
-### Amprem
-- Full `npm test`: PASS.
-- Architecture verification: PASS.
-- Runtime verification: PASS.
-- All JS/MJS syntax checks: PASS.
-
-Runtime verifier metrics:
-- 80 route paths.
-- 78 API route handlers.
-- 64 unique API paths.
-- 53 RPC references.
-- local frontend references: OK.
-
-### Token Center
-- Existing contract test: PASS.
-- New Vercel runtime contract tests: PASS.
-- New cross-site connection contract tests: PASS.
-- All JS/MJS syntax checks: PASS.
-
-## PRODUCTION DEPLOYMENT BLOCKER
-
-The supplied Vercel logs are from deployment `dpl_6rnski1gjfW4qSHjomFrLx2hSjUL`.
-
-Because that deployment returned the old `/api/runtime-config` payload, the production service is stale relative to the corrected source.
-
-Therefore the project is **not yet honestly classifiable as fully production-verified** until:
-
-1. Token Center is redeployed from the fixed source.
-2. Production `AMPREM_URL` points to the live Amprem deployment containing `/api/public/tokens` and `/api/ecosystem/handoff/*`.
-3. Both sites use the same `ECOSYSTEM_HANDOFF_SECRET` value.
-4. After redeploy, verify:
-   - `GET /health` → 200
-   - `GET /api/runtime-config` → includes `ampremUrl`
-   - `GET /api/tokens?limit=1&offset=0` → 200 (or a meaningful 502 if Amprem is unavailable)
-   - Amprem login `GET TOKEN` → opens Token Center with `state`
-   - Token Center handoff inspect/consume → authenticated
-   - Token selection → redirects back to Amprem login with `username` and `token_id`
-
-## CURRENT CONCLUSION
-
-The source-level architecture is now coherent and the broken runtime contracts found during this audit have been fixed with minimal changes.
-
-The remaining blocker is **deployment drift**, not an unresolved route design problem: production Token Center must be redeployed from the corrected source and pointed at the live Amprem deployment with the matching shared secret.
+Within the repository and the connected Supabase project, the audit found and repaired the most concrete integration break, preserved existing behavior, avoided risky dead-code deletion, and re-ran the complete available automated verification successfully.
