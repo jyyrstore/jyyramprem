@@ -27,8 +27,7 @@
     ]
   ];
 
-  let activeRoot = document;
-  const q = (selector) => activeRoot?.querySelector(selector) || null;
+  const q = (selector) => document.querySelector(selector);
 
   let deferredInstallPrompt = null;
   let installPromptWaiters = [];
@@ -254,12 +253,11 @@
   /*
    * Initialize authenticated page.
    */
-  async function init(root = document) {
-    activeRoot = root;
+  async function init() {
     const s = await session();
 
     if (!s) {
-      window.JYYRApp?.showView("login");
+      location.replace('/login.html');
       return null;
     }
 
@@ -270,13 +268,13 @@
     /*
      * User information.
      */
-    activeRoot
+    document
       .querySelectorAll('[data-user-name]')
       .forEach((element) => {
         element.textContent = userName(user);
       });
 
-    activeRoot
+    document
       .querySelectorAll('[data-user-email]')
       .forEach((element) => {
         element.textContent = user?.email || '-';
@@ -423,7 +421,7 @@
     /*
      * Close popup when clicking outside.
      */
-    activeRoot.addEventListener(
+    document.addEventListener(
       'click',
       (event) => {
         const popup = q('#accountPopup');
@@ -455,7 +453,7 @@
       'click',
       async () => {
         await window.AMAuth.signOut();
-        window.JYYRApp?.showView('login');
+        location.replace('/login.html');
       }
     );
 
@@ -464,7 +462,7 @@
      */
     q('#downloadAppAction')?.addEventListener(
       'click',
-      () => { window.JYYRApp?.showView('app'); }
+      () => { window.location.href = '/app.html'; }
     );
 
     /*
@@ -594,15 +592,14 @@ function setupBrandBanner() {
   /*
    * Render shared page elements.
    */
-  function renderShared(root = activeRoot) {
-    activeRoot = root;
-    activeRoot
+  function renderShared() {
+    document
       .querySelectorAll('[data-brand-logo]')
       .forEach((element) => {
         element.src = LOGO;
       });
 
-    activeRoot
+    document
       .querySelectorAll('[data-brand-name-logo]')
       .forEach((element) => {
         element.src = BRAND;
@@ -614,7 +611,7 @@ function setupBrandBanner() {
     const currentPage =
       document.body.dataset.page || '';
 
-    activeRoot
+    document
       .querySelectorAll('[data-nav]')
       .forEach((link) => {
         const target =
@@ -653,5 +650,14 @@ function setupBrandBanner() {
     DONATE
   };
 
-
+  /*
+   * Start application.
+   */
+  document.addEventListener(
+    'DOMContentLoaded',
+    () => {
+      renderShared();
+      init();
+    }
+  );
 })();

@@ -2,7 +2,7 @@
  * OWNER CONSOLE BOOTSTRAP
  *
  * Runtime implementation is intentionally split into classic-script feature
- * modules loaded by /public/index.html. This file remains the stable
+ * modules loaded by /public/html/owner.html. This file remains the stable
  * entrypoint and preserves the legacy static inspection surface.
  *
  * FROZEN OWNER UI CONTRACT INDEX — non-executable.
@@ -77,12 +77,9 @@ data-release-open
  * defined before the page starts loading data.
  */
 
-let ownerEventsBound = false;
-
 async function loadPage() {
   const session = await requireSession();
   if (!session) return;
-  if (!ownerEventsBound) { bindEvents(); ownerEventsBound = true; }
   const ownerStatus = await verifyOwner(session);
   if (!ownerStatus) return;
   setOwnerIdentity(ownerStatus.user || session.user);
@@ -96,4 +93,5 @@ async function loadPage() {
   await Promise.all([loadConversations(), loadContentAdmin(session), loadLoginActivity(session), loadMaintenance(session), loadPortalTokenStatus(session), loadPortalTokenHistory(session), loadPortalTokenDistributionStatus(session), loadAppReleases(session)]).catch((e) => console.warn("[OWNER SECONDARY LOAD]", e));
 }
 
-window.JYYROwner = { loadPage, bindEvents };
+bindEvents();
+loadPage().catch((error) => { console.error("[OWNER LOAD ERROR]", error); const health=document.getElementById("ownerHealth");if(health)health.textContent="Owner console gagal dimuat"; });

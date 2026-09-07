@@ -4,7 +4,7 @@ import fs from 'node:fs';
 
 const server = fs.readFileSync('server.js', 'utf8');
 const home = fs.readFileSync('public/js/home.js', 'utf8');
-const html = fs.readFileSync('public/index.html', 'utf8');
+const html = fs.readFileSync('public/html/home.html', 'utf8');
 
 test('Step 1 never exposes a provider-returned magic link; mailbox is the only link source', () => {
   assert.doesNotMatch(server, /magicLink:\s*send\.magicLink/);
@@ -26,5 +26,5 @@ test('manual mailbox path remains available when provider omits link', () => {
 });
 
 test('ui labels expose the one-click continuation', () => {
-  assert.match(html, /Verifikasi &(?:amp;|#38;)? Aktifkan/);
+  assert.match(html, /Verifikasi & Aktifkan/);
 });

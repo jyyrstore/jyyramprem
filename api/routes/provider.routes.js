@@ -11,8 +11,21 @@ const {
 
 export function registerProviderRoutes(app, deps) {
   const {
-  providerDiagnosticLimiter,
-} = deps;
+    authRegisterLimiter,
+    authResendLimiter,
+    authVerifyLimiter,
+    portalTokenVerifyLimiter,
+    ownerClaimLimiter,
+    ownerReadLimiter,
+    ownerStatisticsLimiter,
+    ownerMemberReadLimiter,
+    ownerBroadcastMutationLimiter,
+    ownerBroadcastReadLimiter,
+    ownerMemberMutationLimiter,
+    providerDiagnosticLimiter,
+    requireAuth,
+    requireOwner
+  } = deps;
 
   app.post(
     "/api/internal/provider/diagnostic",

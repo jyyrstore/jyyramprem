@@ -1,5 +1,4 @@
-window.JYYRRegisterView("login", async (root) => {
-const $ = (selector) => root.querySelector(selector);
+const $ = (selector) => document.querySelector(selector);
 
 let mode = "login";
 
@@ -8,7 +7,7 @@ let mode = "login";
 ========================================================= */
 
 const togglePassword = $("#togglePassword");
-const passwordInput = $("#login-password");
+const passwordInput = $("#password");
 
 const passwordIcon = togglePassword?.querySelector("img");
 
@@ -132,7 +131,7 @@ function setMode(next) {
     if (codeInput) codeInput.value = "";
   }
 
-  $("#login-password").autocomplete = registerMode
+  $("#password").autocomplete = registerMode
     ? "new-password"
     : "current-password";
 }
@@ -153,7 +152,7 @@ $("#registerTab").onclick = () => {
 ========================================================= */
 
 $("#forgotPassword").onclick = async () => {
-  const email = $("#login-email").value.trim();
+  const email = $("#email").value.trim();
 
   if (!email.includes("@")) {
     status(
@@ -167,7 +166,7 @@ $("#forgotPassword").onclick = async () => {
   try {
     await AMAuth.resetPassword(
       email,
-      `${location.origin}/`
+      `${location.origin}/reset-password.html`
     );
 
     status(
@@ -218,7 +217,7 @@ function closePortalTokenGate() {
 async function continueAfterAuth() {
   const { response, data } = await AMAuth.getPortalAccess();
   if (response.ok && (data.access === true || data.owner === true)) {
-    window.JYYRApp?.showView("home");
+    location.replace("/home.html");
     return true;
   }
   showPortalTokenGate();
@@ -240,7 +239,7 @@ async function verifyPortalTokenFromGate() {
     const { response, data } = await AMAuth.verifyPortalToken(token);
     if (!response.ok || data.valid !== true) throw new Error(data.error || "Token tidak valid.");
     setPortalGateStatus("Token valid. Membuka portal…", "success");
-    setTimeout(() => window.JYYRApp?.showView("home"), 180);
+    setTimeout(() => location.replace("/home.html"), 180);
   } catch (error) {
     setPortalGateStatus(error.message || "Token tidak valid.", "error");
   } finally {
@@ -282,8 +281,8 @@ $("#portalTokenInput")?.addEventListener("keydown", (event) => {
 async function submit(event) {
   event.preventDefault();
 
-  const email = $("#login-email").value.trim();
-  const password = $("#login-password").value;
+  const email = $("#email").value.trim();
+  const password = $("#password").value;
   const username = $("#username").value.trim();
   const code = $("#code").value.replace(/\D/g, "").slice(0, 6);
 
@@ -443,8 +442,8 @@ $("#authForm").addEventListener(
 ========================================================= */
 
 $("#resendCode").onclick = async () => {
-  const email = $("#login-email").value.trim();
-  const password = $("#login-password").value;
+  const email = $("#email").value.trim();
+  const password = $("#password").value;
   const username = $("#username").value.trim();
 
   if (!email) {
@@ -487,7 +486,7 @@ function adoptTokenCenterRegisterContext() {
   }
   if (/^[0-9a-f-]{36}$/i.test(tokenId)) sessionStorage.setItem("jyyr:selected_token_id", tokenId);
   if (username || tokenId) {
-    history.replaceState({}, document.title, "/");
+    history.replaceState({}, document.title, "/login.html");
   }
   return Boolean(username || tokenId);
 }
@@ -519,7 +518,7 @@ if (!hasTokenCenterRegisterContext) setMode("login");
    LOGIN BRAND — LETTER WAVE + HOME-MATCHED GRADIENT
 ========================================================= */
 
-const brandWordmark = root.querySelector("#brandWordmark");
+const brandWordmark = document.querySelector("#brandWordmark");
 
 if (brandWordmark) {
   const text = "Jyyr Amprem";
@@ -614,7 +613,3 @@ document.fonts?.ready.then(() => {
 });
 
 window.addEventListener("resize", applyLoginBrandGradient);
-
-  window.JYYRAuthView = { showPortalTokenGate, closePortalTokenGate };
-
-});

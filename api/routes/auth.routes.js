@@ -16,10 +16,21 @@ const {
 
 export function registerAuthRoutes(app, deps) {
   const {
-  authRegisterLimiter,
-  authResendLimiter,
-  authVerifyLimiter,
-} = deps;
+    authRegisterLimiter,
+    authResendLimiter,
+    authVerifyLimiter,
+    portalTokenVerifyLimiter,
+    ownerClaimLimiter,
+    ownerReadLimiter,
+    ownerStatisticsLimiter,
+    ownerMemberReadLimiter,
+    ownerBroadcastMutationLimiter,
+    ownerBroadcastReadLimiter,
+    ownerMemberMutationLimiter,
+    providerDiagnosticLimiter,
+    requireAuth,
+    requireOwner
+  } = deps;
 
   app.post("/api/auth/register", authRegisterLimiter, async (req, res) => {
     try {

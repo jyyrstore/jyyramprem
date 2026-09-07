@@ -24,7 +24,7 @@ async function loadFaq(session) {
   const response = await ownerRequest("/api/owner/faq?limit=50&offset=0", session);
   const data = await parseJson(response);
   if (!response.ok) throw new Error(data.error || "Gagal membaca FAQ.");
-  const list = document.getElementById("owner-faqList");
+  const list = document.getElementById("faqList");
   if (!list) return;
   const rows = Array.isArray(data.faq) ? data.faq : [];
   list.innerHTML = rows.length ? rows.map((x) => `<div class="owner-crud-row"><div><strong>${escapeHtml(x.question)}</strong><small>${escapeHtml(x.category || "Tanpa kategori")} · urutan ${Number(x.sort_order)||0} · ${x.published ? "published" : "draft"}</small><p>${escapeHtml(x.answer)}</p></div><div class="btn-row"><button class="btn faq-edit" type="button" data-id="${escapeHtml(x.id)}">Edit</button><button class="btn danger faq-delete" type="button" data-id="${escapeHtml(x.id)}">Hapus</button></div></div>`).join("") : `<div class="status info">Belum ada FAQ.</div>`;
@@ -80,7 +80,7 @@ async function loadHelp(session) {
   const response = await ownerRequest("/api/owner/help?limit=50&offset=0", session);
   const data = await parseJson(response);
   if (!response.ok) throw new Error(data.error || "Gagal membaca Help Center.");
-  const list = document.getElementById("owner-helpList");
+  const list = document.getElementById("helpList");
   if (!list) return;
   const rows = Array.isArray(data.help) ? data.help : [];
   list.innerHTML = rows.length ? rows.map((x) => `<div class="owner-crud-row"><div><strong>${escapeHtml(x.title)}</strong><small>${escapeHtml(x.slug)} · ${escapeHtml(x.category || "Tanpa kategori")} · urutan ${Number(x.sort_order)||0} · ${x.published ? "published" : "draft"}</small><p>${escapeHtml(x.content)}</p></div><div class="btn-row"><button class="btn help-edit" type="button" data-id="${escapeHtml(x.id)}">Edit</button><button class="btn danger help-delete" type="button" data-id="${escapeHtml(x.id)}">Hapus</button></div></div>`).join("") : `<div class="status info">Belum ada artikel.</div>`;

@@ -33,10 +33,21 @@ const {
 
 export function registerMemberRoutes(app, deps) {
   const {
-  ownerBroadcastReadLimiter,
-  ownerMemberMutationLimiter,
-  requireAuth,
-} = deps;
+    authRegisterLimiter,
+    authResendLimiter,
+    authVerifyLimiter,
+    portalTokenVerifyLimiter,
+    ownerClaimLimiter,
+    ownerReadLimiter,
+    ownerStatisticsLimiter,
+    ownerMemberReadLimiter,
+    ownerBroadcastMutationLimiter,
+    ownerBroadcastReadLimiter,
+    ownerMemberMutationLimiter,
+    providerDiagnosticLimiter,
+    requireAuth,
+    requireOwner
+  } = deps;
 
   app.get('/api/notifications', requireAuth, ownerBroadcastReadLimiter, async(req,res)=>{try{const limit=parsePositiveInt(req.query.limit,20,50),offset=parsePositiveInt(req.query.offset,0,1000000);if(limit===null||offset===null)return res.status(400).json({ok:false,error:'Pagination tidak valid.'});const {data,error}=await db.rpc('member_list_notifications',{p_user_id:req.user.id,p_limit:limit,p_offset:offset});if(error)throw error;return res.json({ok:true,...data});}catch(e){return res.status(/User not found/i.test(String(e.message))?404:500).json({ok:false,error:'Gagal membaca notifikasi.'});}});
 

@@ -1,6 +1,5 @@
-window.JYYRRegisterView("setting", async (root) => {
 const icon=(n)=>window.icon?.(n)||'';
-[['setting-refreshIcon','refresh'],['userAvatarIcon','user'],['setting-homeIcon','home'],['setting-logoutIcon','logout'],['setting-navHome','home'],['setting-navDashboard','dashboard'],['setting-navSetting','settings']].forEach(([id,n])=>{const e=root.querySelector('#'+id);if(e)e.innerHTML=icon(n)});
+[['refreshIcon','refresh'],['userAvatarIcon','user'],['homeIcon','home'],['logoutIcon','logout'],['navHome','home'],['navDashboard','dashboard'],['navSetting','settings']].forEach(([id,n])=>{const e=document.querySelector('#'+id);if(e)e.innerHTML=icon(n)});
 
 let accounts=[];
 const HISTORY_PAGE_SIZE=5;
@@ -59,8 +58,8 @@ function formatExpiry(expiresAt){
 function pad2(value){return String(value).padStart(2,'0')}
 
 function setAccessTrigger(label,tone,disabled=false){
-  const trigger=root.querySelector('#accessStatusTrigger');
-  const labelEl=root.querySelector('#accessStatusLabel');
+  const trigger=document.querySelector('#accessStatusTrigger');
+  const labelEl=document.querySelector('#accessStatusLabel');
   if(!trigger||!labelEl) return;
   trigger.dataset.tone=tone||'purple';
   labelEl.textContent=label;
@@ -68,18 +67,18 @@ function setAccessTrigger(label,tone,disabled=false){
 }
 
 function resetCountdown(){
-  ['accessDays','accessHours','accessMinutes'].forEach(id=>{const el=root.querySelector('#'+id);if(el)el.textContent='—'});
+  ['accessDays','accessHours','accessMinutes'].forEach(id=>{const el=document.querySelector('#'+id);if(el)el.textContent='—'});
 }
 
 function paintAccessModal(){
   const payload=accessStatusData||{};
-  const body=root.querySelector('#accessStatusBody');
-  const stateText=root.querySelector('#accessStatusStateText');
-  const countdown=root.querySelector('#accessStatusCountdown');
-  const unlimited=root.querySelector('#accessStatusUnlimited');
-  const message=root.querySelector('#accessStatusMessage');
-  const expiry=root.querySelector('#accessStatusExpiry');
-  const expiryValue=root.querySelector('#accessExpiryValue');
+  const body=document.querySelector('#accessStatusBody');
+  const stateText=document.querySelector('#accessStatusStateText');
+  const countdown=document.querySelector('#accessStatusCountdown');
+  const unlimited=document.querySelector('#accessStatusUnlimited');
+  const message=document.querySelector('#accessStatusMessage');
+  const expiry=document.querySelector('#accessStatusExpiry');
+  const expiryValue=document.querySelector('#accessExpiryValue');
   if(!body||!stateText||!countdown||!unlimited||!message||!expiry||!expiryValue) return;
 
   if(payload.owner){
@@ -148,9 +147,9 @@ function paintAccessModal(){
   unlimited.hidden=true;
   message.hidden=true;
   expiry.hidden=false;
-  root.querySelector('#accessDays').textContent=String(parts.days);
-  root.querySelector('#accessHours').textContent=pad2(parts.hours);
-  root.querySelector('#accessMinutes').textContent=pad2(parts.minutes);
+  document.querySelector('#accessDays').textContent=String(parts.days);
+  document.querySelector('#accessHours').textContent=pad2(parts.hours);
+  document.querySelector('#accessMinutes').textContent=pad2(parts.minutes);
   expiryValue.textContent=formatExpiry(life.accessExpiresAt);
   setAccessTrigger(`[ ${parts.days} D ]`,tone,false);
 }
@@ -174,16 +173,16 @@ function renderAccessStatus(data){
   if(!accessStatusData.owner && accessStatusData.life?.accessExpiresAt && !accessStatusData.life?.isPermanent){
     accessStatusTimer=setInterval(()=>{
       paintAccessTrigger();
-      const modal=root.querySelector('#accessStatusModal');
+      const modal=document.querySelector('#accessStatusModal');
       if(modal&&!modal.hidden) paintAccessModal();
     },1000);
   }
 }
 
 function openAccessStatus(){
-  const modal=root.querySelector('#accessStatusModal');
+  const modal=document.querySelector('#accessStatusModal');
   const dialog=modal?.querySelector('.access-status-dialog');
-  const trigger=root.querySelector('#accessStatusTrigger');
+  const trigger=document.querySelector('#accessStatusTrigger');
   if(!modal||!dialog||!trigger||trigger.disabled) return;
   accessStatusLastFocused=document.activeElement;
   paintAccessModal();
@@ -194,8 +193,8 @@ function openAccessStatus(){
 }
 
 function closeAccessStatus(){
-  const modal=root.querySelector('#accessStatusModal');
-  const trigger=root.querySelector('#accessStatusTrigger');
+  const modal=document.querySelector('#accessStatusModal');
+  const trigger=document.querySelector('#accessStatusTrigger');
   if(!modal||modal.hidden) return;
   modal.hidden=true;
   trigger?.setAttribute('aria-expanded','false');
@@ -204,13 +203,13 @@ function closeAccessStatus(){
 }
 
 function bindAccessStatusModal(){
-  root.querySelector('#accessStatusTrigger')?.addEventListener('click',openAccessStatus);
-  root.querySelector('#accessStatusClose')?.addEventListener('click',closeAccessStatus);
-  root.querySelector('#accessStatusModal')?.addEventListener('click',(event)=>{
+  document.querySelector('#accessStatusTrigger')?.addEventListener('click',openAccessStatus);
+  document.querySelector('#accessStatusClose')?.addEventListener('click',closeAccessStatus);
+  document.querySelector('#accessStatusModal')?.addEventListener('click',(event)=>{
     if(event.target.matches('[data-access-close]')) closeAccessStatus();
   });
-  root.addEventListener('keydown',(event)=>{
-    const modal=root.querySelector('#accessStatusModal');
+  document.addEventListener('keydown',(event)=>{
+    const modal=document.querySelector('#accessStatusModal');
     if(!modal||modal.hidden) return;
     if(event.key==='Escape'){event.preventDefault();closeAccessStatus();return}
     if(event.key!=='Tab') return;
@@ -225,44 +224,42 @@ function bindAccessStatusModal(){
 
 async function load(){
   const s=await AMAuth.getSession();
-  if(!s){window.JYYRApp?.showView("login");return;}
+  if(!s){location.replace('/login.html');return;}
   const gate=await AMAuth.getPortalAccess().catch(()=>null);
-  if(!gate?.response?.ok||(gate.data?.access!==true&&gate.data?.owner!==true)){await AMAuth.signOut().catch(()=>{});window.JYYRApp?.showView("login", { tokenRequired: true });return}
+  if(!gate?.response?.ok||(gate.data?.access!==true&&gate.data?.owner!==true)){await AMAuth.signOut().catch(()=>{});location.replace('/login.html?token=required');return}
   const h={Authorization:`Bearer ${s.access_token}`,Accept:'application/json'};
   const [u,a]=await Promise.all([fetch('/api/usage',{headers:h,cache:'no-store'}),fetch('/api/accounts',{headers:h,cache:'no-store'})]);
   const ud=await u.json(),ad=await a.json();
   const usage=ud.usage||{};
   accounts=ad.accounts||[];
   const limit=Number(ud.limit||5),used=Number(usage.request_count||usage.consumed_count||0);
-  root.querySelector('#activeQuota').textContent=Math.max(limit-used,0);
-  root.querySelector('#limitedQuota').textContent=limit;
-  root.querySelector('#usedQuota').textContent=used;
-  root.querySelector('#created').textContent=accounts.length;
-  root.querySelector('#success').textContent=accounts.filter(x=>x.status==='success').length;
-  root.querySelector('#failed').textContent=accounts.filter(x=>x.status==='failed').length;
-  root.querySelector('#setting-registeredAt').textContent=s.user?.created_at?new Date(s.user.created_at).toLocaleDateString('id-ID',{dateStyle:'medium'}):'—';
-  root.querySelector('#setting-lastLogin').textContent=s.user?.last_sign_in_at?new Date(s.user.last_sign_in_at).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}):'—';
-  root.querySelector('#profileRole').textContent=gate.data?.owner===true?'ACCOUNT OWNER':'ACCOUNT MEMBER';
-  root.querySelector('#profileAccessType').textContent=gate.data?.owner===true?'Owner':'Member';
+  document.querySelector('#activeQuota').textContent=Math.max(limit-used,0);
+  document.querySelector('#limitedQuota').textContent=limit;
+  document.querySelector('#usedQuota').textContent=used;
+  document.querySelector('#created').textContent=accounts.length;
+  document.querySelector('#success').textContent=accounts.filter(x=>x.status==='success').length;
+  document.querySelector('#failed').textContent=accounts.filter(x=>x.status==='failed').length;
+  document.querySelector('#registeredAt').textContent=s.user?.created_at?new Date(s.user.created_at).toLocaleDateString('id-ID',{dateStyle:'medium'}):'—';
+  document.querySelector('#lastLogin').textContent=s.user?.last_sign_in_at?new Date(s.user.last_sign_in_at).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}):'—';
+  document.querySelector('#profileRole').textContent=gate.data?.owner===true?'ACCOUNT OWNER':'ACCOUNT MEMBER';
+  document.querySelector('#profileAccessType').textContent=gate.data?.owner===true?'Owner':'Member';
   renderAccessStatus(gate.data);
   render();
 }
 
-function getFilteredAccounts(){const q=root.querySelector('#search').value.trim().toLowerCase(),st=root.querySelector('#statusFilter').value;return accounts.filter(a=>(!q||String(a.email||'').toLowerCase().includes(q))&&(!st||a.status===st));}
-function render(){const list=getFilteredAccounts(),totalPages=Math.max(1,Math.ceil(list.length/HISTORY_PAGE_SIZE));historyPage=Math.min(Math.max(historyPage,1),totalPages);const start=(historyPage-1)*HISTORY_PAGE_SIZE,pageItems=list.slice(start,start+HISTORY_PAGE_SIZE);root.querySelector('#total').textContent=`Total akun: ${list.length} • Halaman ${historyPage} dari ${totalPages}`;root.querySelector('#setting-history').innerHTML=pageItems.map(a=>`<tr><td>${esc(a.email||'—')}</td><td><span class="badge ${a.status==='success'?'green':a.status==='failed'?'red':'blue'}">${esc(a.status||'pending')}</span></td><td>${esc(fmt(a.created_at))}</td></tr>`).join('')||'<tr><td colspan="3" class="muted">Belum ada riwayat.</td></tr>';renderPagination(totalPages);}
-function renderPagination(totalPages){const el=root.querySelector('#setting-historyPagination');if(!el)return;el.innerHTML='';if(totalPages<=1)return;const add=(label,page,disabled=false,aria='')=>{const b=document.createElement('button');b.type='button';b.className='btn';b.textContent=label;b.disabled=disabled;if(aria)b.setAttribute('aria-label',aria);if(!disabled)b.addEventListener('click',()=>{historyPage=page;render()});el.appendChild(b)};const showPrevious=historyPage>=4;const showFirst=historyPage>=5;if(showPrevious)add('‹',historyPage-1,false,'Halaman sebelumnya');if(showFirst)add('«',1,false,'Halaman pertama');let start;if(totalPages<=3){start=1}else if(historyPage<=3){start=1}else{start=Math.min(historyPage-1,totalPages-2)}const end=Math.min(totalPages,start+2);for(let p=start;p<=end;p++)add(String(p),p,p===historyPage,`Halaman ${p}`);if(historyPage<totalPages)add('›',historyPage+1,false,'Halaman berikutnya');if(historyPage<totalPages)add('»',totalPages,false,'Halaman terakhir');}
+function getFilteredAccounts(){const q=document.querySelector('#search').value.trim().toLowerCase(),st=document.querySelector('#statusFilter').value;return accounts.filter(a=>(!q||String(a.email||'').toLowerCase().includes(q))&&(!st||a.status===st));}
+function render(){const list=getFilteredAccounts(),totalPages=Math.max(1,Math.ceil(list.length/HISTORY_PAGE_SIZE));historyPage=Math.min(Math.max(historyPage,1),totalPages);const start=(historyPage-1)*HISTORY_PAGE_SIZE,pageItems=list.slice(start,start+HISTORY_PAGE_SIZE);document.querySelector('#total').textContent=`Total akun: ${list.length} • Halaman ${historyPage} dari ${totalPages}`;document.querySelector('#history').innerHTML=pageItems.map(a=>`<tr><td>${esc(a.email||'—')}</td><td><span class="badge ${a.status==='success'?'green':a.status==='failed'?'red':'blue'}">${esc(a.status||'pending')}</span></td><td>${esc(fmt(a.created_at))}</td></tr>`).join('')||'<tr><td colspan="3" class="muted">Belum ada riwayat.</td></tr>';renderPagination(totalPages);}
+function renderPagination(totalPages){const el=document.querySelector('#historyPagination');if(!el)return;el.innerHTML='';if(totalPages<=1)return;const add=(label,page,disabled=false,aria='')=>{const b=document.createElement('button');b.type='button';b.className='btn';b.textContent=label;b.disabled=disabled;if(aria)b.setAttribute('aria-label',aria);if(!disabled)b.addEventListener('click',()=>{historyPage=page;render()});el.appendChild(b)};const showPrevious=historyPage>=4;const showFirst=historyPage>=5;if(showPrevious)add('‹',historyPage-1,false,'Halaman sebelumnya');if(showFirst)add('«',1,false,'Halaman pertama');let start;if(totalPages<=3){start=1}else if(historyPage<=3){start=1}else{start=Math.min(historyPage-1,totalPages-2)}const end=Math.min(totalPages,start+2);for(let p=start;p<=end;p++)add(String(p),p,p===historyPage,`Halaman ${p}`);if(historyPage<totalPages)add('›',historyPage+1,false,'Halaman berikutnya');if(historyPage<totalPages)add('»',totalPages,false,'Halaman terakhir');}
 function fmt(v){return v?new Date(v).toLocaleString('id-ID',{dateStyle:'medium',timeStyle:'short'}):'—'}
 function esc(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-const statusDropdown=root.querySelector('#statusDropdown'),statusToggle=root.querySelector('#statusFilterToggle'),statusMenu=root.querySelector('#statusFilterMenu'),statusLabel=root.querySelector('#statusFilterLabel'),statusFilter=root.querySelector('#statusFilter');
-const statusOptions=[...root.querySelectorAll('.status-dropdown-option')];
+const statusDropdown=document.querySelector('#statusDropdown'),statusToggle=document.querySelector('#statusFilterToggle'),statusMenu=document.querySelector('#statusFilterMenu'),statusLabel=document.querySelector('#statusFilterLabel'),statusFilter=document.querySelector('#statusFilter');
+const statusOptions=[...document.querySelectorAll('.status-dropdown-option')];
 function setStatusFilter(value){statusFilter.value=value;const option=statusOptions.find(x=>x.dataset.value===value);statusLabel.textContent=option?.textContent||'Semua Status';statusOptions.forEach(x=>{const active=x.dataset.value===value;x.classList.toggle('active',active);x.setAttribute('aria-selected',String(active))});historyPage=1;render()}
 statusToggle.addEventListener('click',()=>{const open=!statusMenu.hidden;statusMenu.hidden=open;statusToggle.setAttribute('aria-expanded',String(!open))});
 statusOptions.forEach(option=>option.addEventListener('click',()=>{setStatusFilter(option.dataset.value||'');statusMenu.hidden=true;statusToggle.setAttribute('aria-expanded','false')}));
-root.addEventListener('click',e=>{if(!statusDropdown.contains(e.target)){statusMenu.hidden=true;statusToggle.setAttribute('aria-expanded','false')}});
-root.querySelector('#search').addEventListener('input',()=>{historyPage=1;render()});
-root.querySelector('#setting-logoutBtn').addEventListener('click',async()=>{await AMAuth.signOut();window.JYYRApp?.showView("login")});
-root.querySelector('#setting-refreshPage').addEventListener('click',()=>location.reload());
+document.addEventListener('click',e=>{if(!statusDropdown.contains(e.target)){statusMenu.hidden=true;statusToggle.setAttribute('aria-expanded','false')}});
+document.querySelector('#search').addEventListener('input',()=>{historyPage=1;render()});
+document.querySelector('#logoutBtn').addEventListener('click',async()=>{await AMAuth.signOut();location.replace('/login.html')});
+document.querySelector('#refreshPage').addEventListener('click',()=>location.reload());
 bindAccessStatusModal();
 load().catch(console.error);
-
-});

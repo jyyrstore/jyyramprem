@@ -4,7 +4,7 @@ import fs from "node:fs";
 
 const server = fs.readFileSync(new URL("../server.js", import.meta.url), "utf8");
 const home = fs.readFileSync(new URL("../public/js/home.js", import.meta.url), "utf8");
-const html = fs.readFileSync(new URL("../public/index.html", import.meta.url), "utf8");
+const html = fs.readFileSync(new URL("../public/html/home.html", import.meta.url), "utf8");
 const migration = fs.readFileSync(new URL("../supabase/migrations/20260826034000_split_magic_verification_from_premium_activation.sql", import.meta.url), "utf8");
 
 test("target flow uses user email and fresh send-magiclink", () => {
@@ -58,7 +58,7 @@ test("frontend implements send -> paste -> verify -> confirm -> activate", () =>
   assert.doesNotMatch(home, /webmail/);
   assert.match(home, /resendMagicLinkBtn/);
   assert.match(home, /deliveryStatusNote/);
-  assert.match(html, /id="home-email"/);
+  assert.match(html, /id="email"/);
   assert.match(html, /required/);
 });
 
