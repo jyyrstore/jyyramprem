@@ -9,14 +9,14 @@
   const protectedPages = new Set(["home", "dashboard", "setting"]);
   let accessCheckRunning = false;
   let watchdogTimer = null;
+  let watchdogListenersBound = false;
 
   function currentPage() {
     return String(document.body?.dataset?.page || '').trim().toLowerCase();
   }
 
   function redirectToTokenGate() {
-    if (/^\/login\.html(?:\?|#|$)/i.test(location.pathname + location.search + location.hash)) return;
-    window.location.replace('/login.html?token=required');
+    window.JYYRApp?.showView('login', { tokenRequired: true });
   }
 
   async function enforcePortalAccess() {
@@ -26,14 +26,14 @@
       if (!window.AMAuth?.getSession || !window.AMAuth?.getPortalAccess) return;
       const session = await window.AMAuth.getSession();
       if (!session) {
-        window.location.replace('/login.html');
+        window.JYYRApp?.showView('login');
         return;
       }
       const gate = await window.AMAuth.getPortalAccess();
       if (!gate?.response) return; // Network failure: do not falsely sign out.
       if (gate.response.status === 401) {
         await window.AMAuth.signOut().catch(() => {});
-        window.location.replace('/login.html');
+        window.JYYRApp?.showView('login');
         return;
       }
       if (gate.response.status === 403) {
@@ -61,12 +61,16 @@
     if (!protectedPages.has(currentPage())) return;
     enforcePortalAccess();
     // The server remains authoritative; the timer is only a client-side detection aid.
-    window.setTimeout(enforcePortalAccess, 30000);
-    document.addEventListener('visibilitychange', () => {
-      if (!document.hidden) enforcePortalAccess();
-    });
-    window.addEventListener('pageshow', () => enforcePortalAccess());
-    window.addEventListener('focus', () => enforcePortalAccess());
+    if (!watchdogListenersBound) {
+      watchdogListenersBound = true;
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) enforcePortalAccess();
+      });
+      window.addEventListener('pageshow', () => enforcePortalAccess());
+      window.addEventListener('focus', () => enforcePortalAccess());
+    }
+    if (watchdogTimer) window.clearTimeout(watchdogTimer);
+    watchdogTimer = window.setTimeout(enforcePortalAccess, 30000);
   }
 
   document.addEventListener("contextmenu", (event) => {
@@ -93,5 +97,6 @@
     }
   }, { passive: false });
 
+  window.addEventListener('jyyr:viewchange', () => startPortalAccessWatchdog());
   startPortalAccessWatchdog();
 })();

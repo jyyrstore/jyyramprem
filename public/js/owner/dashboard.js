@@ -33,7 +33,7 @@ async function loadMaintenance(session) {
   if (!response.ok) throw new Error(data.error || "Gagal membaca maintenance.");
   const settings = data.settings || {};
   const button = document.getElementById("maintenanceToggle");
-  const box = document.querySelector(".maintenance");
+  const box = JYYROwnerRoot()?.querySelector(".maintenance");
   if (button) {
     button.dataset.enabled = settings.maintenance_enabled ? "1" : "0";
     button.textContent = settings.maintenance_enabled ? "Matikan Maintenance" : "Aktifkan Maintenance";

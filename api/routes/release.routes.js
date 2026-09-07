@@ -9,7 +9,6 @@ const {
   verifyStoredApk,
   removeStorageObject,
   isUuid,
-  HTML_DIR
 } = runtime;
 
 export function registerReleaseRoutes(app, deps) {
@@ -30,7 +29,7 @@ export function registerReleaseRoutes(app, deps) {
     requireOwner
   } = deps;
 
-  app.get("/app", (_req, res) => res.redirect(302, "/app.html"));
+  app.get("/app", (_req, res) => res.redirect(308, "/"));
 
   app.get("/api/app/latest", async (req, res) => {
     try {
@@ -197,8 +196,4 @@ export function registerReleaseRoutes(app, deps) {
     }
   });
 
-  app.get("/app-intro.html", (req, res) => {
-    res.setHeader("Cache-Control", "no-store, max-age=0");
-    return res.sendFile("app-intro.html", { root: HTML_DIR });
-  });
 }

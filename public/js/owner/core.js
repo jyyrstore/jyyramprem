@@ -1,12 +1,13 @@
+const JYYROwnerRoot = () => window.JYYRApp?.getRoot("owner") || document.querySelector("#view-owner") || document;
 const icon = (name) => window.icon?.(name) || "";
 
 [
-  ["ownerAvatar", "crown"], ["ownerAvatarLarge", "crown"], ["refreshIcon", "refresh"],
-  ["logoutIcon", "logout"], ["logoutIconTop", "logout"], ["homeIcon", "home"],
+  ["ownerAvatar", "crown"], ["ownerAvatarLarge", "crown"], ["owner-refreshIcon", "refresh"],
+  ["owner-logoutIcon", "logout"], ["logoutIconTop", "logout"], ["owner-homeIcon", "home"],
   ["broadcastIcon", "broadcast"], ["trashIcon", "trash"], ["editIcon", "edit"],
   ["messageIcon", "message"], ["bellIcon", "bell"], ["plusIcon", "plus"],
-  ["plusIcon2", "plus"], ["shieldIcon", "shield"], ["lockIcon", "lock"],
-  ["settingsIcon", "settings"], ["checkIcon", "check"], ["refreshIcon2", "refresh"], ["copyTokenIcon", "copy"], ["refreshTokenHistoryIcon", "refresh"],
+  ["plusIcon2", "plus"], ["shieldIcon", "shield"], ["owner-lockIcon", "lock"],
+  ["owner-settingsIcon", "settings"], ["checkIcon", "check"], ["refreshIcon2", "refresh"], ["copyTokenIcon", "copy"], ["refreshTokenHistoryIcon", "refresh"],
   ["tabStatistikIcon", "chart"], ["tabMemberIcon", "users"], ["tabBroadcastIcon", "broadcast"],
   ["tabNotifikasiIcon", "bell"], ["tabTokenIcon", "lock"], ["tabSecurityIcon", "shield"], ["tabSistemIcon", "settings"],
   ["statisticsTitleIcon", "chart"], ["memberTitleIcon", "users"], ["broadcastTitleIcon", "broadcast"],
@@ -16,7 +17,7 @@ const icon = (name) => window.icon?.(name) || "";
   ["closeMemberIcon", "close"], ["saveMemberIcon", "check"], ["sendMessageIcon", "arrowRight"],
   ["generateTokenIcon", "plus"], ["revokeTokenIcon", "lock"],
 ].forEach(([id, name]) => {
-  const el = document.getElementById(id);
+  const el = JYYROwnerRoot()?.querySelector(`#${id}`);
   if (el) el.innerHTML = icon(name);
 });
 
@@ -99,8 +100,8 @@ function findRememberedPortalToken(session, row) {
   return String(item.token).trim().toUpperCase() || null;
 }
 
-const redirectLogin = () => location.replace("/login.html");
-const redirectHome = () => location.replace("/home.html");
+const redirectLogin = () => window.JYYRApp?.showView("login");
+const redirectHome = () => window.JYYRApp?.showView("home");
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -209,25 +210,25 @@ async function verifyOwner(session) {
 
 function setOwnerIdentity(user) {
   const name = user?.user_metadata?.username || user?.user_metadata?.nickname || user?.email?.split("@")[0] || "Owner";
-  document.querySelectorAll("[data-user-name]").forEach((el) => { el.textContent = name; });
-  document.querySelectorAll("[data-user-email]").forEach((el) => { el.textContent = user?.email || "—"; });
-  const registered = document.getElementById("registeredAt");
+  JYYROwnerRoot()?.querySelectorAll("[data-user-name]").forEach((el) => { el.textContent = name; });
+  JYYROwnerRoot()?.querySelectorAll("[data-user-email]").forEach((el) => { el.textContent = user?.email || "—"; });
+  const registered = JYYROwnerRoot()?.querySelector("#owner-registeredAt");
   if (registered) registered.textContent = user?.created_at ? new Date(user.created_at).toLocaleDateString("id-ID", { dateStyle: "medium" }) : "—";
-  const lastLogin = document.getElementById("lastLogin");
+  const lastLogin = JYYROwnerRoot()?.querySelector("#owner-lastLogin");
   if (lastLogin) lastLogin.textContent = user?.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) : "—";
-  const securityOwnerName = document.getElementById("securityOwnerName");
-  const securityOwnerEmail = document.getElementById("securityOwnerEmail");
+  const securityOwnerName = JYYROwnerRoot()?.querySelector("#securityOwnerName");
+  const securityOwnerEmail = JYYROwnerRoot()?.querySelector("#securityOwnerEmail");
   if (securityOwnerName) securityOwnerName.textContent = name;
   if (securityOwnerEmail) securityOwnerEmail.textContent = user?.email || "—";
 }
 
 function setupTabs() {
-  document.querySelectorAll("[data-section]").forEach((btn) => {
+  JYYROwnerRoot()?.querySelectorAll("[data-section]").forEach((btn) => {
     btn.addEventListener("click", async () => {
-      document.querySelectorAll("[data-section]").forEach((x) => x.classList.remove("active"));
-      document.querySelectorAll(".owner-section").forEach((x) => x.classList.remove("active"));
+      JYYROwnerRoot()?.querySelectorAll("[data-section]").forEach((x) => x.classList.remove("active"));
+      JYYROwnerRoot()?.querySelectorAll(".owner-section").forEach((x) => x.classList.remove("active"));
       btn.classList.add("active");
-      document.getElementById(btn.dataset.section)?.classList.add("active");
+      JYYROwnerRoot()?.querySelector(`[data-section="${btn.dataset.section}"]`)?.classList.add("active");
       const session = state.session || await requireSession();
       if (!session) return;
       try {
@@ -257,7 +258,7 @@ function setupTabs() {
    - Page numbers remain compact and mobile friendly.
 ========================================================= */
 function renderPaginationControls(containerId, pageIndex, pageCount, onPageChange) {
-  const container = document.getElementById(containerId);
+  const container = JYYROwnerRoot()?.querySelector(`#${containerId}`);
   if (!container) return;
 
   const totalPages = Math.max(1, Number(pageCount) || 1);

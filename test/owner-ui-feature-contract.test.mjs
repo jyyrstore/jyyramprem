@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import fs from 'node:fs';
 
-const html = fs.readFileSync(new URL('../public/html/owner.html', import.meta.url), 'utf8');
+const html = fs.readFileSync(new URL('../public/index.html', import.meta.url), 'utf8');
 const js = fs.readFileSync(new URL('../public/js/owner.js', import.meta.url), 'utf8');
 const server = fs.readFileSync(new URL('../server.js', import.meta.url), 'utf8');
 

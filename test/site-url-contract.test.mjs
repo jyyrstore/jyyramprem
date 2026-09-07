@@ -24,7 +24,7 @@ function collectTextFiles(dir) {
 }
 
 test("canonical website link is valid and fully qualified", () => {
-  const html = fs.readFileSync(path.join(root, "public/app.html"), "utf8");
+  const html = fs.readFileSync(path.join(root, "public/index.html"), "utf8");
   assert.match(html, new RegExp(`href=["']${canonical.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}["']`));
 });
 

@@ -247,29 +247,15 @@ export function registerPublicRoutes(app, deps) {
     return res.sendFile("service-worker.js", { root: PUBLIC_DIR });
   });
 
-  app.get("/", sendPage("index.html"));
+  app.get("/", (_req, res) => res.sendFile("index.html", { root: PUBLIC_DIR }));
 
-  app.get("/index.html", sendPage("index.html"));
-
-  app.get("/login.html", sendPage("login.html"));
-
-  app.get("/home.html", sendPage("home.html"));
-
-  app.get("/dashboard.html", sendPage("dashboard.html"));
-
-  app.get("/setting.html", sendPage("setting.html"));
-
-  app.get("/reset-password.html", sendPage("reset-password.html"));
-
-  app.get("/help.html", sendPage("help.html"));
-
-  app.get("/login", sendPage("login.html"));
-
-  app.get("/reset-password", sendPage("reset-password.html"));
-
-  app.get("/owner", (_req, res) => {
-    return res.redirect(302, "/owner.html");
-  });
-
-  app.get("/owner.html", sendPage("owner.html"));
+  // Legacy document URLs are compatibility redirects only; the application
+  // state is always rendered from the canonical root entry point.
+  for (const legacyPath of [
+    "/index.html", "/login.html", "/home.html", "/dashboard.html",
+    "/setting.html", "/reset-password.html", "/help.html", "/login",
+    "/reset-password", "/owner", "/owner.html", "/app", "/app-intro.html"
+  ]) {
+    app.get(legacyPath, (_req, res) => res.redirect(308, "/"));
+  }
 }

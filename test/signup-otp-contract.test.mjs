@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const server = fs.readFileSync(path.join(root, "server.js"), "utf8");
 const auth = fs.readFileSync(path.join(root, "public/js/auth.js"), "utf8");
-const login = fs.readFileSync(path.join(root, "public/html/login.html"), "utf8");
+const login = fs.readFileSync(path.join(root, "public/index.html"), "utf8");
 
 function section(source, start, end) {
   const a = source.indexOf(start);

@@ -1,9 +1,10 @@
-const $ = (s) => document.querySelector(s);
+window.JYYRRegisterView("home", async (root) => {
+const $ = (s) => root.querySelector(s);
 
 const icon = (n) => window.icon?.(n) || "";
 
 // Keep HTML rendering safe on the Home page. This helper is intentionally
-// local because owner.js is not loaded by home.html.
+// Local helper kept independent of Owner view logic.
 function escapeHtml(value) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -18,9 +19,9 @@ function escapeHtml(value) {
 ========================================================= */
 
 [
-  ["settingsIcon", "menu"],
+  ["home-settingsIcon", "menu"],
   ["settingsMenu", "settings"],
-  ["navSetting", "settings"],
+  ["home-navSetting", "settings"],
   ["userProfileIcon", "user"]
 ].forEach(([id, name]) => {
   const e = $("#" + id);
@@ -49,9 +50,9 @@ function escapeHtml(value) {
   ["colorIcon", "category"],
   ["checkIcon", "check"],
   ["shieldIcon2", "shield"],
-  ["refreshIcon", "refresh"],
+  ["home-refreshIcon", "refresh"],
   ["crownIcon2", "crown"],
-  ["lockIcon", "lock"],
+  ["home-lockIcon", "lock"],
   ["stepsIcon", "list"],
   ["stepEmailIcon", "mail"],
   ["stepLinkIcon", "link"],
@@ -76,8 +77,8 @@ function escapeHtml(value) {
   ["receiptMenu", "receipt"],
   ["helpMenu", "help"],
   ["logoutMenu", "logout"],
-  ["navHome", "home"],
-  ["navDashboard", "dashboard"]
+  ["home-navHome", "home"],
+  ["home-navDashboard", "dashboard"]
 ].forEach(([id, n]) => {
   const e = $("#" + id);
   if (e) e.innerHTML = icon(n);
@@ -234,7 +235,7 @@ function setStatus(
   type
 ) {
   const e =
-    $("#status");
+    $("#home-status");
 
   if (!e) {
     return;
@@ -407,7 +408,7 @@ async function verifyAndApplyMagicLink(accountId, rawLink, { automatic = false }
     if (title) title.textContent = "AMPREM BERHASIL";
     setResultLines([
       { label: "Status", value: "AMPREM BERHASIL" },
-      { label: "Email", value: window.__lastGeneratedEmail || $("#email")?.value || "" },
+      { label: "Email", value: window.__lastGeneratedEmail || $("#home-email")?.value || "" },
       { label: "Premium", value: "Premium Aktif" },
       { label: "Aktivasi", value: "Berhasil" },
       { label: "Berlaku sampai", value: expiryText },
@@ -459,7 +460,7 @@ async function pollMagicLinkDelivery(accountIdentifier) {
 
 $("#generateBtn")?.addEventListener("click", async () => {
   const btn = $("#generateBtn");
-  const emailInput = $("#email");
+  const emailInput = $("#home-email");
   const email = emailInput?.value.trim() || "";
 
   if (!email) {
@@ -535,13 +536,13 @@ $("#reopenVerificationBtn")?.addEventListener("click", () => {
   setVerificationModal(true);
 });
 
-document.addEventListener("keydown", (event) => {
+root.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && !$("#result")?.classList.contains("hidden")) {
     setVerificationModal(false);
   }
 });
 
-document.addEventListener("click", async (event) => {
+root.addEventListener("click", async (event) => {
   const resendBtn = event.target?.closest?.("#resendMagicLinkBtn");
   if (resendBtn) {
     const accountId = window.__lastGeneratedAccountId;
@@ -621,7 +622,7 @@ document.addEventListener("click", async (event) => {
 
     setResultLines([
       { label: "Status", value: "AMPREM BERHASIL" },
-      { label: "Email", value: window.__lastGeneratedEmail || $("#email")?.value || "" },
+      { label: "Email", value: window.__lastGeneratedEmail || $("#home-email")?.value || "" },
       { label: "Premium", value: "Premium Aktif" },
       { label: "Aktivasi", value: "Berhasil" },
       { label: "Berlaku sampai", value: expiryText },
@@ -644,7 +645,7 @@ document.addEventListener("click", async (event) => {
    The Owner action is now a fixed floating navigation button.
 ========================================================= */
 $("#ownerDashboardNav")?.addEventListener("click", () => {
-  window.location.href = "/owner";
+  window.JYYRApp?.showView("owner");
 });
 
 
@@ -654,18 +655,18 @@ $("#ownerDashboardNav")?.addEventListener("click", () => {
 
 (async () => {
   const session = await AMAuth.getSession().catch(() => null);
-  if (!session?.access_token) { location.replace("/login.html"); return; }
+  if (!session?.access_token) { window.JYYRApp?.showView("login"); return; }
   try {
     const { response, data } = await AMAuth.getPortalAccess();
     if (!response.ok || (data.access !== true && data.owner !== true)) {
       await AMAuth.signOut().catch(() => {});
-      location.replace("/login.html?token=required");
+      window.JYYRApp?.showView("login", { tokenRequired: true });
       return;
     }
     loadQuota();
   } catch {
     await AMAuth.signOut().catch(() => {});
-    location.replace("/login.html?token=required");
+    window.JYYRApp?.showView("login", { tokenRequired: true });
   }
 })();
 
@@ -673,7 +674,7 @@ $("#ownerDashboardNav")?.addEventListener("click", () => {
    HERO NICKNAME — LETTER WAVE + GRADIENT
 ========================================================= */
 
-const heroNickname = document.querySelector("#heroNickname");
+const heroNickname = root.querySelector("#heroNickname");
 
 if (heroNickname) {
   const text = "Jyyr Amprem";
@@ -789,3 +790,4 @@ window.addEventListener(
   "resize",
   applyHeroNicknameGradient
 );
+});

@@ -32,6 +32,8 @@ const required = [
   "lib/supabase/client.js",
   "lib/supabase/admin-client.js",
   "public/js/owner.js",
+  "public/index.html",
+  "public/js/app-runtime.js",
 ];
 
 const missing = required.filter((file) => !exists(file));
@@ -59,6 +61,7 @@ const result = {
     repositoryBoundaryInRoutes: !directSupabaseDataApi,
     packageManifestPresent: packageUnchangedByLock,
     pwaPresent: exists("public/manifest.webmanifest") && exists("public/service-worker.js"),
+    singleEntryPoint: exists("public/index.html") && !exists("public/html/login.html") && !exists("public/html/home.html") && !exists("public/html/dashboard.html") && !exists("public/html/setting.html") && !exists("public/html/owner.html") && !exists("public/app.html"),
     migrationsPresent: exists("supabase/migrations"),
   },
   metrics: {
