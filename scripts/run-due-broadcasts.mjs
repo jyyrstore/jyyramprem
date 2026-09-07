@@ -1,5 +1,5 @@
 // Optional production worker for scheduled broadcasts.
-// Usage: APP_URL=https://example.com OWNER_ACCESS_TOKEN=... node scripts/run-due-broadcasts.mjs
+// Usage: APP_URL=https://www.jyyramprem.my.id OWNER_ACCESS_TOKEN=... node scripts/run-due-broadcasts.mjs
 // Keep OWNER_ACCESS_TOKEN server-side only.
 const base = process.env.APP_URL;
 const token = process.env.OWNER_ACCESS_TOKEN;

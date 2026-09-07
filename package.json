@@ -12,7 +12,7 @@
     "test:provider": "node --test test/provider-contract.test.mjs",
     "test:provider-diagnostic": "node --test test/provider-diagnostic.test.mjs",
     "test:flow": "node --test test/final-magic-flow.test.mjs test/magic-link-quota.test.mjs test/auto-chain-local-contract.test.mjs test/idempotency-quota-local-contract.test.mjs test/home-browser-regression.test.mjs test/provider-delivery-webhook.test.mjs",
-    "test:regression": "node tests/final-flow-regression.mjs && node --test test/signup-otp-contract.test.mjs",
+    "test:regression": "node tests/final-flow-regression.mjs && node --test test/signup-otp-contract.test.mjs test/site-url-contract.test.mjs",
     "test:runtime-contract": "node --test test/runtime-contract.test.mjs",
     "test:owner-ui": "node --test test/owner-ui-feature-contract.test.mjs",
     "test:portal-token": "node --test test/portal-token-gate.test.mjs test/portal-token-lifetime-assignment.test.mjs test/setting-token-lifetime-rebuild.test.mjs",

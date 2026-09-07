@@ -28,12 +28,12 @@ npm start
 
 Pages:
 
-- `http://localhost:3000/`
-- `http://localhost:3000/login.html`
-- `http://localhost:3000/home.html`
-- `http://localhost:3000/dashboard.html`
-- `http://localhost:3000/setting.html`
-- `http://localhost:3000/owner.html`
+- `https://www.jyyramprem.my.id/`
+- `https://www.jyyramprem.my.id/login.html`
+- `https://www.jyyramprem.my.id/home.html`
+- `https://www.jyyramprem.my.id/dashboard.html`
+- `https://www.jyyramprem.my.id/setting.html`
+- `https://www.jyyramprem.my.id/owner.html`
 
 ## Environment
 
