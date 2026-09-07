@@ -26,22 +26,13 @@ const {
 
 export function registerPortalTokenRoutes(app, deps) {
   const {
-    authRegisterLimiter,
-    authResendLimiter,
-    authVerifyLimiter,
-    portalTokenVerifyLimiter,
-    ownerClaimLimiter,
-    ownerReadLimiter,
-    ownerStatisticsLimiter,
-    ownerMemberReadLimiter,
-    ownerBroadcastMutationLimiter,
-    ownerBroadcastReadLimiter,
-    ownerMemberMutationLimiter,
-    portalTokenPublicLimiter,
-    providerDiagnosticLimiter,
-    requireAuth,
-    requireOwner
-  } = deps;
+  portalTokenVerifyLimiter,
+  ownerReadLimiter,
+  ownerMemberMutationLimiter,
+  portalTokenPublicLimiter,
+  requireAuth,
+  requireOwner,
+} = deps;
 
   app.get("/api/access/status", requireAuth, async (req, res) => {
     try {

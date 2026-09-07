@@ -13,21 +13,11 @@ const {
 
 export function registerReleaseRoutes(app, deps) {
   const {
-    authRegisterLimiter,
-    authResendLimiter,
-    authVerifyLimiter,
-    portalTokenVerifyLimiter,
-    ownerClaimLimiter,
-    ownerReadLimiter,
-    ownerStatisticsLimiter,
-    ownerMemberReadLimiter,
-    ownerBroadcastMutationLimiter,
-    ownerBroadcastReadLimiter,
-    ownerMemberMutationLimiter,
-    providerDiagnosticLimiter,
-    requireAuth,
-    requireOwner
-  } = deps;
+  ownerBroadcastReadLimiter,
+  ownerMemberMutationLimiter,
+  requireAuth,
+  requireOwner,
+} = deps;
 
   app.get("/app", (_req, res) => res.redirect(308, "/"));
 

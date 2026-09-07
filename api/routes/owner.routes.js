@@ -18,21 +18,16 @@ const {
 
 export function registerOwnerRoutes(app, deps) {
   const {
-    authRegisterLimiter,
-    authResendLimiter,
-    authVerifyLimiter,
-    portalTokenVerifyLimiter,
-    ownerClaimLimiter,
-    ownerReadLimiter,
-    ownerStatisticsLimiter,
-    ownerMemberReadLimiter,
-    ownerBroadcastMutationLimiter,
-    ownerBroadcastReadLimiter,
-    ownerMemberMutationLimiter,
-    providerDiagnosticLimiter,
-    requireAuth,
-    requireOwner
-  } = deps;
+  ownerClaimLimiter,
+  ownerReadLimiter,
+  ownerStatisticsLimiter,
+  ownerMemberReadLimiter,
+  ownerBroadcastMutationLimiter,
+  ownerBroadcastReadLimiter,
+  ownerMemberMutationLimiter,
+  requireAuth,
+  requireOwner,
+} = deps;
 
   app.post(
     "/api/owner/claim",

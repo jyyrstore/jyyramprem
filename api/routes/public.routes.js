@@ -17,21 +17,8 @@ const {
 
 export function registerPublicRoutes(app, deps) {
   const {
-    authRegisterLimiter,
-    authResendLimiter,
-    authVerifyLimiter,
-    portalTokenVerifyLimiter,
-    ownerClaimLimiter,
-    ownerReadLimiter,
-    ownerStatisticsLimiter,
-    ownerMemberReadLimiter,
-    ownerBroadcastMutationLimiter,
-    ownerBroadcastReadLimiter,
-    ownerMemberMutationLimiter,
-    providerDiagnosticLimiter,
-    requireAuth,
-    requireOwner
-  } = deps;
+  ownerBroadcastReadLimiter,
+} = deps;
 
 
   app.get("/api/public/tokens", portalTokenPublicLimiter, async (req, res) => {
