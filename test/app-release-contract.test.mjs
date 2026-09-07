@@ -146,7 +146,7 @@ test('release source package does not require a bundled APK artifact', () => {
 });
 
 test('APK intro uses the configured app icon asset', () => {
-  assert.match(appIntro, /\/assets\/Foto\/Profil-Apk\.png/);
+  assert.match(appIntro, /\/assets\/Foto\/app_icon\.png/);
 });
 
 test('browser APK metadata reader is loaded before owner logic', () => {

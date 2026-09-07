@@ -7,7 +7,7 @@
     "dev": "node --watch server.js",
     "start": "node server.js",
     "verify": "node scripts/verify-runtime.mjs",
-    "test": "npm run test:provider && npm run test:provider-diagnostic && npm run test:flow && npm run test:regression && npm run test:runtime-contract && npm run test:owner-ui && npm run test:app-release && npm run test:member-status && npm run verify && npm run test:portal-token",
+    "test": "npm run test:provider && npm run test:provider-diagnostic && npm run test:flow && npm run test:regression && npm run test:runtime-contract && npm run test:owner-ui && npm run test:app-release && npm run test:member-status && npm run verify && npm run test:portal-token && npm run test:cleanup",
     "broadcast:worker": "node scripts/run-due-broadcasts.mjs",
     "test:provider": "node --test test/provider-contract.test.mjs",
     "test:provider-diagnostic": "node --test test/provider-diagnostic.test.mjs",
@@ -17,7 +17,8 @@
     "test:owner-ui": "node --test test/owner-ui-feature-contract.test.mjs",
     "test:portal-token": "node --test test/portal-token-gate.test.mjs test/portal-token-lifetime-assignment.test.mjs test/setting-token-lifetime-rebuild.test.mjs",
     "test:app-release": "node --test test/app-release-contract.test.mjs",
-    "test:member-status": "node --test test/member-status-enforcement.test.mjs"
+    "test:member-status": "node --test test/member-status-enforcement.test.mjs",
+    "test:cleanup": "node --test test/cleanup-contract.test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.112.3",

@@ -250,6 +250,7 @@ export function registerPublicRoutes(app, deps) {
   });
 
   const healthHandler = async (_req, res) => {
+      res.setHeader("Cache-Control", "no-store, max-age=0");
       try {
         const {
           error,
