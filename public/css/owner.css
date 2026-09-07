@@ -971,6 +971,19 @@ body[data-page="owner"] .token-pagination {
   body[data-page="owner"] .pagination { align-items:flex-start; }
   body[data-page="owner"] .pagination-controls { width:100%; justify-content:flex-start; }
 }
+@media (max-width: 900px) {
+  /* All owner tabs remain fully visible: wrap instead of horizontal clipping. */
+  body[data-page="owner"] #ownerTabs {
+    flex-wrap: wrap;
+    overflow-x: visible;
+    overflow-y: visible;
+    align-items: stretch;
+  }
+  body[data-page="owner"] #ownerTabs .owner-tab {
+    flex: 0 0 auto;
+  }
+}
+
 @media (max-width: 430px) {
   body[data-page="owner"] #ownerTabs { gap:8px; }
   body[data-page="owner"] #ownerTabs .owner-tab { padding-inline: 13px; }
