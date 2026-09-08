@@ -722,7 +722,8 @@ function applyHeroNicknameGradient() {
 
   if (!width) return;
 
-  heroNickname.querySelectorAll(".hero-char:not(.space)")
+  heroNickname
+    .querySelectorAll(".hero-char:not(.space)")
     .forEach((span) => {
       const charRect = span.getBoundingClientRect();
 
@@ -731,14 +732,13 @@ function applyHeroNicknameGradient() {
         charRect.width / 2 -
         rect.left;
 
-      const position =
-        Math.max(
-          0,
-          Math.min(
-            100,
-            (center / width) * 100
-          )
-        );
+      const position = Math.max(
+        0,
+        Math.min(
+          100,
+          (center / width) * 100
+        )
+      );
 
       let color;
 
@@ -748,7 +748,7 @@ function applyHeroNicknameGradient() {
         color = `rgb(
           ${Math.round(17 + (32 - 17) * t)},
           ${Math.round(221 + (185 - 221) * t)},
-          ${Math.round(255 + (255 - 255) * t)}
+          255
         )`;
       } else if (position < 60) {
         const t = (position - 32) / 28;
@@ -756,7 +756,7 @@ function applyHeroNicknameGradient() {
         color = `rgb(
           ${Math.round(32 + (142 - 32) * t)},
           ${Math.round(185 + (107 - 185) * t)},
-          ${Math.round(255 + (255 - 255) * t)}
+          255
         )`;
       } else if (position < 86) {
         const t = (position - 60) / 26;
@@ -781,15 +781,10 @@ function applyHeroNicknameGradient() {
     });
 }
 
-
 /* Jalankan setelah font selesai dimuat */
 document.fonts?.ready.then(() => {
   requestAnimationFrame(applyHeroNicknameGradient);
 });
 
-
 /* Recalculate ketika ukuran layar berubah */
-window.addEventListener(
-  "resize",
-  applyHeroNicknameGradient
-);
+window.addEventListener("resize", applyHeroNicknameGradient);

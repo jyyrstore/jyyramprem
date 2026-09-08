@@ -506,3 +506,50 @@
       color: #aaa7af;
       font-size: 2.90cqw;
     }
+
+
+/* Floating Home button — App Center */
+.app-home-float {
+  position: fixed;
+  top: calc(16px + env(safe-area-inset-top));
+  right: calc(16px + env(safe-area-inset-right));
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 1px solid rgba(118, 56, 255, 0.7);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(26, 25, 30, 0.92);
+  box-shadow:
+    0 6px 18px rgba(0, 0, 0, 0.32),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.035);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  cursor: pointer;
+  z-index: 1200;
+  transition:
+    transform 0.16s ease,
+    filter 0.16s ease;
+}
+
+.app-home-float-icon {
+  width: 24px;
+  height: 24px;
+  display: block;
+  object-fit: contain;
+}
+
+.app-home-float:hover {
+  filter: brightness(1.1);
+}
+
+.app-home-float:active {
+  transform: scale(0.94);
+}
+
+.app-home-float:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 3px;
+}

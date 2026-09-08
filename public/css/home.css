@@ -28,6 +28,7 @@ a:focus-visible,
 }
 .generator-card {
   border-color:rgba(157,92,255,.12)
+  transform: translateY(-15px);
 }
 .password-row {
   display:grid;
@@ -312,7 +313,10 @@ a:focus-visible,
   border-radius:50%;
   object-fit:cover;
   border:3px solid #1a1226;
-  box-shadow:     0 0 0 2px rgba(239,73,255,.88),     0 0 0 4px rgba(83,91,255,.34),     0 0 20px rgba(157,92,255,.34);
+  box-shadow:
+    0 0 0 1px rgba(239,73,255,.90),
+    0 0 0 3px rgba(83,91,255,.38),
+    0 0 14px rgba(157,92,255,.32);
   background:#0c0912;
 }
 @font-face {
@@ -343,23 +347,9 @@ a:focus-visible,
   letter-spacing: 0;
 
   text-align: center;
+  color: #21dcff;
   white-space: nowrap;
   overflow: visible;
-
-  color: #21dcff;
-
-  background: linear-gradient(
-    90deg,
-    #11ddff 0%,
-    #20b9ff 32%,
-    #8e6bff 60%,
-    #ff4fd7 86%,
-    #1ce3ff 100%
-  );
-
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
 
   filter: drop-shadow(
     0 0 5px rgba(25, 216, 255, 0.24)
@@ -374,9 +364,6 @@ a:focus-visible,
 .hero-char {
   display: inline-block;
   position: relative;
-
-  color: #21dcff;
-  -webkit-text-fill-color: #21dcff;
 
   animation:
     heroCharWave
@@ -485,7 +472,7 @@ a:focus-visible,
 ========================================================= */
 .owner-float-nav {
   position: fixed;
-  right: 22px;
+  right: 12px;
   bottom: calc(150px + env(safe-area-inset-bottom));
   z-index: 1100;
   pointer-events: none;
@@ -527,7 +514,7 @@ a:focus-visible,
 
 @media (max-width: 520px) {
   .owner-float-nav {
-    right: 24px;
+    right: 14px;
     bottom: calc(275px + env(safe-area-inset-bottom));
   }
 
@@ -891,7 +878,7 @@ a:focus-visible,
 }
 
 .app-shell > .hero-banner {
-  margin-bottom: 20px;
+  margin-bottom: 8px;
 }
 
 .generator-card,
@@ -1129,7 +1116,7 @@ a:focus-visible,
   }
 
   .app-shell > .hero-banner {
-    margin-bottom: 18px;
+    margin-bottom: 6px;
   }
 
   .generator-card,
@@ -3267,5 +3254,161 @@ body[data-page="home"] .benefit-item:hover {
 @media (max-width: 600px) {
   .brand-under-banner img {
     transform: scale(1.08);
+  }
+}
+    
+/* HOME — SECURITY CARD UI CONSISTENCY */
+.security-card {
+  transform: none;
+  background: linear-gradient(
+    145deg,
+    rgba(45, 41, 54, 0.97),
+    rgba(29, 26, 36, 0.98)
+  );
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+}
+
+/* HOME — SECURITY CARD UI CONSISTENCY v2 */
+body[data-page="home"] .security-card {
+  position: relative;
+  transform: none;
+  overflow: hidden;
+  padding: 19px;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(157,92,255,.055), transparent 34%),
+    linear-gradient(180deg, #1d1a22 0%, #17151b 100%);
+  border: 1px solid rgba(255,255,255,.075);
+  border-radius: 18px;
+  box-shadow:
+    0 16px 42px rgba(0,0,0,.30),
+    inset 0 1px 0 rgba(255,255,255,.025);
+}
+
+body[data-page="home"] .security-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(167,103,255,.18) 12%,
+    rgba(185,108,255,.62) 50%,
+    rgba(95,225,255,.18) 88%,
+    transparent 100%
+  );
+  box-shadow: 0 0 12px rgba(173,115,255,.18);
+}
+
+body[data-page="home"] .security-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(
+    125deg,
+    rgba(255,255,255,.025),
+    transparent 30%,
+    transparent 68%,
+    rgba(157,92,255,.022)
+  );
+}
+
+body[data-page="home"] .security-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 600px) {
+  body[data-page="home"] .security-card {
+    padding: 17px;
+    border-radius: 15px;
+    box-shadow:
+      0 12px 32px rgba(0,0,0,.27),
+      inset 0 1px 0 rgba(255,255,255,.022);
+  }
+}
+
+@media (max-width: 430px) {
+  body[data-page="home"] .security-card {
+    padding: 15px;
+    border-radius: 14px;
+  }
+}
+
+/* SECURITY CARD — FINAL UI NORMALIZATION */
+
+/* Align Security card with the other Home cards */
+body[data-page="home"] .generate-secondary-grid > .card:last-child {
+  transform: translateY(-14px);
+}
+
+/* Security checks use the same visual language as the other inner tiles */
+body[data-page="home"] .security-card .checks {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+
+body[data-page="home"] .security-card .checks li {
+  min-width: 0;
+  padding: 13px 11px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 7px;
+  background: rgba(255,255,255,.025);
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 12px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.018),
+    0 5px 16px rgba(0,0,0,.12);
+}
+
+body[data-page="home"] .security-card .checks li + li {
+  border-left: 1px solid rgba(255,255,255,.07);
+}
+
+body[data-page="home"] .security-card .checks li:hover {
+  background: rgba(255,255,255,.04);
+  border-color: rgba(167,103,255,.18);
+}
+
+body[data-page="home"] .security-card .checks li strong,
+body[data-page="home"] .security-card .checks li span {
+  min-width: 0;
+}
+
+@media (max-width: 600px) {
+  body[data-page="home"] .security-card .checks {
+    gap: 8px;
+  }
+
+  body[data-page="home"] .security-card .checks li {
+    padding: 11px 9px;
+    border-radius: 10px;
+  }
+}
+
+@media (max-width: 430px) {
+  body[data-page="home"] .security-card .checks {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  body[data-page="home"] .security-card .checks li {
+    padding: 12px;
+  }
+
+  body[data-page="home"] .security-card .checks li + li {
+    border-left: 1px solid rgba(255,255,255,.07);
   }
 }
