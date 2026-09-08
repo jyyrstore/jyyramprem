@@ -21,6 +21,14 @@ test("SPA preserves the active view in a clean canonical path for refresh", () =
   assert.match(router, /showView\(viewName, \{ updateUrl: true/);
 });
 
+test("authentication and owner middleware have one canonical implementation", () => {
+  assert.match(runtime, /createRequireAuth/);
+  assert.match(runtime, /createRequireOwner/);
+  assert.doesNotMatch(runtime, /async function requireAuth\s*\(/);
+  assert.doesNotMatch(runtime, /async function requireOwner\s*\(/);
+  assert.match(authMiddleware, /export function createRequireAuth/);
+});
+
 test("authenticated non-owners are blocked server-side while maintenance is enabled", () => {
   assert.match(authMiddleware, /getMaintenanceSettings/);
   assert.match(authMiddleware, /maintenance\.maintenance_enabled/);

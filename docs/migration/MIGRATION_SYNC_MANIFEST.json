@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-09-04",
-  "status": "CANONICAL_SINGLE_USER_TOKEN_CONTRACT_LIVE_VERIFIED",
-  "migration_count": 43,
+  "generated_at": "2026-09-09",
+  "status": "CANONICAL_SINGLE_USER_TOKEN_CONTRACT_SOURCE_VERIFIED",
+  "migration_count": 45,
   "duplicate_timestamps": {},
   "included_migrations": [
     "20260818000000_create_am_account_portal_runtime_base_v1.sql",
@@ -46,11 +46,13 @@
     "20260904120000_global_reusable_portal_tokens_v5.sql",
     "20260904140000_final_canonical_global_reusable_portal_token_v6.sql",
     "20260904150000_canonical_single_user_token_redemption_v7.sql",
-    "20260904193000_cleanup_redundant_app_release_indexes_and_fk_indexes.sql"
+    "20260904193000_cleanup_redundant_app_release_indexes_and_fk_indexes.sql",
+    "20260905000000_jyyr_ecosystem_token_center_v1.sql",
+    "20260905010000_jyyr_ecosystem_canonical_hardening_v2.sql"
   ],
-  "policy": "Verify live Supabase migration history before deployment; this manifest is a source-package inventory, not proof of production state.",
+  "policy": "Source inventory only. Verify live Supabase migration history before deployment; this file is not proof of production state.",
   "production_baseline_file": "MIGRATION_PRODUCTION_BASELINE.json",
   "production_migration_count": 79,
   "production_latest_migration": "20260904122452",
-  "note": "Source-package migration inventory only. Live Supabase was re-verified on 2026-09-04 and now records 79 migrations, including V7 and two cleanup migrations. The source package contains the semantic V7 migration and one combined cleanup migration; the live ledger may use generated timestamps/names."
+  "note": "Source package inventory contains 45 migrations, including the ecosystem Token Center V1/V2 migrations. Production baseline remains a separate historical ledger and must be verified against live Supabase before deployment."
 }
