@@ -8,7 +8,7 @@ let server = null;
 
 if (!process.env.VERCEL) {
   server = app.listen(PORT, () => {
-    console.log(`AM Account Portal V4.2 running on ${START_URL}`);
+    console.log(`Jyy'R Amprem V4.2 running on ${START_URL}`);
   });
 }function shutdown(signal){console.log(`[SERVER] ${signal} received.`);if(!server)return process.exit(0);server.close(()=>{console.log("[SERVER] HTTP server closed.");process.exit(0);});}if(server){process.on("SIGTERM",()=>shutdown("SIGTERM"));process.on("SIGINT",()=>shutdown("SIGINT"));}
 /*
