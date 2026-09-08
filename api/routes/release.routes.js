@@ -8,24 +8,13 @@ const {
   releaseDownloadUrl,
   verifyStoredApk,
   removeStorageObject,
-  isUuid,
-  HTML_DIR
+  isUuid
 } = runtime;
 
 export function registerReleaseRoutes(app, deps) {
   const {
-    authRegisterLimiter,
-    authResendLimiter,
-    authVerifyLimiter,
-    portalTokenVerifyLimiter,
-    ownerClaimLimiter,
-    ownerReadLimiter,
-    ownerStatisticsLimiter,
-    ownerMemberReadLimiter,
-    ownerBroadcastMutationLimiter,
     ownerBroadcastReadLimiter,
     ownerMemberMutationLimiter,
-    providerDiagnosticLimiter,
     requireAuth,
     requireOwner
   } = deps;

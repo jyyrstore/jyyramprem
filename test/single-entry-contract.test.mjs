@@ -39,7 +39,7 @@ const legacyFiles = [
   'public/html/reset-password.html',
   'public/html/app-intro.html',
 ];
-const legacyPaths = ['/login.html', '/home.html', '/dashboard.html', '/setting.html', '/owner.html', '/app.html', '/app'];
+const legacyPaths = ['/index.html', '/login.html', '/home.html', '/dashboard.html', '/setting.html', '/owner.html', '/app.html'];
 
 function idsIn(html) {
   return [...html.matchAll(/\sid=["']([^"']+)["']/gi)].map((m) => m[1]);
@@ -75,25 +75,41 @@ test('only the active view is materialized into the live DOM', () => {
   }
 });
 
-test('view navigation stays on the canonical root and does not use pathname as privilege', () => {
+test('view navigation uses clean canonical paths and does not use pathname as privilege', () => {
   assert.match(router, /window\.JYYRApp = \{ showView, navigate/);
   assert.doesNotMatch(router, /(?:location|window\.location)\.(?:assign|replace|reload)\(/);
   assert.doesNotMatch(router, /location\.(?:href|pathname)\s*=/);
-  assert.match(router, /history\.replaceState\(\{\}, document\.title, "\/"\)/);
+  assert.match(router, /const ROUTES = \{/);
+  assert.match(router, /dashboard: "\/dashboard"/);
+  assert.match(router, /setting: "\/setting"/);
   for (const source of [auth, home, dashboard, setting, owner, resetPassword, help, nav]) {
     assert.doesNotMatch(source, /(?:location|window\.location)\.(?:href|assign|replace)\s*=\s*[`'\"]\/(?:login|home|dashboard|setting|owner|app|help|reset-password)\.html/);
   }
 });
 
-test('all legacy page URLs are compatibility redirects rather than runtime entry points', () => {
-  const blockStart = publicRoutes.indexOf('for (const legacyPath of [');
-  const blockEnd = publicRoutes.indexOf('  ])', blockStart);
-  const block = publicRoutes.slice(blockStart, blockEnd);
-  for (const legacyPath of legacyPaths) assert.ok(block.includes(`"${legacyPath}"`));
-  assert.match(publicRoutes, /res\.redirect\(308, target\)/);
+test('legacy page URLs redirect to clean canonical routes while the SPA remains single-entry', () => {
+  const legacyPairs = {
+    '/index.html': '/',
+    '/login.html': '/login',
+    '/home.html': '/',
+    '/dashboard.html': '/dashboard',
+    '/setting.html': '/setting',
+    '/owner.html': '/owner',
+    '/app.html': '/app',
+  };
+  for (const [legacyPath, canonicalPath] of Object.entries(legacyPairs)) {
+    assert.ok(publicRoutes.includes(`"${legacyPath}": "${canonicalPath}"`), `missing legacy redirect ${legacyPath}`);
+  }
+  assert.match(publicRoutes, /res\.redirect\(308,/);
   assert.match(publicRoutes, /app\.get\("\/"/);
   assert.match(publicRoutes, /sendFile\("index\.html"/);
   assert.doesNotMatch(releaseRoutes, /app\.get\("\/app"[\s\S]*app-intro\.html/);
+  const canonicalBlockStart = publicRoutes.indexOf('for (const canonicalPath of [');
+  const canonicalBlockEnd = publicRoutes.indexOf('  ])', canonicalBlockStart);
+  const canonicalBlock = publicRoutes.slice(canonicalBlockStart, canonicalBlockEnd);
+  for (const canonicalPath of ['/dashboard', '/setting', '/owner', '/app', '/help', '/maintenance', '/reset-password', '/login']) {
+    assert.ok(canonicalBlock.includes(`"${canonicalPath}"`), `missing canonical route ${canonicalPath}`);
+  }
 });
 
 test('PWA identity and navigation fallback use the canonical root', () => {

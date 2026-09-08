@@ -8,7 +8,7 @@ The authoritative runtime files are:
 
 - `server.js` — HTTP routes and server orchestration
 - `lib/*.js` — provider/magic-link contracts
-- `public/html/*.html` — page structure
+- `public/index.html (single entry point)` — page structure
 - `public/js/*.js` — browser behavior
 - `public/css/*.css` — UI styles
 - `supabase/migrations/*.sql` — repository migration set
@@ -28,12 +28,7 @@ npm start
 
 Pages:
 
-- `https://www.jyyramprem.my.id/`
-- `https://www.jyyramprem.my.id/login.html`
-- `https://www.jyyramprem.my.id/home.html`
-- `https://www.jyyramprem.my.id/dashboard.html`
-- `https://www.jyyramprem.my.id/setting.html`
-- `https://www.jyyramprem.my.id/owner.html`
+- `https://www.jyyramprem.my.id`
 
 ## Environment
 

@@ -11,7 +11,8 @@ const {
   supabaseAuth,
   publicUser,
   findPendingEmailVerification,
-  sendSignupVerificationEmail
+  sendSignupVerificationEmail,
+  assertMaintenanceOff
 } = runtime;
 
 export function registerAuthRoutes(app, deps) {
@@ -19,20 +20,10 @@ export function registerAuthRoutes(app, deps) {
     authRegisterLimiter,
     authResendLimiter,
     authVerifyLimiter,
-    portalTokenVerifyLimiter,
-    ownerClaimLimiter,
-    ownerReadLimiter,
-    ownerStatisticsLimiter,
-    ownerMemberReadLimiter,
-    ownerBroadcastMutationLimiter,
-    ownerBroadcastReadLimiter,
-    ownerMemberMutationLimiter,
-    providerDiagnosticLimiter,
-    requireAuth,
-    requireOwner
   } = deps;
 
   app.post("/api/auth/register", authRegisterLimiter, async (req, res) => {
+    try { await assertMaintenanceOff(); } catch (error) { return res.status(Number(error.status) || 503).json({ ok: false, code: error.code || "MAINTENANCE_MODE", maintenance: true, error: error.message }); }
     try {
       const parsed = normalizeUserEmail(req.body?.email);
       if (!parsed.valid) return res.status(400).json({ ok: false, code: "INVALID_EMAIL", error: "Masukkan alamat email yang valid." });
@@ -124,6 +115,7 @@ export function registerAuthRoutes(app, deps) {
   });
 
   app.post("/api/auth/resend-verification", authResendLimiter, async (req, res) => {
+    try { await assertMaintenanceOff(); } catch (error) { return res.status(Number(error.status) || 503).json({ ok: false, code: error.code || "MAINTENANCE_MODE", maintenance: true, error: error.message }); }
     try {
       const parsed = normalizeUserEmail(req.body?.email);
       if (!parsed.valid) return res.status(400).json({ ok: false, code: "INVALID_EMAIL", error: "Masukkan alamat email yang valid." });
@@ -161,6 +153,7 @@ export function registerAuthRoutes(app, deps) {
   });
 
   app.post("/api/auth/verify-email", authVerifyLimiter, async (req, res) => {
+    try { await assertMaintenanceOff(); } catch (error) { return res.status(Number(error.status) || 503).json({ ok: false, code: error.code || "MAINTENANCE_MODE", maintenance: true, error: error.message }); }
     try {
       const parsed = normalizeUserEmail(req.body?.email);
       if (!parsed.valid) return res.status(400).json({ ok: false, code: "INVALID_EMAIL", error: "Email tidak valid." });

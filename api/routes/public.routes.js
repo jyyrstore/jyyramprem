@@ -11,26 +11,12 @@ const {
   decryptPortalToken,
   timingSafeSecretEquals,
   parsePositiveInt,
-  isUuid,
-  sendPage
+  isUuid
 } = runtime;
 
 export function registerPublicRoutes(app, deps) {
   const {
-    authRegisterLimiter,
-    authResendLimiter,
-    authVerifyLimiter,
-    portalTokenVerifyLimiter,
-    ownerClaimLimiter,
-    ownerReadLimiter,
-    ownerStatisticsLimiter,
-    ownerMemberReadLimiter,
-    ownerBroadcastMutationLimiter,
     ownerBroadcastReadLimiter,
-    ownerMemberMutationLimiter,
-    providerDiagnosticLimiter,
-    requireAuth,
-    requireOwner
   } = deps;
 
 
@@ -153,7 +139,7 @@ export function registerPublicRoutes(app, deps) {
     }
   );
 
-  app.get('/api/maintenance', async(_req,res)=>{try{const {data,error}=await db.rpc('public_get_maintenance');if(error)throw error;return res.json({ok:true,...data});}catch(e){console.error('[MAINTENANCE ERROR]',e);return res.status(500).json({ok:false,error:'Maintenance status unavailable.'});}});
+  app.get('/api/maintenance', async(req,res)=>{try{const {data,error}=await db.rpc('public_get_maintenance');if(error)throw error;let owner=false;const authorization=req.headers.authorization||'';if(authorization.startsWith('Bearer ')){const token=authorization.slice(7).trim();if(token){try{const {data:{user}}=await runtime.supabase.auth.getUser(token);if(user)owner=await runtime.isOwner(user.id);}catch{owner=false;}}}res.setHeader('Cache-Control','no-store, max-age=0');return res.json({ok:true,...data,owner});}catch(e){console.error('[MAINTENANCE ERROR]',e);return res.status(500).json({ok:false,error:'Maintenance status unavailable.'});}});
 
   app.get('/api/faq', ownerBroadcastReadLimiter, async (_req, res) => {
     try {
@@ -247,22 +233,37 @@ export function registerPublicRoutes(app, deps) {
     return res.sendFile("service-worker.js", { root: PUBLIC_DIR });
   });
 
-  app.get("/", (_req, res) => {
+  const sendIndex = (_req, res) => {
     res.setHeader("Cache-Control", "no-store, max-age=0");
     return res.sendFile("index.html", { root: PUBLIC_DIR });
-  });
-
-  const redirectLegacyFrontend = (req, res) => {
-    const query = String(req.originalUrl || "").split("?", 2)[1] || "";
-    const target = query ? `/?${query}` : "/";
-    return res.redirect(308, target);
   };
 
-  for (const legacyPath of [
-    "/index.html", "/login.html", "/home.html", "/dashboard.html", "/setting.html",
-    "/reset-password.html", "/help.html", "/login", "/reset-password", "/owner", "/owner.html", "/app", "/app.html"
+  app.get("/", sendIndex);
+
+  // Canonical SPA view URLs. Every view still uses the single index.html entry point.
+  for (const canonicalPath of [
+    "/dashboard", "/setting", "/owner", "/app", "/help", "/maintenance", "/reset-password", "/login"
   ]) {
-    app.get(legacyPath, redirectLegacyFrontend);
+    app.get(canonicalPath, sendIndex);
+  }
+
+  const legacyRedirects = {
+    "/index.html": "/",
+    "/login.html": "/login",
+    "/home.html": "/",
+    "/dashboard.html": "/dashboard",
+    "/setting.html": "/setting",
+    "/reset-password.html": "/reset-password",
+    "/help.html": "/help",
+    "/owner.html": "/owner",
+    "/app.html": "/app",
+  };
+
+  for (const [legacyPath, canonicalPath] of Object.entries(legacyRedirects)) {
+    app.get(legacyPath, (req, res) => {
+      const query = String(req.originalUrl || "").split("?", 2)[1] || "";
+      return res.redirect(308, query ? `${canonicalPath}?${query}` : canonicalPath);
+    });
   }
 
 }

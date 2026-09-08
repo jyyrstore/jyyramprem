@@ -9,6 +9,7 @@
     owner: { css: ["/css/owner.css"], scripts: ["/js/icons.js", "/js/ui-icons-assets.js", "/js/nav.js", "/js/notifications.js", "/js/apk-metadata.js", "/js/owner/core.js", "/js/owner/members.js", "/js/owner/portal-token.js", "/js/owner/dashboard.js", "/js/owner/broadcasts.js", "/js/owner/messaging.js", "/js/owner/content.js", "/js/owner/events.js", "/js/owner/releases.js", "/js/owner.js"], title: "Jyy'R Amprem • Owner", auth: true },
     app: { css: ["/css/app.css"], scripts: ["/js/app.js"], title: "Jyy'R Amprem • Download", auth: false },
     help: { css: ["/css/help.css"], scripts: ["/js/help.js"], title: "Pusat Bantuan • Jyy'R Amprem", auth: false },
+    maintenance: { css: ["/css/maintenance.css"], scripts: ["/js/maintenance.js"], title: "Maintenance • Jyy'R Amprem", auth: false },
     "reset-password": { css: ["/css/reset-password.css"], scripts: ["/js/icons.js", "/js/ui-icons-assets.js", "/js/notifications.js", "/js/reset-password.js"], title: "Reset Password • Jyy'R Amprem", auth: false },
   };
 
@@ -17,6 +18,42 @@
   let activeView = null;
   let activeStyleLinks = [];
   let navigationSerial = 0;
+
+  const ROUTES = {
+    home: "/",
+    dashboard: "/dashboard",
+    setting: "/setting",
+    owner: "/owner",
+    app: "/app",
+    help: "/help",
+    maintenance: "/maintenance",
+    login: "/login",
+    "reset-password": "/reset-password",
+  };
+  const VIEW_BY_PATH = new Map(Object.entries(ROUTES).map(([view, route]) => [route, view]));
+
+  function readViewFromUrl() {
+    try {
+      const url = new URL(window.location.href);
+      const pathname = url.pathname.replace(/\/+$/, "") || "/";
+      return normalizeView(VIEW_BY_PATH.get(pathname) || null);
+    } catch {
+      return null;
+    }
+  }
+
+  function syncViewUrl(name, { replace = false, section = null } = {}) {
+    try {
+      const url = new URL(window.location.href);
+      url.pathname = ROUTES[name] || "/";
+      const nextSearch = new URLSearchParams();
+      if (section) nextSearch.set("section", section);
+      url.search = nextSearch.toString();
+      const next = `${url.pathname}${url.search}${url.hash}`;
+      const method = replace ? "replaceState" : "pushState";
+      window.history[method]({}, VIEW_META[name].title, next);
+    } catch {}
+  }
 
   function normalizeView(value) {
     const name = String(value || "").trim().toLowerCase();
@@ -32,7 +69,9 @@
       if (username) sessionStorage.setItem("jyyr:login_username", username);
       if (/^[0-9a-f-]{36}$/i.test(tokenId)) sessionStorage.setItem("jyyr:selected_token_id", tokenId);
       // Legacy handoff URLs are compatibility input, never the canonical application URL.
-      window.history.replaceState({}, document.title, "/");
+      const canonical = ROUTES[readViewFromUrl() || "home"];
+      const clean = new URL(canonical, window.location.origin);
+      window.history.replaceState({}, document.title, clean.pathname);
       return { username, tokenId };
     } catch {
       return null;
@@ -124,6 +163,16 @@
     const next = views.get(name);
 
     legacyContextFromUrl();
+    if (name !== "maintenance" && name !== "login" && name !== "reset-password") {
+      const session = await window.AMAuth.getSession().catch(() => null);
+      const maintenance = await getMaintenanceState(session);
+      if (session?.access_token && maintenance.data?.maintenance_enabled === true && maintenance.data?.owner !== true) {
+        return showView("maintenance", { updateUrl: true, replaceUrl: true });
+      }
+    }
+    if (options.updateUrl) {
+      syncViewUrl(name, { replace: options.replaceUrl === true, section: options.section || null });
+    }
 
     if (activeView === name && next.isConnected) {
       if (options.tokenRequired) window.JYYRAuthView?.showPortalTokenGate?.();
@@ -170,7 +219,7 @@
   }
 
   function navigate(viewName, options = {}) {
-    return showView(viewName, options).catch((error) => {
+    return showView(viewName, { updateUrl: true, ...options }).catch((error) => {
       console.error("[JYYR ROUTER] Navigation failed", { viewName, error });
       return false;
     });
@@ -199,19 +248,47 @@
 
   window.JYYRApp = { showView, navigate, get activeView() { return activeView; }, getViewElement: (name) => views.get(normalizeView(name)) || null };
 
+  async function getMaintenanceState(session) {
+    try {
+      const headers = { Accept: "application/json" };
+      if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
+      const response = await fetch("/api/maintenance", { headers, cache: "no-store" });
+      const data = await response.json().catch(() => ({}));
+      return { response, data };
+    } catch {
+      return { response: null, data: null };
+    }
+  }
+
+  window.JYYRAppMaintenance = { getMaintenanceState };
+
+  window.addEventListener("popstate", () => {
+    const requested = readViewFromUrl();
+    if (requested) navigate(requested, { replaceUrl: true, fromHistory: true });
+    else navigate("home", { replaceUrl: true, fromHistory: true });
+  });
+
   (async () => {
     legacyContextFromUrl();
     const recovery = isRecoveryUrl();
     const session = await window.AMAuth.getSession().catch(() => null);
     const context = sessionStorage.getItem("jyyr:login_username") || sessionStorage.getItem("jyyr:selected_token_id");
     if (recovery) {
-      await showView("reset-password");
+      await showView("reset-password", { replaceUrl: true });
       return;
     }
     if (context && !session) {
-      await showView("login");
+      await showView("login", { replaceUrl: true });
       return;
     }
-    await showView(session?.access_token ? "home" : "login");
+
+    const requestedView = readViewFromUrl();
+    const requestedName = requestedView || (session?.access_token ? "home" : "login");
+    const maintenance = await getMaintenanceState(session);
+    if (session?.access_token && maintenance.data?.maintenance_enabled === true && maintenance.data?.owner !== true) {
+      await showView("maintenance", { replaceUrl: true });
+      return;
+    }
+    await showView(requestedName, { replaceUrl: true });
   })();
 })();

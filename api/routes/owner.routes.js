@@ -4,6 +4,7 @@ const {
   db,
   supabase,
   isOwner,
+  invalidateMaintenanceCache,
   parsePositiveInt,
   isUuid,
   memberErrorStatus,
@@ -18,10 +19,6 @@ const {
 
 export function registerOwnerRoutes(app, deps) {
   const {
-    authRegisterLimiter,
-    authResendLimiter,
-    authVerifyLimiter,
-    portalTokenVerifyLimiter,
     ownerClaimLimiter,
     ownerReadLimiter,
     ownerStatisticsLimiter,
@@ -29,7 +26,6 @@ export function registerOwnerRoutes(app, deps) {
     ownerBroadcastMutationLimiter,
     ownerBroadcastReadLimiter,
     ownerMemberMutationLimiter,
-    providerDiagnosticLimiter,
     requireAuth,
     requireOwner
   } = deps;
@@ -445,7 +441,7 @@ export function registerOwnerRoutes(app, deps) {
 
   app.get('/api/owner/maintenance', requireAuth, ownerBroadcastReadLimiter, requireOwner, async(req,res)=>{try{const {data,error}=await db.rpc('owner_get_system_settings',{p_owner_user_id:req.user.id});if(error)throw error;return res.json({ok:true,owner:true,settings:data});}catch(e){const st=ownerCrudError(e);return res.status(st).json({ok:false,error:st===500?'Gagal membaca maintenance.':e.message});}});
 
-  app.patch('/api/owner/maintenance', requireAuth, ownerMemberMutationLimiter, requireOwner, async(req,res)=>{try{const enabled=Boolean(req.body?.enabled),message=typeof req.body?.message==='string'?req.body.message:'';if(message.length>500)return res.status(400).json({ok:false,error:'Pesan maintenance terlalu panjang.'});const {data,error}=await db.rpc('owner_set_maintenance',{p_owner_user_id:req.user.id,p_enabled:enabled,p_message:message});if(error)throw error;return res.json({ok:true,owner:true,settings:data});}catch(e){const st=ownerCrudError(e);return res.status(st).json({ok:false,error:st===500?'Gagal mengubah maintenance.':e.message});}});
+  app.patch('/api/owner/maintenance', requireAuth, ownerMemberMutationLimiter, requireOwner, async(req,res)=>{try{const enabled=Boolean(req.body?.enabled),message=typeof req.body?.message==='string'?req.body.message:'';if(message.length>500)return res.status(400).json({ok:false,error:'Pesan maintenance terlalu panjang.'});const {data,error}=await db.rpc('owner_set_maintenance',{p_owner_user_id:req.user.id,p_enabled:enabled,p_message:message});if(error)throw error;invalidateMaintenanceCache();return res.json({ok:true,owner:true,settings:data});}catch(e){const st=ownerCrudError(e);return res.status(st).json({ok:false,error:st===500?'Gagal mengubah maintenance.':e.message});}});
 
   app.post('/api/owner/broadcasts/:id/execute', requireAuth, ownerMemberMutationLimiter, requireOwner, async(req,res)=>{try{if(!isUuid(req.params.id))return res.status(400).json({ok:false,error:'Broadcast ID tidak valid.'});const {data,error}=await db.rpc('owner_execute_broadcast',{p_owner_user_id:req.user.id,p_broadcast_id:req.params.id});if(error)throw error;return res.json({ok:true,owner:true,...data});}catch(e){const st=ownerCrudError(e);return res.status(st).json({ok:false,error:st===500?'Gagal menjalankan broadcast.':e.message});}});
 

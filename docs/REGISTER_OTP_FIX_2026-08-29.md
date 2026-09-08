@@ -23,7 +23,7 @@ The Generate/Magic-Link/provider implementation is intentionally unchanged by th
   - Submit button changes from `CREATE ACCOUNT` to `VERIFY CODE` during OTP step.
   - OTP input is normalized to six digits.
   - Pending/unverified and already-registered states are shown distinctly.
-- `public/html/login.html`
+- `public/index.html (login view)`
   - OTP input is explicitly constrained to six digits and exposes accessible guidance.
 - `test/signup-otp-contract.test.mjs`
   - Adds regression coverage for signup, resend, six-digit verification, OTP UI gating, and provider-flow preservation.

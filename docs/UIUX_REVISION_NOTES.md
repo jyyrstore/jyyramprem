@@ -5,14 +5,14 @@ UI/UX frontend revision only. Backend contract is intentionally preserved.
 
 ## Updated
 - `public/css/common.css` — complete visual system, responsive tablet/mobile layout, purple press glow, floating bottom navigation, popup, cards, badges, tables and charts.
-- `public/html/login.html` / `public/css/login.css` — centered brand logos outside card, cleaner auth card, register field order, verification-code state.
+- `public/index.html (login view)` / `public/css/login.css` — centered brand logos outside card, cleaner auth card, register field order, verification-code state.
 - `public/js/auth.js` — adapted only to the renamed registration verification field and register email label.
-- `public/html/home.html` / `public/css/home.css` — polished header, backend status pill, banner/video, generator, result state, benefits, steps, security, socials and footer.
+- `public/index.html (home view)` / `public/css/home.css` — polished header, backend status pill, banner/video, generator, result state, benefits, steps, security, socials and footer.
 - `public/js/home.js` — Limited state remains blue.
 - `public/js/nav.js` — backend health pill now visibly switches between Online/Offline.
-- `public/html/dashboard.html` / `public/css/dashboard.css` — cleaner metrics, trend chart, status distribution, daily log and history layout.
-- `public/html/setting.html` / `public/css/setting.css` / `public/js/setting.js` — centered user icon profile and compact history/filter layout.
-- `public/html/owner.html` / `public/css/owner.css` — cleaner owner console, compact tabs, Home/Logout actions, member/broadcast/security/system cards.
+- `public/index.html (dashboard view)` / `public/css/dashboard.css` — cleaner metrics, trend chart, status distribution, daily log and history layout.
+- `public/index.html (settings view)` / `public/css/setting.css` / `public/js/setting.js` — centered user icon profile and compact history/filter layout.
+- `public/index.html (owner view)` / `public/css/owner.css` — cleaner owner console, compact tabs, Home/Logout actions, member/broadcast/security/system cards.
 - `DESIGN.md` — implementation specification.
 
 ## Intentionally preserved

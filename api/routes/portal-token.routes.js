@@ -26,19 +26,10 @@ const {
 
 export function registerPortalTokenRoutes(app, deps) {
   const {
-    authRegisterLimiter,
-    authResendLimiter,
-    authVerifyLimiter,
     portalTokenVerifyLimiter,
-    ownerClaimLimiter,
     ownerReadLimiter,
-    ownerStatisticsLimiter,
-    ownerMemberReadLimiter,
-    ownerBroadcastMutationLimiter,
-    ownerBroadcastReadLimiter,
     ownerMemberMutationLimiter,
     portalTokenPublicLimiter,
-    providerDiagnosticLimiter,
     requireAuth,
     requireOwner
   } = deps;

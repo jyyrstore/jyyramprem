@@ -253,15 +253,19 @@ if (forbiddenHits.length) {
 }
 
 const legacyRedirectSource = fs.readFileSync(path.join(root, 'api/routes/public.routes.js'), 'utf8');
-const legacyPathBlock = legacyRedirectSource.slice(
-  legacyRedirectSource.indexOf('for (const legacyPath of ['),
-  legacyRedirectSource.indexOf('  ])', legacyRedirectSource.indexOf('for (const legacyPath of [')) + 4,
-);
-for (const pathName of ['/login.html', '/home.html', '/dashboard.html', '/setting.html', '/owner.html', '/app']) {
-  if (!legacyPathBlock.includes(`\"${pathName}\"`)) throw new Error(`Missing compatibility route: ${pathName}`);
+for (const [legacyPath, canonicalPath] of Object.entries({
+  '/index.html': '/',
+  '/login.html': '/login',
+  '/home.html': '/',
+  '/dashboard.html': '/dashboard',
+  '/setting.html': '/setting',
+  '/owner.html': '/owner',
+  '/app.html': '/app',
+})) {
+  const pair = `"${legacyPath}": "${canonicalPath}"`;
+  if (!legacyRedirectSource.includes(pair)) throw new Error(`Missing compatibility redirect: ${legacyPath} -> ${canonicalPath}`);
 }
-if (!/res\.redirect\(308, target\)/.test(legacyRedirectSource)) throw new Error('Legacy page routes must redirect with 308');
-
+if (!/res\.redirect\(308,/.test(legacyRedirectSource)) throw new Error('Legacy page routes must redirect with 308');
 
 console.log(JSON.stringify({
   ok: true,

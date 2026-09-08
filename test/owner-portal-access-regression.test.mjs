@@ -4,6 +4,10 @@ import fs from "node:fs";
 
 const root = new URL("../", import.meta.url);
 const server = fs.readFileSync(new URL("server.js", root), "utf8");
+const routeFiles = [
+  "api/routes/member.routes.js",
+].map((file) => fs.readFileSync(new URL(file, root), "utf8"));
+const routeSource = routeFiles.join("\n");
 const migration = fs.readFileSync(new URL("../supabase/migrations/20260904150000_canonical_single_user_token_redemption_v7.sql", import.meta.url), "utf8");
 
 test("Owner is exempt from the member portal-token gate", () => {
@@ -25,6 +29,6 @@ test("Canonical authorization checks assigned user and access expiry", () => {
 test("Critical member-facing endpoints remain behind requireAuth", () => {
   for (const endpoint of ['/api/accounts','/api/usage','/api/generate','/api/accounts/:id/verify-email','/api/accounts/:id/apply-premium','/api/accounts/:id/magiclink-status','/api/accounts/:id/send-magiclink']) {
     const escaped = endpoint.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    assert.match(server, new RegExp(`\\"?${escaped}\\"?\\s*,?\\s*\\n?\\s*requireAuth`, 'm'), endpoint);
+    assert.match(routeSource, new RegExp(`\\"?${escaped}\\"?\\s*,?\\s*\\n?\\s*requireAuth`, 'm'), endpoint);
   }
 });

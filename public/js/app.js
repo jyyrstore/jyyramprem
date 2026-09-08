@@ -182,7 +182,7 @@ document.addEventListener('contextmenu', (event) => {
 
           <a
             class="action-button center"
-            href="/" data-jyyr-view="app"
+            href="/app" data-jyyr-view="app"
           >
             App Center
           </a>

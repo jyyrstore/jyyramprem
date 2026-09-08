@@ -9,7 +9,9 @@
   const protectedPages = new Set(["home", "dashboard", "setting"]);
   let accessCheckRunning = false;
   let watchdogTimer = null;
+  let maintenanceTimer = null;
   let watchdogStarted = false;
+  let maintenanceCheckRunning = false;
 
   function currentPage() {
     return String(document.body?.dataset?.page || '').trim().toLowerCase();
@@ -17,6 +19,27 @@
 
   function redirectToTokenGate() {
     window.JYYRApp?.navigate("login", { tokenRequired: true });
+  }
+
+  async function enforceMaintenanceMode() {
+    if (maintenanceCheckRunning) return;
+    maintenanceCheckRunning = true;
+    try {
+      const session = await window.AMAuth?.getSession?.().catch(() => null);
+      if (!session?.access_token) return;
+      const response = await fetch("/api/maintenance", {
+        headers: { Authorization: `Bearer ${session.access_token}`, Accept: "application/json" },
+        cache: "no-store",
+      });
+      const data = await response.json().catch(() => ({}));
+      if (data?.maintenance_enabled === true && data?.owner !== true && currentPage() !== "maintenance") {
+        window.JYYRApp?.navigate("maintenance", { replaceUrl: true });
+      }
+    } catch {
+      // Availability failure must not falsely revoke the user's session.
+    } finally {
+      maintenanceCheckRunning = false;
+    }
   }
 
   async function enforcePortalAccess() {
@@ -62,13 +85,15 @@
     if (!protectedPages.has(currentPage())) return;
     watchdogStarted = true;
     enforcePortalAccess();
-    // The server remains authoritative; the timer is only a client-side detection aid.
+    enforceMaintenanceMode();
+    // The server remains authoritative; timers are only client-side detection aids.
     window.setTimeout(enforcePortalAccess, 30000);
+    maintenanceTimer = window.setInterval(enforceMaintenanceMode, 15000);
     document.addEventListener('visibilitychange', () => {
-      if (!document.hidden) enforcePortalAccess();
+      if (!document.hidden) { enforcePortalAccess(); enforceMaintenanceMode(); }
     });
-    window.addEventListener('pageshow', () => enforcePortalAccess());
-    window.addEventListener('focus', () => enforcePortalAccess());
+    window.addEventListener('pageshow', () => { enforcePortalAccess(); enforceMaintenanceMode(); });
+    window.addEventListener('focus', () => { enforcePortalAccess(); enforceMaintenanceMode(); });
   }
 
   document.addEventListener("contextmenu", (event) => {
@@ -95,7 +120,6 @@
     }
   }, { passive: false });
 
-  window.JYYRUIProtection = { refresh: enforcePortalAccess, start: startPortalAccessWatchdog };
   window.JYYRUIProtection = { refresh: enforcePortalAccess, start: startPortalAccessWatchdog };
   startPortalAccessWatchdog();
 })();
