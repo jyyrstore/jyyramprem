@@ -657,6 +657,8 @@ $("#ownerDashboardNav")?.addEventListener("click", () => {
   if (!session?.access_token) { window.JYYRApp?.navigate("login"); return; }
   try {
     const { response, data } = await AMAuth.getPortalAccess();
+    const ownerNav = document.getElementById("ownerDashboardNavWrap");
+    if (ownerNav) ownerNav.hidden = data.owner !== true;
     if (!response.ok || (data.access !== true && data.owner !== true)) {
       await AMAuth.signOut().catch(() => {});
       window.JYYRApp?.navigate("login", { tokenRequired: true });
@@ -664,6 +666,8 @@ $("#ownerDashboardNav")?.addEventListener("click", () => {
     }
     loadQuota();
   } catch {
+    const ownerNav = document.getElementById("ownerDashboardNavWrap");
+    if (ownerNav) ownerNav.hidden = true;
     await AMAuth.signOut().catch(() => {});
     window.JYYRApp?.navigate("login", { tokenRequired: true });
   }
