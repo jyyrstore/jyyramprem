@@ -2,7 +2,7 @@
   "name": "Jyy'R Amprem",
   "short_name": "Jyy'R Amprem",
   "description": "Jyy'R Amprem — Premium Account Portal",
-  "start_url": "/app-intro.html",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
@@ -23,6 +23,6 @@
       "purpose": "any maskable"
     }
   ],
-  "id": "/home.html",
+  "id": "/",
   "prefer_related_applications": false
 }

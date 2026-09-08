@@ -166,7 +166,7 @@ $("#forgotPassword").onclick = async () => {
   try {
     await AMAuth.resetPassword(
       email,
-      `${location.origin}/reset-password.html`
+      `${location.origin}/`
     );
 
     status(
@@ -217,7 +217,7 @@ function closePortalTokenGate() {
 async function continueAfterAuth() {
   const { response, data } = await AMAuth.getPortalAccess();
   if (response.ok && (data.access === true || data.owner === true)) {
-    location.replace("/home.html");
+    window.JYYRApp?.navigate("home");
     return true;
   }
   showPortalTokenGate();
@@ -239,7 +239,7 @@ async function verifyPortalTokenFromGate() {
     const { response, data } = await AMAuth.verifyPortalToken(token);
     if (!response.ok || data.valid !== true) throw new Error(data.error || "Token tidak valid.");
     setPortalGateStatus("Token valid. Membuka portal…", "success");
-    setTimeout(() => location.replace("/home.html"), 180);
+    setTimeout(() => window.JYYRApp?.navigate("home"), 180);
   } catch (error) {
     setPortalGateStatus(error.message || "Token tidak valid.", "error");
   } finally {
@@ -477,8 +477,8 @@ $("#resendCode").onclick = async () => {
 
 function adoptTokenCenterRegisterContext() {
   const params = new URLSearchParams(window.location.search);
-  const username = String(params.get("username") || "").trim();
-  const tokenId = String(params.get("token_id") || "").trim();
+  const username = String(params.get("username") || sessionStorage.getItem("jyyr:login_username") || "").trim();
+  const tokenId = String(params.get("token_id") || sessionStorage.getItem("jyyr:selected_token_id") || "").trim();
   if (username && /^@[a-z0-9](?:[a-z0-9._-]{2,28})$/i.test(username)) {
     const input = $("#username");
     if (input) input.value = username.toLowerCase();
@@ -486,7 +486,8 @@ function adoptTokenCenterRegisterContext() {
   }
   if (/^[0-9a-f-]{36}$/i.test(tokenId)) sessionStorage.setItem("jyyr:selected_token_id", tokenId);
   if (username || tokenId) {
-    history.replaceState({}, document.title, "/login.html");
+    sessionStorage.removeItem("jyyr:login_username");
+    history.replaceState({}, document.title, "/");
   }
   return Boolean(username || tokenId);
 }
@@ -613,3 +614,5 @@ document.fonts?.ready.then(() => {
 });
 
 window.addEventListener("resize", applyLoginBrandGradient);
+
+window.JYYRAuthView = { setMode, showPortalTokenGate, closePortalTokenGate, continueAfterAuth };

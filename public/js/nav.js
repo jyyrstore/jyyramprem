@@ -254,10 +254,13 @@
    * Initialize authenticated page.
    */
   async function init() {
+    const page = document.body.dataset.page || '';
+    if (document.body.dataset.jyyrNavInitializedFor === page) return null;
+    document.body.dataset.jyyrNavInitializedFor = page;
     const s = await session();
 
     if (!s) {
-      location.replace('/login.html');
+      window.JYYRApp?.navigate("login");
       return null;
     }
 
@@ -453,7 +456,7 @@
       'click',
       async () => {
         await window.AMAuth.signOut();
-        location.replace('/login.html');
+        window.JYYRApp?.navigate("login");
       }
     );
 
@@ -462,7 +465,7 @@
      */
     q('#downloadAppAction')?.addEventListener(
       'click',
-      () => { window.location.href = '/app.html'; }
+      () => { window.JYYRApp?.navigate("app"); }
     );
 
     /*
@@ -653,11 +656,14 @@ function setupBrandBanner() {
   /*
    * Start application.
    */
-  document.addEventListener(
-    'DOMContentLoaded',
-    () => {
-      renderShared();
-      init();
-    }
-  );
+  function boot() {
+    renderShared();
+    init();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot, { once: true });
+  } else {
+    boot();
+  }
 })();

@@ -7,14 +7,12 @@ const requiredFiles = [
   'package.json',
   'package-lock.json',
   '.env.example',
-  'public/html/index.html',
-  'public/html/login.html',
-  'public/html/home.html',
-  'public/html/dashboard.html',
-  'public/html/setting.html',
-  'public/html/owner.html',
-  'public/html/reset-password.html',
-  'public/html/help.html',
+  'public/index.html',
+  'public/manifest.webmanifest',
+  'public/service-worker.js',
+  'public/css/app.css',
+  'public/js/router.js',
+  'public/js/app.js',
   'public/js/auth-client.js',
   'public/js/auth.js',
   'public/js/home.js',
@@ -149,7 +147,7 @@ if (missingOwnerRoutes.length) {
   process.exit(1);
 }
 
-const requiredPublicRoutes = ['/api/faq', '/api/help', '/help.html'];
+const requiredPublicRoutes = ['/api/faq', '/api/help'];
 const missingPublicRoutes = requiredPublicRoutes.filter((route) => !routes.has(route));
 if (missingPublicRoutes.length) {
   console.error('MISSING_PUBLIC_HELP_ROUTES');
@@ -190,32 +188,80 @@ function assertBalancedCss(file) {
 
 for (const css of ['public/css/home.css', 'public/css/login.css']) assertBalancedCss(path.join(root, css));
 
-const localPages = ['index.html','login.html','home.html','dashboard.html','setting.html','owner.html','reset-password.html','help.html'];
-const htmlDir = path.join(root, 'public', 'html');
-for (const page of localPages) {
-  if (!fs.existsSync(path.join(htmlDir, page))) throw new Error(`Missing page ${page}`);
-}
-for (const page of localPages) {
-  const expected = page === 'index.html' ? '/' : `/${page}`;
-  if (!routes.has(expected) && !(page === 'owner.html' && routes.has('/owner.html'))) {
-    throw new Error(`Missing server page route ${expected}`);
-  }
-}
-
-const unresolvedLocalRefs = [];
-for (const file of fs.readdirSync(htmlDir).filter((x) => x.endsWith('.html'))) {
-  const text = fs.readFileSync(path.join(htmlDir, file), 'utf8');
-  for (const match of text.matchAll(/(?:src|href)=["'](\/(?:css|js)\/[^"']+)["']/g)) {
-    const ref = match[1];
-    const localPath = ref.split(/[?#]/, 1)[0];
-    if (!fs.existsSync(path.join(root, 'public', localPath.slice(1)))) unresolvedLocalRefs.push(`${file}: ${ref}`);
-  }
-}
-if (unresolvedLocalRefs.length) {
-  console.error('BROKEN_LOCAL_REFS');
-  unresolvedLocalRefs.forEach((x) => console.error(`- ${x}`));
+const publicRoot = path.join(root, 'public');
+const legacyPublicPages = [
+  'app.html',
+  path.join('html', 'index.html'),
+  path.join('html', 'login.html'),
+  path.join('html', 'home.html'),
+  path.join('html', 'dashboard.html'),
+  path.join('html', 'setting.html'),
+  path.join('html', 'owner.html'),
+  path.join('html', 'reset-password.html'),
+  path.join('html', 'help.html'),
+  path.join('html', 'app-intro.html'),
+];
+const legacyFilesPresent = legacyPublicPages.filter((file) => fs.existsSync(path.join(publicRoot, file)));
+if (legacyFilesPresent.length) {
+  console.error('LEGACY_PUBLIC_ENTRY_FILES_PRESENT');
+  legacyFilesPresent.forEach((file) => console.error(`- public/${file.replaceAll(path.sep, '/')}`));
   process.exit(1);
 }
+
+const indexHtml = fs.readFileSync(path.join(publicRoot, 'index.html'), 'utf8');
+const expectedViews = ['login', 'home', 'dashboard', 'setting', 'owner', 'app'];
+for (const view of expectedViews) {
+  if (!indexHtml.includes(`id="view-${view}"`) || !indexHtml.includes(`data-view="${view}"`)) {
+    throw new Error(`Missing canonical frontend view: ${view}`);
+  }
+}
+if (!/<script\s+src=["']\/js\/router\.js["']/.test(indexHtml)) throw new Error('index.html must load router.js');
+if (!/<script\s+src=["']\/js\/auth-client\.js["']/.test(indexHtml)) throw new Error('index.html must load auth-client.js');
+if (/\/public\/html\//.test(indexHtml) || /(?:href|src)=["']\/[^"']+\.html(?:[?#][^"']*)?["']/.test(indexHtml)) {
+  throw new Error('index.html contains a legacy HTML entry reference');
+}
+
+const runtimeSurfaceFiles = [
+  'public/index.html',
+  'public/js/router.js',
+  'public/js/auth-client.js',
+  'public/js/auth.js',
+  'public/js/home.js',
+  'public/js/dashboard.js',
+  'public/js/setting.js',
+  'public/js/owner.js',
+  'public/js/reset-password.js',
+  'public/js/help.js',
+  'public/js/nav.js',
+  'public/js/ui-protection.js',
+  'public/js/app.js',
+  'public/manifest.webmanifest',
+  'public/service-worker.js',
+  'api/routes/release.routes.js',
+  'vercel.json',
+].filter((file) => fs.existsSync(path.join(root, file)));
+const forbiddenRuntimeRefs = /(?:\/login\.html|\/home\.html|\/dashboard\.html|\/setting\.html|\/owner\.html|\/app\.html|\/help\.html|\/reset-password\.html|app-intro\.html)/g;
+const forbiddenHits = [];
+for (const file of runtimeSurfaceFiles) {
+  const text = fs.readFileSync(path.join(root, file), 'utf8');
+  for (const match of text.matchAll(forbiddenRuntimeRefs)) forbiddenHits.push(`${file}:${match.index}:${match[0]}`);
+}
+if (forbiddenHits.length) {
+  console.error('FORBIDDEN_LEGACY_RUNTIME_REFERENCES');
+  forbiddenHits.forEach((hit) => console.error(`- ${hit}`));
+  process.exit(1);
+}
+
+const legacyRedirectSource = fs.readFileSync(path.join(root, 'api/routes/public.routes.js'), 'utf8');
+const legacyPathBlock = legacyRedirectSource.slice(
+  legacyRedirectSource.indexOf('for (const legacyPath of ['),
+  legacyRedirectSource.indexOf('  ])', legacyRedirectSource.indexOf('for (const legacyPath of [')) + 4,
+);
+for (const pathName of ['/login.html', '/home.html', '/dashboard.html', '/setting.html', '/owner.html', '/app']) {
+  if (!legacyPathBlock.includes(`\"${pathName}\"`)) throw new Error(`Missing compatibility route: ${pathName}`);
+}
+if (!/res\.redirect\(308, target\)/.test(legacyRedirectSource)) throw new Error('Legacy page routes must redirect with 308');
+
 
 console.log(JSON.stringify({
   ok: true,

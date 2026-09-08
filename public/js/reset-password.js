@@ -53,7 +53,7 @@ const status = (text, type = "info") => {
 
         await AMAuth.signOut();
         status("Password berhasil diperbarui. Silakan login kembali.", "success");
-        setTimeout(() => location.replace("/login.html"), 1200);
+        setTimeout(() => window.JYYRApp?.navigate("login"), 1200);
       } catch (error) {
         status(error?.message || "Gagal memperbarui password.", "error");
       } finally {

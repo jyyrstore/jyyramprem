@@ -1,7 +1,6 @@
-const CACHE_NAME='jyy-r-amprem-app-v3';
+const CACHE_NAME='jyy-r-amprem-app-v4';
 const APP_SHELL=[
-  '/app-intro.html',
-  '/home.html',
+  '/',
   '/manifest.webmanifest',
   "/assets/Foto/Jyy'R_PROFIL.png",
   '/assets/Icon/Download-App.png',
@@ -42,7 +41,7 @@ self.addEventListener('fetch',(event)=>{
   // Navigation stays network-first so updated HTML is always preferred.
   if(request.mode==='navigate'){
     event.respondWith(
-      fetch(request).catch(()=>caches.match('/app-intro.html'))
+      fetch(request).catch(()=>caches.match('/'))
     );
     return;
   }

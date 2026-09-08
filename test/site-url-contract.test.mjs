@@ -23,8 +23,8 @@ function collectTextFiles(dir) {
   return out;
 }
 
-test("canonical website link is valid and fully qualified", () => {
-  const html = fs.readFileSync(path.join(root, "public/app.html"), "utf8");
+test("canonical website URL contract is preserved in the single entry point", () => {
+  const html = fs.readFileSync(path.join(root, "public/index.html"), "utf8");
   assert.match(html, new RegExp(`href=["']${canonical.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}["']`));
 });
 

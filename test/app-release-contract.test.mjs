@@ -6,9 +6,9 @@ import { inspectApk } from '../lib/apk-manifest.js';
 
 const root = new URL('../', import.meta.url);
 const server = fs.readFileSync(new URL('server.js', root), 'utf8');
-const app = fs.readFileSync(new URL('public/app.html', root), 'utf8');
-const owner = fs.readFileSync(new URL('public/html/owner.html', root), 'utf8');
-const appIntro = fs.readFileSync(new URL('public/html/app-intro.html', root), 'utf8');
+const index = fs.readFileSync(new URL('public/index.html', root), 'utf8');
+const app = fs.readFileSync(new URL('public/js/app.js', root), 'utf8');
+const owner = index;
 const ownerJs = fs.readFileSync(new URL('public/js/owner.js', root), 'utf8');
 const notifyJs = fs.readFileSync(new URL('public/js/notifications.js', root), 'utf8');
 const apkMetaJs = fs.readFileSync(new URL('public/js/apk-metadata.js', root), 'utf8');
@@ -68,7 +68,8 @@ test('PWA root assets are available from the public static root and explicit rou
   const serviceWorker = new URL('public/service-worker.js', root);
   assert.equal(fs.existsSync(manifest), true);
   assert.equal(fs.existsSync(serviceWorker), true);
-  assert.match(fs.readFileSync(manifest, 'utf8'), /\"start_url\"\s*:\s*\"\/app-intro\.html\"/);
+  assert.match(fs.readFileSync(manifest, 'utf8'), /\"start_url\"\s*:\s*\"\/\"/);
+  assert.match(fs.readFileSync(manifest, 'utf8'), /\"id\"\s*:\s*\"\/\"/);
   assert.match(fs.readFileSync(serviceWorker, 'utf8'), /self\.addEventListener\('fetch'/);
 
   assert.match(server, /app\.get\("\/manifest\.webmanifest",[\s\S]*sendFile\("manifest\.webmanifest", \{ root: path\.join\(__dirname, "public"\) \}\)/);
@@ -94,14 +95,14 @@ test('APK metadata is read from the real bundled APK', () => {
 
 test('owner CREATE metadata is automatic and release defaults are fixed', () => {
   assert.match(owner, /Version.*Otomatis dari APK/);
-  assert.match(owner, /Version Code.*Otomatis dari APK/);
+  assert.match(owner, /Version\s+Code[\s\S]*Otomatis dari APK/);
   assert.match(owner, /Package Name/);
   assert.match(owner, /Minimum SDK/);
   assert.match(owner, /Target SDK/);
-  assert.match(owner, /Minimum Version.*Otomatis dari stable release paling awal/);
-  assert.match(owner, /option value="stable">Stable/);
-  assert.match(owner, /option value="published">Published/);
-  assert.match(owner, /releaseMandatory.*disabled/);
+  assert.match(owner, /Minimum Version[\s\S]*Otomatis dari stable release paling awal/);
+  assert.match(owner, /option[\s\S]*value="stable"[\s\S]*Stable/);
+  assert.match(owner, /option[\s\S]*value="published"[\s\S]*Published/);
+  assert.match(owner, /releaseMandatory[\s\S]*disabled/);
   assert.match(ownerJs, /state\.appReleaseEditorMode === "edit"/);
   assert.match(ownerJs, /state\.appReleaseEditorMode !== "edit"/);
   assert.match(ownerJs, /automaticMinimumVersion/);
@@ -121,7 +122,10 @@ test('notification layer deduplicates identical notices and guards close', () =>
   assert.match(notifyJs, /if \(closed\) return/);
 });
 
-test('home navigation targets the App Center', () => { assert.match(nav, /window\.location\.href = '\/app\.html'/); });
+test('home navigation targets the App Center through the canonical view manager', () => {
+  assert.match(nav, /JYYRApp\?\.navigate\("app"\)/);
+  assert.doesNotMatch(nav, /window\.location\.href\s*=\s*['"]\/app\.html['"]/);
+});
 test('owner release history exposes edit controls and APK metadata fields', () => {
   assert.match(server, /app\.patch\("\/api\/owner\/app-releases\/:id"/);
   assert.match(server, /requireAuth, ownerMemberMutationLimiter, requireOwner/);
@@ -145,8 +149,8 @@ test('release source package does not require a bundled APK artifact', () => {
   assert.match(readme, /APK binaries are not bundled in this source package/);
 });
 
-test('APK intro uses the configured app icon asset', () => {
-  assert.match(appIntro, /\/assets\/Foto\/app_icon\.png/);
+test('App Center preserves the configured app icon asset', () => {
+  assert.match(app, /\/assets\/Foto\/app_icon\.png/);
 });
 
 test('browser APK metadata reader is loaded before owner logic', () => {

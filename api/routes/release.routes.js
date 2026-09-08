@@ -30,8 +30,6 @@ export function registerReleaseRoutes(app, deps) {
     requireOwner
   } = deps;
 
-  app.get("/app", (_req, res) => res.redirect(302, "/app.html"));
-
   app.get("/api/app/latest", async (req, res) => {
     try {
       const channel = String(req.query?.channel || "stable").trim().toLowerCase();
@@ -197,8 +195,4 @@ export function registerReleaseRoutes(app, deps) {
     }
   });
 
-  app.get("/app-intro.html", (req, res) => {
-    res.setHeader("Cache-Control", "no-store, max-age=0");
-    return res.sendFile("app-intro.html", { root: HTML_DIR });
-  });
 }

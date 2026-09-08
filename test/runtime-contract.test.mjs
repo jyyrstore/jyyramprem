@@ -77,7 +77,7 @@ test("Public help, member inbox, and auth hardening stay connected", () => {
   for (const route of [
     "/api/faq",
     "/api/help",
-    "/help.html",
+    "/",
     "/api/notifications",
     "/api/messages",
   ]) assert.ok(r.has(route), `missing route: ${route}`);

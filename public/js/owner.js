@@ -2,7 +2,7 @@
  * OWNER CONSOLE BOOTSTRAP
  *
  * Runtime implementation is intentionally split into classic-script feature
- * modules loaded by /public/html/owner.html. This file remains the stable
+ * owner feature modules are loaded by the single-entry router. This file remains the stable
  * entrypoint and preserves the legacy static inspection surface.
  *
  * FROZEN OWNER UI CONTRACT INDEX — non-executable.

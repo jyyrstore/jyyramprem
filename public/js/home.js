@@ -3,7 +3,7 @@ const $ = (s) => document.querySelector(s);
 const icon = (n) => window.icon?.(n) || "";
 
 // Keep HTML rendering safe on the Home page. This helper is intentionally
-// local because owner.js is not loaded by home.html.
+// local because owner.js is not loaded on the member Home view.
 function escapeHtml(value) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -644,7 +644,7 @@ document.addEventListener("click", async (event) => {
    The Owner action is now a fixed floating navigation button.
 ========================================================= */
 $("#ownerDashboardNav")?.addEventListener("click", () => {
-  window.location.href = "/owner";
+  window.JYYRApp?.navigate("owner");
 });
 
 
@@ -654,18 +654,18 @@ $("#ownerDashboardNav")?.addEventListener("click", () => {
 
 (async () => {
   const session = await AMAuth.getSession().catch(() => null);
-  if (!session?.access_token) { location.replace("/login.html"); return; }
+  if (!session?.access_token) { window.JYYRApp?.navigate("login"); return; }
   try {
     const { response, data } = await AMAuth.getPortalAccess();
     if (!response.ok || (data.access !== true && data.owner !== true)) {
       await AMAuth.signOut().catch(() => {});
-      location.replace("/login.html?token=required");
+      window.JYYRApp?.navigate("login", { tokenRequired: true });
       return;
     }
     loadQuota();
   } catch {
     await AMAuth.signOut().catch(() => {});
-    location.replace("/login.html?token=required");
+    window.JYYRApp?.navigate("login", { tokenRequired: true });
   }
 })();
 

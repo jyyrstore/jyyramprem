@@ -224,9 +224,9 @@ function bindAccessStatusModal(){
 
 async function load(){
   const s=await AMAuth.getSession();
-  if(!s){location.replace('/login.html');return;}
+  if(!s){window.JYYRApp?.navigate("login");return;}
   const gate=await AMAuth.getPortalAccess().catch(()=>null);
-  if(!gate?.response?.ok||(gate.data?.access!==true&&gate.data?.owner!==true)){await AMAuth.signOut().catch(()=>{});location.replace('/login.html?token=required');return}
+  if(!gate?.response?.ok||(gate.data?.access!==true&&gate.data?.owner!==true)){await AMAuth.signOut().catch(()=>{});window.JYYRApp?.navigate("login", { tokenRequired: true });return}
   const h={Authorization:`Bearer ${s.access_token}`,Accept:'application/json'};
   const [u,a]=await Promise.all([fetch('/api/usage',{headers:h,cache:'no-store'}),fetch('/api/accounts',{headers:h,cache:'no-store'})]);
   const ud=await u.json(),ad=await a.json();
@@ -259,7 +259,7 @@ statusToggle.addEventListener('click',()=>{const open=!statusMenu.hidden;statusM
 statusOptions.forEach(option=>option.addEventListener('click',()=>{setStatusFilter(option.dataset.value||'');statusMenu.hidden=true;statusToggle.setAttribute('aria-expanded','false')}));
 document.addEventListener('click',e=>{if(!statusDropdown.contains(e.target)){statusMenu.hidden=true;statusToggle.setAttribute('aria-expanded','false')}});
 document.querySelector('#search').addEventListener('input',()=>{historyPage=1;render()});
-document.querySelector('#logoutBtn').addEventListener('click',async()=>{await AMAuth.signOut();location.replace('/login.html')});
+document.querySelector('#logoutBtn').addEventListener('click',async()=>{await AMAuth.signOut();window.JYYRApp?.navigate("login")});
 document.querySelector('#refreshPage').addEventListener('click',()=>location.reload());
 bindAccessStatusModal();
 load().catch(console.error);

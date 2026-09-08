@@ -247,29 +247,22 @@ export function registerPublicRoutes(app, deps) {
     return res.sendFile("service-worker.js", { root: PUBLIC_DIR });
   });
 
-  app.get("/", sendPage("index.html"));
-
-  app.get("/index.html", sendPage("index.html"));
-
-  app.get("/login.html", sendPage("login.html"));
-
-  app.get("/home.html", sendPage("home.html"));
-
-  app.get("/dashboard.html", sendPage("dashboard.html"));
-
-  app.get("/setting.html", sendPage("setting.html"));
-
-  app.get("/reset-password.html", sendPage("reset-password.html"));
-
-  app.get("/help.html", sendPage("help.html"));
-
-  app.get("/login", sendPage("login.html"));
-
-  app.get("/reset-password", sendPage("reset-password.html"));
-
-  app.get("/owner", (_req, res) => {
-    return res.redirect(302, "/owner.html");
+  app.get("/", (_req, res) => {
+    res.setHeader("Cache-Control", "no-store, max-age=0");
+    return res.sendFile("index.html", { root: PUBLIC_DIR });
   });
 
-  app.get("/owner.html", sendPage("owner.html"));
+  const redirectLegacyFrontend = (req, res) => {
+    const query = String(req.originalUrl || "").split("?", 2)[1] || "";
+    const target = query ? `/?${query}` : "/";
+    return res.redirect(308, target);
+  };
+
+  for (const legacyPath of [
+    "/index.html", "/login.html", "/home.html", "/dashboard.html", "/setting.html",
+    "/reset-password.html", "/help.html", "/login", "/reset-password", "/owner", "/owner.html", "/app", "/app.html"
+  ]) {
+    app.get(legacyPath, redirectLegacyFrontend);
+  }
+
 }

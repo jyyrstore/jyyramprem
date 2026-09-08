@@ -99,8 +99,8 @@ function findRememberedPortalToken(session, row) {
   return String(item.token).trim().toUpperCase() || null;
 }
 
-const redirectLogin = () => location.replace("/login.html");
-const redirectHome = () => location.replace("/home.html");
+const redirectLogin = () => window.JYYRApp?.navigate("login");
+const redirectHome = () => window.JYYRApp?.navigate("home");
 
 function escapeHtml(value) {
   return String(value ?? "")

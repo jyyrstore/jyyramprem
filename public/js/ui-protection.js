@@ -9,14 +9,14 @@
   const protectedPages = new Set(["home", "dashboard", "setting"]);
   let accessCheckRunning = false;
   let watchdogTimer = null;
+  let watchdogStarted = false;
 
   function currentPage() {
     return String(document.body?.dataset?.page || '').trim().toLowerCase();
   }
 
   function redirectToTokenGate() {
-    if (/^\/login\.html(?:\?|#|$)/i.test(location.pathname + location.search + location.hash)) return;
-    window.location.replace('/login.html?token=required');
+    window.JYYRApp?.navigate("login", { tokenRequired: true });
   }
 
   async function enforcePortalAccess() {
@@ -26,14 +26,14 @@
       if (!window.AMAuth?.getSession || !window.AMAuth?.getPortalAccess) return;
       const session = await window.AMAuth.getSession();
       if (!session) {
-        window.location.replace('/login.html');
+        window.JYYRApp?.navigate("login");
         return;
       }
       const gate = await window.AMAuth.getPortalAccess();
       if (!gate?.response) return; // Network failure: do not falsely sign out.
       if (gate.response.status === 401) {
         await window.AMAuth.signOut().catch(() => {});
-        window.location.replace('/login.html');
+        window.JYYRApp?.navigate("login");
         return;
       }
       if (gate.response.status === 403) {
@@ -58,7 +58,9 @@
   }
 
   function startPortalAccessWatchdog() {
+    if (watchdogStarted) return;
     if (!protectedPages.has(currentPage())) return;
+    watchdogStarted = true;
     enforcePortalAccess();
     // The server remains authoritative; the timer is only a client-side detection aid.
     window.setTimeout(enforcePortalAccess, 30000);
@@ -93,5 +95,7 @@
     }
   }, { passive: false });
 
+  window.JYYRUIProtection = { refresh: enforcePortalAccess, start: startPortalAccessWatchdog };
+  window.JYYRUIProtection = { refresh: enforcePortalAccess, start: startPortalAccessWatchdog };
   startPortalAccessWatchdog();
 })();
