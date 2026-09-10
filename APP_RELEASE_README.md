@@ -5,7 +5,6 @@ This package adds the website-side Android release center and Owner release mana
 ## Public endpoints
 
 - `/app` → App Center
-- `/app.html` → App Center page
 - `/api/app/latest` → latest published stable release
 - `/api/app/releases` → published release history
 

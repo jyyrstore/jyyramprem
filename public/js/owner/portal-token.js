@@ -51,16 +51,16 @@ async function loadPortalTokenHistory(session) {
       // finally use the newest row as a defensive fallback when an older RPC
       // response omitted its id.
       const rememberedToken = findRememberedPortalToken(session, t);
-      const serverToken = /^[A-F0-9]{20}$/.test(String(t.token || "").trim().toUpperCase())
+      const serverToken = /^JYYR[A-F0-9]{8}$/.test(String(t.token || "").trim().toUpperCase())
         ? String(t.token).trim().toUpperCase()
         : null;
-      const generatedToken = t.id && t.id === state.generatedPortalTokenId && /^[A-F0-9]{20}$/.test(String(state.generatedPortalToken || "").trim().toUpperCase())
+      const generatedToken = t.id && t.id === state.generatedPortalTokenId && /^JYYR[A-F0-9]{8}$/.test(String(state.generatedPortalToken || "").trim().toUpperCase())
         ? String(state.generatedPortalToken).trim().toUpperCase()
         : null;
-      const newestToken = index === 0 && t.status === "active" && /^[A-F0-9]{20}$/.test(String(state.generatedPortalToken || "").trim().toUpperCase())
+      const newestToken = index === 0 && t.status === "active" && /^JYYR[A-F0-9]{8}$/.test(String(state.generatedPortalToken || "").trim().toUpperCase())
         ? String(state.generatedPortalToken).trim().toUpperCase()
         : null;
-      // Always prefer a known full 20-character token. A masked preview is
+      // Always prefer a known full 12-character token. A masked preview is
       // only a last-resort display for legacy rows that cannot be recovered.
       const tokenValue = rememberedToken || serverToken || generatedToken || newestToken || null;
       const token = escapeHtml(tokenValue || t.preview || "—");
@@ -126,8 +126,22 @@ async function loadPortalTokenDistributionStatus(session) {
     el.className = `status ${Number(data.remaining || 0) > 0 ? "success" : "error"}`;
   }
   const inventory = document.getElementById("portalTokenInventoryCount");
-  if (inventory) inventory.textContent = `Inventory belum disebar : ${Number(data.unpublishedInventory || 0)}`;
+  if (inventory) inventory.textContent = `Belum disebar ke JYY'R Token : ${Number(data.unpublishedInventory || 0)} · token tetap bisa dipakai`;
   return data;
+}
+
+function readCanonicalOwnerToken(data) {
+  const candidates = [
+    data?.token,
+    data?.latest?.token,
+    Array.isArray(data?.tokens) ? data.tokens[0]?.token : null,
+    Array.isArray(data?.tokens) ? data.tokens[data.tokens.length - 1]?.token : null,
+  ];
+  for (const value of candidates) {
+    const token = String(value || "").trim().toUpperCase();
+    if (/^JYYR[A-F0-9]{8}$/.test(token) && token.length === 12) return token;
+  }
+  return null;
 }
 
 async function generatePortalToken(session) {
@@ -140,18 +154,56 @@ async function generatePortalToken(session) {
   });
   const data = await parseJson(response);
   if (!response.ok) throw new Error(data.error || "Gagal membuat token.");
+  let generatedToken = readCanonicalOwnerToken(data);
+  let resolvedData = data;
+
+  // Recovery path for a local server process that created the DB row but did not
+  // Legacy diagnostic wording: Deploy backend terbaru JYYRXXXXXXXX when the running process is stale.
+  // expose the plaintext token in the batch response. The server resolves the
+  // newest token from its in-memory vault or token_encrypted column.
+  if (!generatedToken) {
+    try {
+      const latestResponse = await ownerRequest("/api/owner/token/latest", session);
+      const latestData = await parseJson(latestResponse);
+      if (latestResponse.ok) {
+        const latestToken = readCanonicalOwnerToken(latestData);
+        if (latestToken) {
+          generatedToken = latestToken;
+          resolvedData = { ...data, ...latestData, token: latestToken };
+        }
+      }
+    } catch (recoveryError) {
+      console.warn("[OWNER TOKEN LATEST RECOVERY FAILED]", recoveryError);
+    }
+  }
+
+  if (!generatedToken) {
+    console.error("[OWNER TOKEN CONTRACT MISMATCH]", {
+      responseStatus: response.status,
+      serverBuild: response.headers.get("X-JYYR-Token-Server-Build") || data?.serverBuild || null,
+      headerContract: response.headers.get("X-JYYR-Token-Contract") || null,
+      ok: data?.ok,
+      tokenFormat: data?.tokenFormat || null,
+      tokenLength: data?.tokenLength || null,
+      hasToken: Boolean(data?.token),
+      hasPreview: Boolean(data?.tokenPreview || data?.preview),
+    });
+    throw new Error("Server mengembalikan token yang bukan format canonical 12 karakter. Token sebenarnya sudah dibuat, tetapi plaintext JYYRXXXXXXXX tidak sampai ke frontend; pastikan proses server lokal menjalankan source token-contract-v3.");
+  }
+  const dataForUi = resolvedData;
+  dataForUi.token = generatedToken;
   const out = document.getElementById("generatedPortalToken");
-  state.generatedPortalToken = data.token || null;
-  state.generatedPortalTokenId = data.tokenId || null;
-  if (data.token && data.tokenId) rememberPortalTokenOnDevice(session, data.tokenId, data.token, data.redemptionExpiresAt);
+  state.generatedPortalToken = generatedToken;
+  state.generatedPortalTokenId = dataForUi.tokenId || null;
+  if (dataForUi.token && dataForUi.tokenId) rememberPortalTokenOnDevice(session, dataForUi.tokenId, dataForUi.token, dataForUi.redemptionExpiresAt);
   if (out) {
     out.hidden = false;
     const tokenEl = document.getElementById("generatedPortalTokenToken");
     const createdEl = document.getElementById("generatedPortalTokenCreated");
     const statusEl = document.getElementById("generatedPortalTokenStatus");
-    if (tokenEl) tokenEl.textContent = data.token ? `Token terakhir : ${data.token}` : "Token terakhir : —";
-    if (createdEl) createdEl.textContent = `Dibuat ${Number(data.createdCount || 1)} token · ${broadcastDate(data.createdAt || new Date().toISOString())}`;
-    if (statusEl) statusEl.textContent = `Inventory : BELUM DISEBAR · Redemption sampai ${broadcastDate(data.redemptionExpiresAt || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString())}`;
+    if (tokenEl) tokenEl.textContent = dataForUi.token ? `Token terakhir : ${dataForUi.token}` : "Token terakhir : —";
+    if (createdEl) createdEl.textContent = `Dibuat ${Number(dataForUi.createdCount || 1)} token · ${broadcastDate(dataForUi.createdAt || new Date().toISOString())}`;
+    if (statusEl) statusEl.textContent = `Token AKTIF · bisa dipakai langsung · Redemption sampai ${broadcastDate(dataForUi.redemptionExpiresAt || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString())}`;
   }
   state.tokenHistoryPage = 0;
   state.tokenStatusNotified = false;

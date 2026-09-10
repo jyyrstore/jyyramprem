@@ -4,7 +4,7 @@ The migration directory contains historical migrations from iterative portal-tok
 
 ## Final portal-token contract
 
-`20260904150000_canonical_single_user_token_redemption_v7.sql` is the source-package final corrective migration for the portal-token system and supersedes the earlier V4/V5/V6 portal-token semantics.
+`20260910040000_direct_redeem_owner_tokens_v1.sql` is the latest source-package corrective migration for the portal-token system. It supersedes only the publication-gate portion of the V2 ecosystem hardening while preserving the V7 single-user binding and two-clock lifetime contract.
 
 The final contract is:
 
@@ -20,4 +20,4 @@ The final contract is:
 
 ## Production note
 
-Live production was re-verified on 2026-09-04. The Supabase migration ledger currently reaches version `20260904083839`, whose recorded name corresponds to the live application of the V7 semantic contract. The supplied source package contains the semantically equivalent V7 file under `20260904150000`; do not rename already-applied migration history. The application/server contract uses the V7 canonical RPC signature and redemption/access fields; V6-era code that computes a 15/30-day token `expires_at` is incompatible with this final contract.
+Live production state was re-verified during the 2026-09-09 audit. The Supabase migration ledger contains 79 recorded migrations and currently reaches version `20260904122452` (`remove_duplicate_app_release_timestamp_trigger`). The supplied source package keeps the semantically equivalent V7 portal-token migration under `20260904150000`; do not rename or rewrite already-applied production migration history. The application/server contract uses the canonical `portal_verify_token(uuid,text)` signature and the `redemption_expires_at` / `access_expires_at` fields; older V6-era code that treats token `expires_at` as the member-access lifetime is incompatible. The source package contains ecosystem Token Center migrations plus the latest direct-redemption correction. Live production was verified separately: the required Token Center tables and the direct-redeem `portal_verify_token()` definition are present, but the migration ledger does not contain those later source timestamps. Do not replay these files blindly; reconcile migration history with the live schema before any deployment tooling attempts to push them.

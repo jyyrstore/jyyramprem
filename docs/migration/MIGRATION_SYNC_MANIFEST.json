@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-09-09",
-  "status": "CANONICAL_SINGLE_USER_TOKEN_CONTRACT_SOURCE_VERIFIED",
-  "migration_count": 45,
+  "generated_at": "2026-09-10",
+  "status": "DIRECT_REDEEM_OWNER_TOKEN_V1_SOURCE_UPDATED",
+  "migration_count": 46,
   "duplicate_timestamps": {},
   "included_migrations": [
     "20260818000000_create_am_account_portal_runtime_base_v1.sql",
@@ -48,7 +48,8 @@
     "20260904150000_canonical_single_user_token_redemption_v7.sql",
     "20260904193000_cleanup_redundant_app_release_indexes_and_fk_indexes.sql",
     "20260905000000_jyyr_ecosystem_token_center_v1.sql",
-    "20260905010000_jyyr_ecosystem_canonical_hardening_v2.sql"
+    "20260905010000_jyyr_ecosystem_canonical_hardening_v2.sql",
+    "20260910040000_direct_redeem_owner_tokens_v1.sql"
   ],
   "policy": "Source inventory only. Verify live Supabase migration history before deployment; this file is not proof of production state.",
   "production_baseline_file": "MIGRATION_PRODUCTION_BASELINE.json",

@@ -228,8 +228,8 @@ async function verifyPortalTokenFromGate() {
   const input = $("#portalTokenInput");
   const button = $("#verifyPortalTokenBtn");
   const token = String(input?.value || "").replace(/[-\s]/g, "").toUpperCase();
-  if (!/^[A-F0-9]{20}$/.test(token)) {
-    setPortalGateStatus("Token harus 20 karakter heksadesimal.", "error");
+  if (!/^JYYR[A-F0-9]{8}$/.test(token)) {
+    setPortalGateStatus("Token harus berformat JYYR + 8 karakter heksadesimal.", "error");
     input?.focus();
     return;
   }

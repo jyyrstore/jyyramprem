@@ -168,7 +168,7 @@
         <label for="portalTokenInput">
          Token Akses
         </label>
-        <input autocapitalize="characters" autocomplete="one-time-code" class="input" id="portalTokenInput" inputmode="text" maxlength="20" placeholder="20 karakter token" spellcheck="false" type="text"/>
+        <input autocapitalize="characters" autocomplete="one-time-code" class="input" id="portalTokenInput" inputmode="text" maxlength="12" placeholder="12 karakter token (JYYR + 8 heksadesimal)" spellcheck="false" type="text"/>
        </div>
        <div aria-live="polite" class="token-status" id="portalTokenStatus">
        </div>
@@ -2333,7 +2333,7 @@
             </span>
            </h2>
            <p class="section-note">
-            Token disimpan terenkripsi di database. Setiap token tersedia 24 jam untuk redemption pertama. Setelah satu user berhasil redeem, token terkunci ke user tersebut.
+            Token disimpan terenkripsi di database. Token yang baru dibuat langsung bisa dipakai tanpa harus disebarkan. Setiap token tersedia 24 jam untuk redemption pertama; publikasi hanya untuk penyebaran ke JYY'R Token.
            </p>
           </div>
           <span class="badge blue token-server-badge">
@@ -2370,7 +2370,7 @@
            </option>
           </select>
           <small>
-           Generate menambah inventory saja. Tidak mengurangi quota distribusi.
+           Generate membuat token yang langsung bisa dipakai. Sebarkan bersifat opsional dan hanya memengaruhi distribusi ke JYY'R Token.
           </small>
          </div>
          <div class="status success token-generated" hidden="" id="generatedPortalToken">
@@ -2427,7 +2427,7 @@
             </span>
            </h2>
            <p class="section-note">
-            Generate tidak sama dengan publish. Pilih Sebarkan untuk memasukkan token ke JYY'R Token. Maksimal 5 distribusi sukses per calendar day.
+            Generate langsung membuat token aktif. Pilih Sebarkan bila ingin memasukkannya ke JYY'R Token; token tetap bisa dipakai walau belum disebar atau setelah disembunyikan. Maksimal 5 distribusi sukses per calendar day.
            </p>
           </div>
           <button aria-label="Refresh token history" class="round-btn token-history-refresh" id="refreshPortalTokenHistory" title="Refresh" type="button">

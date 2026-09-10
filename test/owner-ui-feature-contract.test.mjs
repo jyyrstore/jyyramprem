@@ -53,6 +53,8 @@ test('owner can revoke any available or assigned portal token', () => {
 
 test('owner portal token result and history usage labels follow the final UI contract', () => {
   assert.match(html, /Buat Token\.\.\./);
+  assert.match(html, /id=["']portalTokenInput["'][^>]*maxlength=["']12["']/);
+  assert.match(html, /placeholder=["']12 karakter token \(JYYR \+ 8 heksadesimal\)["']/);
   for (const id of ['generatedPortalTokenToken','generatedPortalTokenCreated','generatedPortalTokenStatus']) {
     assert.match(html, new RegExp(`id=["']${id}["']`));
   }

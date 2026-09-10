@@ -7,6 +7,8 @@ const {
   normalizePortalToken,
   hashPortalToken,
   generatePortalToken,
+  isCanonicalPortalToken,
+  PORTAL_TOKEN_LENGTH,
   normalizePortalTokenDuration,
   getPortalTokenDurationLabel,
   getPortalTokenLifetime,
@@ -23,6 +25,26 @@ const {
   parsePositiveInt,
   isUuid
 } = runtime;
+
+const PORTAL_TOKEN_CONTRACT = "JYYRXXXXXXXX";
+const PORTAL_TOKEN_SERVER_BUILD = "20260910-token-contract-v3";
+
+function assertCanonicalOwnerToken(token, context = "Portal token") {
+  const normalized = normalizePortalToken(token);
+  if (normalized.length !== PORTAL_TOKEN_LENGTH || !isCanonicalPortalToken(normalized)) {
+    const error = new Error(`${context} bukan token canonical ${PORTAL_TOKEN_LENGTH} karakter.`);
+    error.code = "PORTAL_TOKEN_CANONICAL_INVALID";
+    error.status = 500;
+    throw error;
+  }
+  return normalized;
+}
+
+function setPortalTokenContractHeaders(res) {
+  res.setHeader("X-JYYR-Token-Contract", PORTAL_TOKEN_CONTRACT);
+  res.setHeader("X-JYYR-Token-Server-Build", PORTAL_TOKEN_SERVER_BUILD);
+  res.setHeader("Cache-Control", "no-store, max-age=0");
+}
 
 export function registerPortalTokenRoutes(app, deps) {
   const {
@@ -83,13 +105,12 @@ export function registerPortalTokenRoutes(app, deps) {
   app.post("/api/access/verify", requireAuth, portalTokenVerifyLimiter, async (req, res) => {
     try {
       const token = normalizePortalToken(req.body?.token);
-      if (!/^[A-F0-9]{20}$/.test(token)) return res.status(400).json({ ok: false, valid: false, error: "Format token tidak valid." });
+      if (!/^JYYR[A-F0-9]{8}$/.test(token)) return res.status(400).json({ ok: false, valid: false, error: "Format token tidak valid. Gunakan JYYR + 8 karakter heksadesimal." });
 
       const { data, error } = await db.rpc("portal_verify_token", { p_user_id: req.user.id, p_token_hash: hashPortalToken(token) });
       if (error) {
         const message = String(error.message || "");
         if (/already used|revoked|expired/i.test(message)) return res.status(409).json({ ok: false, valid: false, code: "TOKEN_UNAVAILABLE", error: /expired/i.test(message) ? "Token sudah kedaluwarsa." : "Token sudah digunakan atau dicabut." });
-        if (/not available/i.test(message)) return res.status(409).json({ ok: false, valid: false, code: "TOKEN_NOT_PUBLISHED", error: "Token belum dipublikasikan." });
         if (/invalid/i.test(message)) return res.status(401).json({ ok: false, valid: false, error: "Token salah atau tidak valid." });
         return res.status(500).json({ ok: false, valid: false, error: "Gagal memverifikasi token." });
       }
@@ -191,6 +212,7 @@ export function registerPortalTokenRoutes(app, deps) {
   });
 
   app.post("/api/owner/token/generate", requireAuth, ownerMemberMutationLimiter, requireOwner, async (req, res) => {
+    setPortalTokenContractHeaders(res);
     try {
       const durationMode = normalizePortalTokenDuration(req.body?.duration_mode || req.body?.durationMode);
       if (!durationMode) {
@@ -201,7 +223,7 @@ export function registerPortalTokenRoutes(app, deps) {
         });
       }
 
-      const token = generatePortalToken();
+      const token = assertCanonicalOwnerToken(generatePortalToken(), "Generated portal token");
       const tokenHash = hashPortalToken(token);
       const tokenPreview = `${token.slice(0, 4)}••••${token.slice(-4)}`;
       const tokenEncrypted = encryptPortalToken(token);
@@ -242,7 +264,10 @@ export function registerPortalTokenRoutes(app, deps) {
       return res.status(201).json({
         ok: true,
         owner: true,
-        token,
+        serverBuild: PORTAL_TOKEN_SERVER_BUILD,
+        token: assertCanonicalOwnerToken(token, "Response token"),
+        tokenFormat: PORTAL_TOKEN_CONTRACT,
+        tokenLength: PORTAL_TOKEN_LENGTH,
         tokenId: data.id,
         createdAt: persisted.created_at,
         redemptionExpiresAt: persisted.redemption_expires_at,
@@ -259,6 +284,7 @@ export function registerPortalTokenRoutes(app, deps) {
 
 
   app.post("/api/owner/token/generate-batch", requireAuth, ownerMemberMutationLimiter, requireOwner, async (req, res) => {
+    setPortalTokenContractHeaders(res);
     try {
       const quantity = Number(req.body?.quantity ?? 1);
       const durationMode = normalizePortalTokenDuration(req.body?.duration_mode || req.body?.durationMode);
@@ -269,7 +295,7 @@ export function registerPortalTokenRoutes(app, deps) {
       let created = 0;
       let latest = null;
       for (let i = 0; i < quantity; i += 1) {
-        const token = generatePortalToken();
+        const token = assertCanonicalOwnerToken(generatePortalToken(), "Generated portal token");
         const tokenHash = hashPortalToken(token);
         const tokenPreview = `${token.slice(0, 4)}••••${token.slice(-4)}`;
         const tokenEncrypted = encryptPortalToken(token);
@@ -285,10 +311,59 @@ export function registerPortalTokenRoutes(app, deps) {
         latest = { token, tokenId: data?.id || null, createdAt: data?.created_at || null, redemptionExpiresAt: data?.redemption_expires_at || null, durationMode: data?.duration_mode || durationMode };
       }
       if (latest?.tokenId && latest?.token) rememberRecentOwnerPortalToken(req.user.id, latest.tokenId, latest.token, latest.redemptionExpiresAt);
-      return res.status(201).json({ ok: true, createdCount: created, ...latest });
+      if (!latest?.token) throw new Error("Batch tidak menghasilkan token canonical.");
+      latest.token = assertCanonicalOwnerToken(latest.token, "Response token");
+      const responseToken = latest.token;
+      const responseLatest = { ...latest, token: responseToken };
+      return res.status(201).json({
+        ok: true,
+        owner: true,
+        serverBuild: PORTAL_TOKEN_SERVER_BUILD,
+        tokenFormat: PORTAL_TOKEN_CONTRACT,
+        tokenLength: PORTAL_TOKEN_LENGTH,
+        token: responseToken,
+        tokenId: responseLatest.tokenId,
+        createdAt: responseLatest.createdAt,
+        redemptionExpiresAt: responseLatest.redemptionExpiresAt,
+        accessExpiresAt: null,
+        durationMode: responseLatest.durationMode,
+        latest: responseLatest,
+        tokens: [responseLatest],
+      });
     } catch (error) {
       console.error("[OWNER TOKEN BATCH GENERATE ERROR]", { code: error?.code || null, message: error?.message || "Unknown error" });
       return res.status(500).json({ ok: false, error: "Gagal membuat token." });
+    }
+  });
+
+  app.get("/api/owner/token/latest", requireAuth, ownerReadLimiter, requireOwner, async (req, res) => {
+    setPortalTokenContractHeaders(res);
+    try {
+      const { data: row, error } = await db.from("portal_access_tokens")
+        .select("id, token_encrypted, duration_mode, status, created_at, redemption_expires_at, published_at")
+        .eq("created_by", req.user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      if (!row?.id) return res.status(404).json({ ok: false, owner: true, serverBuild: PORTAL_TOKEN_SERVER_BUILD, error: "Belum ada token." });
+
+      let token = getRecentOwnerPortalToken(req.user.id, row.id);
+      if (!token && row.token_encrypted) {
+        try { token = decryptPortalToken(row.token_encrypted); } catch {}
+      }
+      if (!token) return res.status(409).json({ ok: false, owner: true, serverBuild: PORTAL_TOKEN_SERVER_BUILD, code: "TOKEN_PLAINTEXT_UNAVAILABLE", error: "Token terbaru tersimpan tetapi plaintext tidak dapat dipulihkan." });
+      token = assertCanonicalOwnerToken(token, "Latest token");
+      rememberRecentOwnerPortalToken(req.user.id, row.id, token, row.redemption_expires_at);
+      return res.json({
+        ok: true, owner: true, serverBuild: PORTAL_TOKEN_SERVER_BUILD,
+        token, tokenFormat: PORTAL_TOKEN_CONTRACT, tokenLength: PORTAL_TOKEN_LENGTH,
+        tokenId: row.id, createdAt: row.created_at, redemptionExpiresAt: row.redemption_expires_at,
+        durationMode: row.duration_mode, status: row.status, publishedAt: row.published_at || null,
+      });
+    } catch (error) {
+      console.error("[OWNER TOKEN LATEST ERROR]", { code: error?.code || null, message: error?.message || "Unknown error" });
+      return res.status(500).json({ ok: false, owner: true, serverBuild: PORTAL_TOKEN_SERVER_BUILD, error: "Gagal membaca token terbaru." });
     }
   });
 
@@ -303,12 +378,14 @@ export function registerPortalTokenRoutes(app, deps) {
       // encrypted field and cause a token to disappear after refresh.
       const { data: rows, error } = await db.from("portal_access_tokens")
         .select("id, token_preview, token_encrypted, duration_mode, status, created_at, redemption_expires_at, published_at, published_by, assigned_user_id, used_at, revoked_at")
+        .eq("created_by", req.user.id)
         .order("created_at", { ascending: false })
         .range(offset, offset + limit - 1);
       if (error) throw error;
 
       const { count: total, error: countError } = await db.from("portal_access_tokens")
-        .select("id", { count: "exact", head: true });
+        .select("id", { count: "exact", head: true })
+        .eq("created_by", req.user.id);
       if (countError) throw countError;
 
       // The token history UI needs the email of the member who actually used a
@@ -365,13 +442,15 @@ export function registerPortalTokenRoutes(app, deps) {
         const encrypted = String(row.token_encrypted || "").trim();
         if (encrypted) {
           try {
-            safeRow.token = decryptPortalToken(encrypted);
+            safeRow.token = assertCanonicalOwnerToken(decryptPortalToken(encrypted), "History token");
           } catch (decryptError) {
             console.error("[OWNER TOKEN HISTORY DECRYPT ERROR]", { code: decryptError?.code || null, tokenId: row.id });
-            safeRow.token = getRecentOwnerPortalToken(req.user.id, row.id);
+            const remembered = getRecentOwnerPortalToken(req.user.id, row.id);
+            safeRow.token = remembered && isCanonicalPortalToken(remembered) ? remembered : null;
           }
         } else {
-          safeRow.token = getRecentOwnerPortalToken(req.user.id, row.id);
+          const remembered = getRecentOwnerPortalToken(req.user.id, row.id);
+          safeRow.token = remembered && isCanonicalPortalToken(remembered) ? remembered : null;
         }
         // Owner history intentionally does not expose plaintext to the browser
         // when it cannot be recovered. The preview remains available as a safe

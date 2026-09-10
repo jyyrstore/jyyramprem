@@ -51,6 +51,18 @@ const routeText = routeFiles.map((file) => read(`api/routes/${file}`)).join("\n"
 const directSupabaseDataApi = /supabase\s*\.\s*(?:from|rpc|storage\s*\.\s*from)\s*\(/s.test(routeText);
 const packageUnchangedByLock = exists("package-lock.json") && exists("package.json");
 
+const tokenContractFiles = [
+  "lib/runtime/app-runtime.js",
+  "api/routes/portal-token.routes.js",
+  "public/js/auth.js",
+  "public/js/owner/portal-token.js",
+  "public/index.html",
+];
+const tokenContractFailures = tokenContractFiles.filter((relative) => {
+  const text = fs.readFileSync(path.join(root, relative), "utf8");
+  return /JYYR[A-F0-9]\{16\}/.test(text) || /randomBytes\(8\).*JYYR|JYYR.*randomBytes\(8\)/s.test(text);
+});
+
 const result = {
   ok: missing.length === 0 && serverLines <= 500 && !directSupabaseDataApi,
   checks: {
@@ -72,7 +84,11 @@ const result = {
     ownerFeatureFiles,
   },
   missing,
+  portalTokenContract: {
+    exactLength: 12,
+    legacy20CharExecutablePathFindings: tokenContractFailures,
+  },
 };
 
 console.log(JSON.stringify(result, null, 2));
-if (!result.ok) process.exitCode = 1;
+if (!result.ok || tokenContractFailures.length) process.exitCode = 1;

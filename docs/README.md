@@ -41,7 +41,7 @@ Required for the web server:
 - `PROVIDER_API_KEY`
 - `PROVIDER_TOKEN_ENCRYPTION_KEY` for verification/apply-premium flows (minimum 32 characters)
 
-The complete configuration surface, including optional limits, provider paths, diagnostics, and the broadcast worker variables, is documented in the repository `.env.example`.
+The web-server configuration surface is documented in `.env.example`. Optional diagnostics use `PROVIDER_DIAGNOSTIC_SECRET` and portal contact uses `OWNER_WHATSAPP_URL`. The scheduled broadcast worker additionally uses `APP_URL` and `OWNER_ACCESS_TOKEN`; those worker-only values are intentionally not required by the web server.
 
 ## Verification
 
@@ -60,7 +60,7 @@ The portal does not create or authenticate a separate mailbox. The browser uses 
 
 ## Portal token access
 
-The canonical portal access contract is `1 TOKEN = 1 USER`: a newly generated token is unassigned and redeemable by any member for 24 hours. The first successful redemption locks the token to that user. Access then lasts 15 days, 30 days, or permanently according to the token mode. Logout preserves active access; expired access is denied by the backend and the protected-page watchdog redirects the member to the token gate. See `PORTAL_TOKEN_LIFETIME_ACCESS_CONTRACT.md`.
+The canonical portal access contract is `1 TOKEN = 1 USER`: a newly generated Owner token is unassigned and immediately redeemable by any eligible member for 24 hours, without requiring publication first. Publication to JYY'R Token is optional distribution/visibility; an unpublished token remains directly usable, and published tokens remain usable. The first successful redemption locks the token to that user. Access then lasts 15 days, 30 days, or permanently according to the token mode. Logout preserves active access; expired access is denied by the backend and the protected-page watchdog redirects the member to the token gate. Owner-generated tokens use the canonical `JYYR` + 8-character uppercase hexadecimal format (12 characters total). See `PORTAL_TOKEN_LIFETIME_ACCESS_CONTRACT.md`.
 
 ## Migration note
 
