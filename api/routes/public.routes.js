@@ -7,7 +7,6 @@ const {
   SUPABASE_URL,
   SUPABASE_PUBLISHABLE_KEY,
   getPortalTokenDurationLabel,
-  portalTokenPublicLimiter,
   decryptPortalToken,
   timingSafeSecretEquals,
   parsePositiveInt,
@@ -17,6 +16,7 @@ const {
 export function registerPublicRoutes(app, deps) {
   const {
     ownerBroadcastReadLimiter,
+    portalTokenPublicLimiter,
   } = deps;
 
 

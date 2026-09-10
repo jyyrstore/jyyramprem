@@ -344,7 +344,6 @@ body[data-page="owner"] .health-grid span {
 
 #generatedPortalToken { word-break: break-all; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 
-
 /* Portal token history */
 body[data-page="owner"] .token-generated { display:flex; align-items:center; gap:10px; justify-content:space-between; }
 body[data-page="owner"] .token-generated #generatedPortalTokenText { min-width:0; flex:1; }
@@ -826,7 +825,6 @@ body[data-page="owner"] .footer { margin-top:20px; color:#6f6a76; }
   }
 }
 
-
 /* ============================================================
    OWNER SPACING + LEFT-ALIGNED ICONOGRAPHY
    - Creates a deliberate breathing gap between tabs and content.
@@ -908,19 +906,6 @@ body[data-page="owner"] #ownerTokenStatus {
 body[data-page="owner"] #token #generatePortalToken,
 body[data-page="owner"] #token #revokePortalToken {
   min-height: 42px;
-  border-radius: 11px;
-}
-body[data-page="owner"] #token .token-generated {
-  margin-top: 10px;
-  border-radius: 12px;
-  padding: 11px 12px;
-  background: linear-gradient(180deg, rgba(18,57,36,.98), rgba(14,40,28,.98));
-  border: 1px solid rgba(75,229,138,.28);
-  box-shadow: 0 10px 28px rgba(0,0,0,.14), 0 0 24px rgba(69,210,131,.07);
-}
-body[data-page="owner"] #token .token-copy {
-  width: 38px;
-  height: 38px;
   border-radius: 11px;
 }
 
@@ -1022,42 +1007,7 @@ body[data-page="owner"] #token .token-server-badge {
 }
 
 /* Generated token is intentionally above Generate/Revoke. */
-body[data-page="owner"] #token .token-generated {
-  margin:16px 0 12px;
-  display:grid;
-  grid-template-columns:42px minmax(0,1fr);
-  align-items:center;
-  gap:12px;
-  min-height:68px;
-  padding:11px 12px;
-  border-radius:13px;
-}
-body[data-page="owner"] #token .token-generated-copy {
-  min-width:0;
-  display:grid;
-  gap:4px;
-}
-body[data-page="owner"] #token .token-generated-copy strong {
-  color:#dff8e8;
-  font-size:13px;
-  font-weight:850;
-  letter-spacing:.01em;
-}
-body[data-page="owner"] #token .token-generated-copy span {
-  min-width:0;
-  color:#bff8d0;
-  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
-  font-size:13px;
-  line-height:1.55;
-  font-weight:850;
-  letter-spacing:.045em;
-  overflow-wrap:anywhere;
-}
-body[data-page="owner"] #token .token-copy {
-  width:42px;
-  height:42px;
-  border-radius:12px;
-}
+
 body[data-page="owner"] #token .token-actions {
   width:min(100%, 420px);
   margin:14px auto 0;
@@ -1331,7 +1281,6 @@ body[data-page="owner"] #app-release .badge {
   }
 }
 
-
 /* Portal token generation mode selector */
 .token-mode-selector {
   display: flex;
@@ -1345,4 +1294,1232 @@ body[data-page="owner"] #app-release .badge {
 .token-mode-btn.active {
   font-weight: 800;
   box-shadow: 0 0 0 2px currentColor inset;
+}
+
+/* ============================================================
+   JYY'R AMPREM — TOKEN CARD CLEAN / NEON AURORA
+   ============================================================ */
+
+/* ============================================================
+   MAIN TOKEN CONTENT
+   ============================================================ */
+
+/* Baris token + copy */
+body[data-page="owner"] #token .token-main-row{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+
+  width:100%;
+  min-width:0;
+}
+
+/* Area teks */
+body[data-page="owner"] #token .token-main-text{
+  min-width:0;
+  flex:1;
+}
+
+/* ============================================================
+   TOKEN ACCESS
+   ============================================================ */
+
+body[data-page="owner"] #token #generatedPortalTokenToken{
+  position:relative;
+
+  display:block;
+  width:100%;
+
+  margin:0;
+  padding-left:16px;
+  padding-right:4px;
+
+  color:#f3edf9;
+
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    Consolas,
+    monospace;
+
+  font-size:12px;
+  font-weight:900;
+  line-height:1.55;
+  letter-spacing:.035em;
+
+  overflow-wrap:anywhere;
+}
+
+/* Titik ungu */
+body[data-page="owner"] #token #generatedPortalTokenToken::before{
+  content:"";
+
+  position:absolute;
+
+  left:0;
+  top:.78em;
+
+  width:6px;
+  height:6px;
+
+  border-radius:50%;
+
+  background:#a86cff;
+
+  box-shadow:
+    0 0 7px rgba(168,108,255,.95),
+    0 0 15px rgba(168,108,255,.45);
+
+  transform:translateY(-50%);
+}
+
+/* ============================================================
+   CREATED + STATUS
+   ============================================================ */
+
+body[data-page="owner"] #token #generatedPortalTokenCreated,
+body[data-page="owner"] #token #generatedPortalTokenStatus{
+  position:relative;
+
+  display:block;
+
+  margin-top:7px;
+
+  padding-left:16px;
+  padding-right:4px;
+
+  color:#c4becb;
+
+  font-size:11px;
+  font-weight:700;
+  line-height:1.65;
+
+  overflow-wrap:anywhere;
+}
+
+/* Bullet created/status */
+body[data-page="owner"] #token #generatedPortalTokenCreated::before,
+body[data-page="owner"] #token #generatedPortalTokenStatus::before{
+  content:"";
+
+  position:absolute;
+
+  left:0;
+  top:.78em;
+
+  width:6px;
+  height:6px;
+
+  border-radius:50%;
+
+  background:#a86cff;
+
+  box-shadow:
+    0 0 7px rgba(168,108,255,.95),
+    0 0 15px rgba(168,108,255,.45);
+
+  transform:translateY(-50%);
+}
+
+/* Active status */
+body[data-page="owner"] #token #generatedPortalTokenStatus{
+  color:#d0c9d8;
+}
+
+/* ============================================================
+   COPY BUTTON — FIXED TO TOP RIGHT
+   ============================================================ */
+
+/* ============================================================
+   "BUAT TOKEN..." — HANYA PRE-GENERATE STATE
+   ============================================================ */
+
+body[data-page="owner"] #token #generatedPortalTokenTitle{
+  color:#d4c4e8;
+
+  font-size:11px;
+  font-weight:850;
+
+  letter-spacing:.06em;
+  text-transform:uppercase;
+}
+
+body[data-page="owner"] #token #generatedPortalTokenTitle[hidden]{
+  display:none !important;
+}
+
+/* ============================================================
+   MOBILE
+   ============================================================ */
+
+@media (max-width:560px){
+
+  
+
+/* ============================================================
+   JYY'R TOKEN UI — CLEAN NEON AURORA
+   HARD FIX
+   ============================================================ */
+
+.token-result-fixed,
+.token-generated.token-result-fixed,
+#generatedPortalToken.token-result-fixed {
+  position: relative !important;
+
+  width: 100% !important;
+  box-sizing: border-box !important;
+
+  padding: 17px 64px 17px 18px !important;
+
+  margin: 16px 0 !important;
+
+  border-radius: 16px !important;
+
+  /* GRAPHITE — TIDAK HIJAU */
+  background:
+    radial-gradient(
+      420px 180px at 0% 0%,
+      rgba(155, 91, 255, .12),
+      transparent 68%
+    ),
+    radial-gradient(
+      300px 160px at 100% 0%,
+      rgba(77, 210, 255, .055),
+      transparent 72%
+    ),
+    linear-gradient(
+      145deg,
+      #242329 0%,
+      #1c1c22 48%,
+      #15151a 100%
+    ) !important;
+
+  border: 1px solid rgba(168, 105, 255, .30) !important;
+
+  box-shadow:
+    0 14px 34px rgba(0,0,0,.30),
+    0 0 32px rgba(153, 87, 255, .08),
+    inset 0 1px 0 rgba(255,255,255,.025) !important;
+
+  overflow: hidden !important;
+}
+
+/* ============================================================
+   SEMUA TOMBOL COPY LAMA
+   ============================================================ */
+
+#copyGeneratedPortalToken,
+.copyGeneratedPortalToken,
+.token-copy,
+.token-copy-fixed {
+  position: absolute !important;
+
+  top: 16px !important;
+  right: 16px !important;
+  left: auto !important;
+  bottom: auto !important;
+
+  width: 42px !important;
+  height: 42px !important;
+  min-width: 42px !important;
+  min-height: 42px !important;
+
+  margin: 0 !important;
+  padding: 0 !important;
+
+  display: grid !important;
+  place-items: center !important;
+
+  transform: none !important;
+
+  border-radius: 12px !important;
+
+  border: 1px solid rgba(181, 128, 255, .34) !important;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(72, 50, 96, .90),
+      rgba(29, 27, 35, .98)
+    ) !important;
+
+  color: #e4d2ff !important;
+
+  box-shadow:
+    0 0 18px rgba(158, 89, 255, .13),
+    inset 0 0 0 1px rgba(255,255,255,.025) !important;
+
+  z-index: 50 !important;
+}
+
+/* ============================================================
+   TOKEN CONTENT
+   ============================================================ */
+
+#generatedPortalTokenToken,
+#generatedPortalTokenCreated,
+#generatedPortalTokenStatus {
+  position: relative !important;
+
+  display: block !important;
+
+  width: 100% !important;
+
+  box-sizing: border-box !important;
+
+  margin: 0 !important;
+
+  padding-left: 16px !important;
+  padding-right: 0 !important;
+
+  text-align: left !important;
+
+  overflow-wrap: anywhere !important;
+  word-break: normal !important;
+}
+
+/* Token utama */
+#generatedPortalTokenToken {
+  color: #f3edf9 !important;
+
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    Consolas,
+    monospace !important;
+
+  font-size: 12px !important;
+  font-weight: 900 !important;
+
+  line-height: 1.55 !important;
+  letter-spacing: .025em !important;
+}
+
+/* Dibuat */
+#generatedPortalTokenCreated {
+  margin-top: 8px !important;
+
+  color: #c5bfce !important;
+
+  font-size: 11px !important;
+  font-weight: 700 !important;
+
+  line-height: 1.65 !important;
+}
+
+/* Status */
+#generatedPortalTokenStatus {
+  margin-top: 7px !important;
+
+  color: #d0c8da !important;
+
+  font-size: 11px !important;
+  font-weight: 700 !important;
+
+  line-height: 1.65 !important;
+}
+
+/* ============================================================
+   BULLET UNGU NEON
+   ============================================================ */
+
+#generatedPortalTokenToken::before,
+#generatedPortalTokenCreated::before,
+#generatedPortalTokenStatus::before {
+  content: "" !important;
+
+  position: absolute !important;
+
+  left: 0 !important;
+  top: .78em !important;
+
+  width: 6px !important;
+  height: 6px !important;
+
+  border-radius: 50% !important;
+
+  background: #a86cff !important;
+
+  box-shadow:
+    0 0 7px rgba(168,108,255,.95),
+    0 0 15px rgba(168,108,255,.48) !important;
+
+  transform: translateY(-50%) !important;
+}
+
+/* ============================================================
+   "BUAT TOKEN..." HANYA PRE-GENERATE
+   ============================================================ */
+
+#generatedPortalTokenTitle[hidden],
+#generatedPortalTokenTitle[style*="display: none"] {
+  display: none !important;
+}
+
+/* ============================================================
+   MOBILE
+   ============================================================ */
+
+@media (max-width: 600px) {
+
+  .token-result-fixed,
+  .token-generated.token-result-fixed,
+  #generatedPortalToken.token-result-fixed {
+    padding:
+      15px
+      58px
+      15px
+      15px !important;
+
+    border-radius: 15px !important;
+  }
+
+  #copyGeneratedPortalToken,
+  .copyGeneratedPortalToken,
+  .token-copy,
+  .token-copy-fixed {
+    top: 14px !important;
+    right: 14px !important;
+
+    width: 40px !important;
+    height: 40px !important;
+
+    min-width: 40px !important;
+    min-height: 40px !important;
+
+    border-radius: 11px !important;
+  }
+
+  #generatedPortalTokenToken {
+    font-size: 10.8px !important;
+    line-height: 1.65 !important;
+  }
+
+  #generatedPortalTokenCreated,
+  #generatedPortalTokenStatus {
+    font-size: 10.3px !important;
+    line-height: 1.72 !important;
+  }
+
+  #generatedPortalTokenToken::before,
+  #generatedPortalTokenCreated::before,
+  #generatedPortalTokenStatus::before {
+    width: 5px !important;
+    height: 5px !important;
+  }
+}
+
+/* JYY'R AMPREM — FINAL TOKEN CARD FIX v2 */
+
+/*
+  ==========================================================
+  TOKEN RESULT CARD
+  ==========================================================
+*/
+
+body[data-page="owner"] #token .token-generated,
+#generatedPortalToken{
+  position:relative !important;
+
+  display:block !important;
+
+  width:100% !important;
+  min-width:0 !important;
+  min-height:0 !important;
+  height:auto !important;
+
+  box-sizing:border-box !important;
+
+  margin:10px 0 8px !important;
+
+  padding:11px 13px !important;
+
+  border-radius:11px !important;
+
+  overflow:hidden !important;
+}
+
+/*
+  ==========================================================
+  PRE-GENERATE
+  "Buat Token..."
+  Tidak ada bullet dan tidak memaksa tinggi card.
+  ==========================================================
+*/
+
+/*
+  Tidak ada bullet pada state awal.
+*/
+#generatedPortalTokenTitle::before,
+#generatedPortalToken .token-generated-copy > strong::before{
+  display:none !important;
+  content:none !important;
+}
+
+/*
+  ==========================================================
+  HASIL TOKEN
+  ==========================================================
+*/
+
+#generatedPortalTokenToken,
+#generatedPortalTokenCreated,
+#generatedPortalTokenStatus{
+  position:relative !important;
+
+  display:block !important;
+
+  width:100% !important;
+  min-width:0 !important;
+
+  box-sizing:border-box !important;
+
+  margin:2px 0 !important;
+
+  padding:0 42px 0 15px !important;
+
+  font-size:13.5px !important;
+  line-height:1.45 !important;
+
+  white-space:normal !important;
+  overflow-wrap:anywhere !important;
+}
+
+/*
+  Token utama sedikit lebih kuat.
+*/
+#generatedPortalTokenToken{
+  font-size:14.5px !important;
+  font-weight:600 !important;
+}
+
+/*
+  ==========================================================
+  BULLET UNGU
+  HANYA muncul ketika result card tidak hidden.
+  ==========================================================
+*/
+
+#generatedPortalTokenToken::before,
+#generatedPortalTokenCreated::before,
+#generatedPortalTokenStatus::before{
+  display:none !important;
+  content:none !important;
+}
+
+#generatedPortalToken:not([hidden])
+  #generatedPortalTokenToken::before,
+#generatedPortalToken:not([hidden])
+  #generatedPortalTokenCreated::before,
+#generatedPortalToken:not([hidden])
+  #generatedPortalTokenStatus::before{
+  display:block !important;
+
+  content:"" !important;
+
+  position:absolute !important;
+
+  left:0 !important;
+  top:.72em !important;
+
+  width:5px !important;
+  height:5px !important;
+
+  border-radius:50% !important;
+
+  background:#a86cff !important;
+
+  box-shadow:
+    0 0 6px rgba(168,108,255,.95),
+    0 0 12px rgba(168,108,255,.45) !important;
+
+  transform:translateY(-50%) !important;
+}
+
+/*
+  ==========================================================
+  COPY BUTTON
+  Kanan atas — kecil — bulat 50%
+  ==========================================================
+*/
+
+/*
+  Pastikan layout lama tidak lagi membuat
+  tombol copy menjadi kolom kiri.
+*/
+
+/*
+  ==========================================================
+  MOBILE
+  ==========================================================
+*/
+
+@media (max-width:600px){
+
+  body[data-page="owner"] #token .token-generated,
+  #generatedPortalToken{
+    margin:8px 0 6px !important;
+    padding:10px 11px !important;
+
+    border-radius:10px !important;
+  }
+
+  
+
+  #generatedPortalTokenToken,
+  #generatedPortalTokenCreated,
+  #generatedPortalTokenStatus{
+    padding-right:38px !important;
+
+    font-size:12.5px !important;
+    line-height:1.4 !important;
+  }
+
+  #generatedPortalTokenToken{
+    font-size:13.5px !important;
+  }
+
+  
+
+  #generatedPortalToken #copyGeneratedPortalToken svg{
+    width:12px !important;
+    height:12px !important;
+  }
+}
+
+/*
+  BEFORE GENERATE
+  Tombol Salin benar-benar HILANG.
+*/
+body[data-page="owner"] #token #copyGeneratedPortalToken,
+#generatedPortalToken #copyGeneratedPortalToken{
+  display:none !important;
+  visibility:hidden !important;
+  opacity:0 !important;
+  pointer-events:none !important;
+}
+
+/*
+  AFTER GENERATE
+  Tombol Salin muncul di pojok kanan atas card.
+*/
+body[data-page="owner"] #token #generatedPortalToken:not([hidden])
+  #copyGeneratedPortalToken,
+#generatedPortalToken:not([hidden])
+  #copyGeneratedPortalToken{
+
+  display:inline-flex !important;
+  visibility:visible !important;
+  opacity:1 !important;
+  pointer-events:auto !important;
+
+  position:absolute !important;
+
+  top:9px !important;
+  right:9px !important;
+  left:auto !important;
+
+  z-index:20 !important;
+
+  width:30px !important;
+  height:30px !important;
+
+  min-width:30px !important;
+  min-height:30px !important;
+
+  max-width:30px !important;
+  max-height:30px !important;
+
+  padding:0 !important;
+  margin:0 !important;
+
+  border-radius:50% !important;
+
+  align-items:center !important;
+  justify-content:center !important;
+
+  box-sizing:border-box !important;
+
+  transform:none !important;
+}
+
+/*
+  Icon copy tetap kecil.
+*/
+#generatedPortalToken:not([hidden])
+  #copyGeneratedPortalToken svg{
+  width:13px !important;
+  height:13px !important;
+}
+
+/*
+  Beri ruang pada baris token agar tidak bertabrakan
+  dengan tombol di pojok kanan atas.
+*/
+#generatedPortalToken:not([hidden])
+  #generatedPortalTokenToken{
+  padding-right:42px !important;
+}
+
+/*
+  Mobile
+*/
+@media (max-width:600px){
+
+  #generatedPortalToken:not([hidden])
+    #copyGeneratedPortalToken{
+
+    top:8px !important;
+    right:8px !important;
+
+    width:28px !important;
+    height:28px !important;
+
+    min-width:28px !important;
+    min-height:28px !important;
+  }
+
+  #generatedPortalToken:not([hidden])
+    #generatedPortalToken #copyGeneratedPortalToken svg{
+    width:12px !important;
+    height:12px !important;
+  }
+
+  #generatedPortalToken:not([hidden])
+    #generatedPortalTokenToken{
+    padding-right:38px !important;
+  }
+}
+
+/* Benar-benar dekat pojok kanan atas card */
+body[data-page="owner"] #token #generatedPortalToken:not([hidden])
+  #copyGeneratedPortalToken,
+#generatedPortalToken:not([hidden])
+  #copyGeneratedPortalToken{
+
+  top:3px !important;
+  right:3px !important;
+  left:auto !important;
+
+  transform:none !important;
+
+  position:absolute !important;
+}
+
+/* Mobile */
+@media (max-width:600px){
+
+  body[data-page="owner"] #token #generatedPortalToken:not([hidden])
+    #copyGeneratedPortalToken,
+  #generatedPortalToken:not([hidden])
+    #copyGeneratedPortalToken{
+
+    top:3px !important;
+    right:3px !important;
+  }
+}
+
+/*
+  BENAR-BENAR POJOK KANAN ATAS CARD
+*/
+#generatedPortalToken:not([hidden]) #copyGeneratedPortalToken{
+  position:absolute !important;
+
+  top:0 !important;
+  right:0 !important;
+
+  bottom:auto !important;
+  left:auto !important;
+
+  margin:0 !important;
+  transform:none !important;
+
+  z-index:100 !important;
+}
+
+/* Mobile tetap 0px */
+@media (max-width:600px){
+  #generatedPortalToken:not([hidden]) #copyGeneratedPortalToken{
+    top:0 !important;
+    right:0 !important;
+  }
+}
+
+/*
+  Parent card menjadi reference point tombol absolute.
+*/
+body[data-page="owner"] #token .token-generated,
+#generatedPortalToken{
+  position:relative !important;
+
+  display:block !important;
+
+  grid-template-columns:none !important;
+  grid-template-rows:none !important;
+}
+
+/*
+  Tombol Salin:
+  - hilang sebelum generate
+  - muncul setelah #generatedPortalToken tidak hidden
+  - benar-benar di sudut kanan atas card
+*/
+#generatedPortalToken #copyGeneratedPortalToken{
+  display:none !important;
+}
+
+#generatedPortalToken:not([hidden]) #copyGeneratedPortalToken{
+  display:flex !important;
+
+  position:absolute !important;
+
+  top:0 !important;
+  right:0 !important;
+  left:auto !important;
+  bottom:auto !important;
+
+  width:30px !important;
+  height:30px !important;
+
+  min-width:30px !important;
+  min-height:30px !important;
+
+  padding:0 !important;
+  margin:0 !important;
+
+  border-radius:50% !important;
+
+  align-items:center !important;
+  justify-content:center !important;
+
+  transform:none !important;
+
+  z-index:50 !important;
+}
+
+/*
+  Isi card tidak lagi menyediakan kolom khusus untuk tombol.
+*/
+
+/*
+  Beri ruang hanya pada baris token aktif supaya
+  teks tidak bertabrakan dengan tombol.
+*/
+#generatedPortalToken:not([hidden]) #generatedPortalTokenToken{
+  padding-right:40px !important;
+}
+
+@media (max-width:600px){
+  #generatedPortalToken:not([hidden]) #copyGeneratedPortalToken{
+    top:0 !important;
+    right:0 !important;
+
+    width:28px !important;
+    height:28px !important;
+
+    min-width:28px !important;
+    min-height:28px !important;
+  }
+
+  #generatedPortalToken:not([hidden]) #generatedPortalTokenToken{
+    padding-right:36px !important;
+  }
+}
+
+/* JYY'R AMPREM — TOKEN COPY CORNER FINAL */
+
+/* Card sebagai titik referensi tombol */
+body[data-page="owner"] #token .token-generated,
+#generatedPortalToken{
+  position:relative !important;
+  display:block !important;
+
+  grid-template-columns:none !important;
+  grid-template-rows:none !important;
+}
+
+/* SEBELUM GENERATE: tombol benar-benar hilang */
+#generatedPortalToken #copyGeneratedPortalToken{
+  display:none !important;
+  visibility:hidden !important;
+  opacity:0 !important;
+  pointer-events:none !important;
+}
+
+/* SETELAH GENERATE: tombol benar-benar di pojok card */
+#generatedPortalToken:not([hidden]) #copyGeneratedPortalToken{
+  display:flex !important;
+  visibility:visible !important;
+  opacity:1 !important;
+  pointer-events:auto !important;
+
+  position:absolute !important;
+
+  top:0 !important;
+  right:0 !important;
+  bottom:auto !important;
+  left:auto !important;
+
+  width:30px !important;
+  height:30px !important;
+
+  min-width:30px !important;
+  min-height:30px !important;
+
+  max-width:30px !important;
+  max-height:30px !important;
+
+  margin:0 !important;
+  padding:0 !important;
+
+  border-radius:50% !important;
+
+  transform:none !important;
+
+  z-index:999 !important;
+
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+}
+
+/* Isi card tidak lagi membuat kolom kiri */
+#generatedPortalToken .token-generated-copy{
+  width:100% !important;
+  min-width:0 !important;
+
+  margin:0 !important;
+  padding:0 !important;
+
+  grid-column:auto !important;
+}
+
+/* Ruang teks agar tidak bertabrakan dengan tombol */
+#generatedPortalToken:not([hidden]) #generatedPortalTokenToken{
+  padding-right:38px !important;
+}
+
+/* Mobile */
+@media (max-width:600px){
+  #generatedPortalToken:not([hidden]) #copyGeneratedPortalToken{
+    top:0 !important;
+    right:0 !important;
+
+    width:28px !important;
+    height:28px !important;
+
+    min-width:28px !important;
+    min-height:28px !important;
+  }
+
+  #generatedPortalToken:not([hidden]) #generatedPortalTokenToken{
+    padding-right:35px !important;
+  }
+}
+
+/* JYY'R AMPREM — BUAT TOKEN CENTER FIX */
+
+#generatedPortalTokenTitle,
+#generatedPortalToken .token-generated-copy > strong{
+  font-weight:700 !important;
+  transform:translateY(3px) !important;
+}
+
+/* JYY'R AMPREM — FINAL TOKEN UI */
+
+body[data-page="owner"] #token .token-generated{
+  position:relative;
+  display:block;
+  width:100%;
+  box-sizing:border-box;
+  min-height:0;
+  margin:10px 0 8px;
+  padding:11px 13px;
+  border-radius:11px;
+}
+
+body[data-page="owner"] #token .token-generated-copy{
+  width:100%;
+  min-width:0;
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+}
+
+body[data-page="owner"] #token .token-generated-copy strong{
+  display:block;
+  margin:0;
+  padding:0;
+  font-size:15px;
+  line-height:1.4;
+  font-weight:700;
+}
+
+body[data-page="owner"] #token .token-generated-copy span{
+  display:block;
+  min-width:0;
+  margin:2px 0;
+  padding:0 38px 0 15px;
+  box-sizing:border-box;
+  font-size:13.5px;
+  line-height:1.45;
+  overflow-wrap:anywhere;
+}
+
+body[data-page="owner"] #token .token-copy{
+  display:none;
+}
+
+body[data-page="owner"] #token .token-generated:not([hidden]) .token-copy{
+  display:flex;
+
+  position:absolute;
+  top:0;
+  right:0;
+  left:auto;
+  bottom:auto;
+
+  width:30px;
+  height:30px;
+  min-width:30px;
+  min-height:30px;
+
+  margin:0;
+  padding:0;
+
+  border-radius:50%;
+
+  align-items:center;
+  justify-content:center;
+
+  z-index:20;
+}
+
+body[data-page="owner"] #token .token-copy svg{
+  width:13px;
+  height:13px;
+}
+
+body[data-page="owner"] #token .token-generated-copy span::before{
+  content:"";
+  position:absolute;
+  left:0;
+}
+
+body[data-page="owner"] #token .token-generated:not([hidden])
+  .token-generated-copy span{
+  position:relative;
+}
+
+body[data-page="owner"] #token .token-generated:not([hidden])
+  .token-generated-copy span::before{
+  width:5px;
+  height:5px;
+  top:.72em;
+  border-radius:50%;
+  background:#a86cff;
+  box-shadow:
+    0 0 6px rgba(168,108,255,.95),
+    0 0 12px rgba(168,108,255,.45);
+  transform:translateY(-50%);
+}
+
+@media (max-width:560px){
+  body[data-page="owner"] #token .token-generated{
+    margin:8px 0 6px;
+    padding:10px 11px;
+    border-radius:10px;
+  }
+
+  body[data-page="owner"] #token .token-generated-copy strong{
+    font-size:14px;
+  }
+
+  body[data-page="owner"] #token .token-generated-copy span{
+    padding-right:35px;
+    font-size:12.5px;
+  }
+
+  body[data-page="owner"] #token .token-generated:not([hidden]) .token-copy{
+    top:0;
+    right:0;
+    width:28px;
+    height:28px;
+    min-width:28px;
+    min-height:28px;
+  }
+
+  body[data-page="owner"] #token .token-copy svg{
+    width:12px;
+    height:12px;
+  }
+}
+
+/* JYY'R AMPREM — COPY ICON VISIBILITY FINAL */
+
+/*
+  Tombol copy mengikuti visibility card.
+  Jangan paksa :not([hidden]) karena state card
+  dapat dikontrol oleh JavaScript.
+*/
+
+/* Default: tombol tidak terlihat saat card tersembunyi */
+body[data-page="owner"] #token .token-generated[hidden] #copyGeneratedPortalToken{
+  display:none !important;
+  visibility:hidden !important;
+  opacity:0 !important;
+  pointer-events:none !important;
+}
+
+/* Saat card tampil: tombol aktif */
+body[data-page="owner"] #token .token-generated #copyGeneratedPortalToken{
+  position:absolute !important;
+
+  top:0 !important;
+  right:0 !important;
+  left:auto !important;
+  bottom:auto !important;
+
+  width:30px !important;
+  height:30px !important;
+
+  min-width:30px !important;
+  min-height:30px !important;
+
+  margin:0 !important;
+  padding:0 !important;
+
+  border-radius:50% !important;
+
+  visibility:visible !important;
+  opacity:1 !important;
+  pointer-events:auto !important;
+
+  z-index:999 !important;
+
+  display:grid !important;
+  place-items:center !important;
+
+  transform:none !important;
+}
+
+/* Icon */
+body[data-page="owner"] #token .token-generated #copyTokenIcon{
+  width:13px !important;
+  height:13px !important;
+
+  display:block !important;
+}
+
+/* Mobile */
+@media (max-width:560px){
+  body[data-page="owner"] #token .token-generated #copyGeneratedPortalToken{
+    top:0 !important;
+    right:0 !important;
+
+    width:28px !important;
+    height:28px !important;
+
+    min-width:28px !important;
+    min-height:28px !important;
+  }
+
+  body[data-page="owner"] #token .token-generated #copyTokenIcon{
+    width:12px !important;
+    height:12px !important;
+  }
+}
+
+/* JYY'R AMPREM — COPY ICON ASSET FINAL */
+
+/* Icon Salin menggunakan IMG.asset-ui-icon, bukan SVG */
+body[data-page="owner"] #token #copyGeneratedPortalToken .asset-ui-icon,
+#generatedPortalToken #copyGeneratedPortalToken .asset-ui-icon{
+  display:block !important;
+
+  width:15px !important;
+  height:15px !important;
+
+  min-width:15px !important;
+  min-height:15px !important;
+
+  max-width:15px !important;
+  max-height:15px !important;
+
+  object-fit:contain !important;
+
+  opacity:1 !important;
+  visibility:visible !important;
+
+  flex:0 0 15px !important;
+}
+
+/* Span pembungkus icon */
+body[data-page="owner"] #token #copyTokenIcon,
+#generatedPortalToken #copyTokenIcon{
+  display:flex !important;
+
+  width:15px !important;
+  height:15px !important;
+
+  min-width:15px !important;
+  min-height:15px !important;
+
+  align-items:center !important;
+  justify-content:center !important;
+
+  opacity:1 !important;
+  visibility:visible !important;
+}
+
+/* Tombol tetap bulat dan di pojok kanan atas */
+body[data-page="owner"] #token .token-generated #copyGeneratedPortalToken{
+  position:absolute !important;
+
+  top:0 !important;
+  right:0 !important;
+  left:auto !important;
+  bottom:auto !important;
+
+  width:30px !important;
+  height:30px !important;
+
+  min-width:30px !important;
+  min-height:30px !important;
+
+  padding:0 !important;
+  margin:0 !important;
+
+  border-radius:50% !important;
+
+  display:grid !important;
+  place-items:center !important;
+
+  z-index:999 !important;
+}
+
+/* Mobile */
+@media (max-width:560px){
+  body[data-page="owner"] #token .token-generated #copyGeneratedPortalToken{
+    top:0 !important;
+    right:0 !important;
+
+    width:28px !important;
+    height:28px !important;
+
+    min-width:28px !important;
+    min-height:28px !important;
+  }
+
+  body[data-page="owner"] #token #copyGeneratedPortalToken .asset-ui-icon{
+    width:13px !important;
+    height:13px !important;
+    min-width:13px !important;
+    min-height:13px !important;
+  }
 }

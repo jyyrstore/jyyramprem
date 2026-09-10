@@ -1,4 +1,4 @@
-import crypto from "node:crypto";
+import * as crypto from "node:crypto";
 import runtime from "../../lib/runtime/app-runtime.js";
 
 const {

@@ -1,201 +1,412 @@
-# FULL PROJECT AUDIT — 2026-09-10
+# Jyy'R Amprem — Full Project Audit & Stabilization Report
 
-## PROJECT STATUS
+**Audit date:** 2026-09-10  
+**Scope:** Entire uploaded archive from repository root: structure, source, frontend, backend, API routing, authentication, configuration, dependency manifests, Supabase migrations/integration contracts, tests, deployment config, assets, documentation, dead-code/file candidates, duplication, and cross-component references.
 
-**Overall Status: Needs Attention**
+## 1. PROJECT STATUS
 
-The application source is structurally consistent and the complete local regression suite passes, but production/database state has two operational/security items that are outside safe source-only cleanup: migration-ledger drift and Supabase leaked-password protection being disabled.
+**Overall Status: NEEDS EXTERNAL VERIFICATION — source tree is clean/stable after targeted fixes, but live Supabase/provider/Vercel runtime cannot be proven from the uploaded archive alone.**
 
-### Verification matrix
-
-| Area | Status | Evidence |
+| Area | Result | Evidence / limitation |
 |---|---|---|
-| Build | PASS (no dedicated build script) | `package.json` has no build step; all JS/MJS syntax checks pass |
-| Tests | PASS | `npm test`: 131/131 tests passed |
-| Architecture contract | PASS | `node scripts/verify-architecture.mjs` passed |
-| Runtime contract | PASS (local config not live) | `node scripts/verify-runtime.mjs` passed; local `.env` absent |
-| Frontend ↔ Backend route references | PASS | static import/path checks pass; contract tests pass |
-| Database schema presence | PASS | live Supabase queried successfully |
-| Token RPC security | PASS | canonical token RPCs are `SECURITY DEFINER`, execute granted to `service_role` only |
-| Token runtime semantics | PASS | live `portal_verify_token(uuid,text)` matches direct-redemption contract |
-| Deployment state | NEEDS ATTENTION | live migration ledger stops at `20260904122452` while later source changes are present in the live schema |
-| Security | NEEDS ATTENTION | Supabase advisor reports leaked-password protection disabled |
+| Build | **NOT VERIFIED** | No `build` script exists. Source syntax and architecture checks pass. A dependency install was attempted, but `npm ci` timed out in the sandbox, so a true runtime import/build was not completed. |
+| Tests | **PASS** | Full `npm test` passed after the cleanup changes. |
+| Integration | **PASS STATICALLY / EXTERNAL PENDING** | Frontend references resolve to active API contracts; external provider delivery/auth flows require real environment credentials and runtime verification. |
+| Database | **PASS ON SOURCE CONTRACT / LIVE PENDING** | 26 public application tables are represented in migrations and runtime RPC references are accounted for; live schema/migration ledger cannot be re-queried without configured Supabase credentials. |
+| Frontend ↔ Backend | **PASS STATICALLY** | Single-entry SPA routing, API paths, auth gate, token contract, and route composition checks pass. |
+| Security | **PASS ON INSPECTED CODE PATHS / EXTERNAL PENDING** | Server-side owner/member authorization, RLS-oriented migrations, secret separation, rate limiting, provider diagnostics, and token handling were inspected. Dashboard-only settings cannot be verified from source. |
+| Deployment | **READY BASELINE / REDEPLOY + RUNTIME CHECK REQUIRED** | `vercel.json` and Node runtime contract are coherent; this archive was not deployed during the audit. |
 
-## FILE STRUCTURE
+## 2. REPOSITORY INVENTORY
 
-- Source package files before audit: **228**
-- Source package files after audit: **229**
-- Files added: **1** — `docs/reports/FULL_PROJECT_AUDIT_2026-09-10.md`
-- Files modified: **3** — `APP_RELEASE_README.md`, `docs/README.md`, `docs/migration/MIGRATION_CANONICAL_ORDER.md`
-- Files removed: **0**
-- Generated/build/cache/backup artifacts found in the source archive: none requiring removal.
+### Files
 
-The source tree was inventoried from root through API, middleware, runtime, frontend JS/CSS/assets, scripts, tests, Supabase migrations, and documentation.
+- **Files before cleanup:** 251
+- **Files after cleanup:** 232
+- **Files removed:** 19 files total: 18 verified backup/rollback artifacts plus 1 duplicate audit-report alias
+- **Files added:** 0
+- **Files modified:** 5 project files (`server.js`, migration metadata, removal register, cleanup contract test) plus this audit report
 
-## DEAD CODE / DEAD FILE
+### Top-level distribution after cleanup
 
-### Confirmed
-No source file was removed during this audit solely from name-based suspicion. Static dependency analysis found no broken local import target or broken local HTML reference.
+| Area | Count |
+|---|---:|
+| `public/` | 94 |
+| `supabase/` | 47 |
+| `docs/` | 29 |
+| `test/` | 24 |
+| `lib/` | 16 |
+| `api/` | 12 |
+| `scripts/` | 3 |
+| `tests/` | 1 |
+| root files | 7 |
 
-`public/assets/Foto/app_icon_2.png` has no textual reference, but it was **kept** because image assets may be used by external consumers or deployment configuration that is not represented by repository text.
+### Hidden/config files inspected
 
-### Kept for safety
-The live database contains both `claim_initial_owner()` and `claim_initial_owner(uuid)`. The application source calls the parameterized form. The zero-argument overload is therefore a **likely legacy overload**, but it was not removed because external/manual callers cannot be proven absent from repository-only evidence.
+- `.env.example`
+- `.gitignore`
+- `package.json`
+- `package-lock.json`
+- `vercel.json`
 
-## DUPLICATION
+No `.env` secret file was present in the uploaded archive.
 
-No duplicate HTTP method + path definitions were found in the seven active route modules.
-
-The runtime intentionally retains middleware factory exports for historical contract tests, while `server.js` creates the canonical middleware instances used by route registration. This is not currently a runtime correctness issue and was left untouched to avoid breaking established contracts.
-
-## BROKEN CONNECTION
-
-### 1. Migration ledger → source migration set
-
-**Component**
-Live Supabase migration history
-
-**Expected dependency**
-The later Token Center/direct-redemption source migrations should have corresponding migration history entries before deployment tooling treats the source directory as replayable.
-
-**Actual dependency**
-The live database contains the Token Center tables and the latest direct-redemption `portal_verify_token()` implementation, but the migration ledger ends at `20260904122452`.
-
-**Problem**
-Schema state and migration ledger are not authoritative from the same history. Blindly replaying the source migration directory against this production database is unsafe.
-
-**Fix**
-Source documentation was corrected to flag the drift explicitly. No production migration-history row was fabricated and no destructive reconciliation was performed automatically.
-
-**Status: CONFIRMED**
-
-### 2. Legacy token ciphertext
-
-**Component**
-`portal_access_tokens.token_encrypted`
-
-**Expected dependency**
-Newly generated tokens have encrypted storage so Owner history can recover plaintext after process restart.
-
-**Actual dependency**
-13 legacy rows have no ciphertext.
-
-**Problem**
-Those legacy token values cannot be recovered from `token_encrypted` after process restart.
-
-**Mitigation/verification**
-All 13 missing-ciphertext rows are `revoked`; no active token currently suffers from this data-loss condition.
-
-**Status: CONFIRMED, non-active legacy data only**
-
-### 3. Token redemption
-
-No broken runtime connection was found. Live `portal_verify_token(uuid,text)`:
-
-- accepts an active unassigned token without requiring `published_at`;
-- enforces the 24-hour redemption window;
-- assigns exactly one user atomically under row lock;
-- computes member access from `duration_mode` (`15_days`, `30_days`, `permanent`);
-- writes the grant and preserves single-user binding.
-
-**Status: CONFIRMED HEALTHY**
-
-## TOKEN DAMAGE CHECK
-
-Live production snapshot:
-
-- Total token rows: **40**
-- Active: **1**
-- Used: **12**
-- Revoked: **27**
-- Currently redeemable: **1**
-- Missing encrypted token ciphertext: **13**, all revoked
-
-Canonical live constraints include:
-
-- unique `token_hash`
-- state/assignment consistency check
-- redemption window check
-- supported duration modes
-- FK to the creating/assigned/authenticated users
-
-Canonical token RPC privileges:
-
-- `anon`: no execute
-- `authenticated`: no execute
-- `service_role`: execute
-
-This is the desired server-side privilege boundary for the current architecture.
-
-## SECURITY
-
-Supabase security advisor findings:
-
-1. **WARN — Leaked Password Protection disabled.** This should be enabled in the Supabase Auth settings. This is an external project setting, not a safe source-code-only patch.
-2. **INFO — 19 tables with RLS enabled and no policies.** These tables are service-role/server-only in the current architecture and application access is mediated through server-side RPCs. Do not add broad policies without re-evaluating the threat model.
-
-## PERFORMANCE
-
-Supabase performance advisor reports 21 unused indexes and one multiple-permissive-policy warning on `public.app_releases`.
-
-These are **not automatically removed** because usage counters are workload-dependent and dropping indexes/policies can create regressions. Revisit after observing production query plans and workload statistics.
-
-## DOCUMENTATION FIXES
-
-1. Removed the obsolete `/app.html` claim from `APP_RELEASE_README.md`; the project is single-entry and the active App Center contract is `/app`.
-2. Clarified environment-variable responsibilities in `docs/README.md`, including worker-only variables.
-3. Updated `docs/migration/MIGRATION_CANONICAL_ORDER.md` so the direct-redeem migration is recognized as the latest source correction and the production migration-ledger drift is explicit.
-
-## VERIFICATION
-
-Executed successfully:
+## 3. ARCHITECTURE MAP
 
 ```text
-node --check on all JS/MJS files: PASS
-node scripts/verify-architecture.mjs: PASS
-node scripts/verify-runtime.mjs: PASS (local Supabase not configured)
-npm test: PASS — 131 tests, 0 failed
+public/index.html
+   ↓
+public/js/auth-client.js + public/js/router.js
+   ↓
+view-specific browser modules
+   ↓
+/api/*
+   ↓
+server.js (composition root)
+   ↓
+route modules + middleware
+   ↓
+lib/runtime/app-runtime.js
+   ↓
+Supabase repository/client + provider helpers
+   ↓
+Supabase Auth / Postgres / Storage / external provider
 ```
 
-Live Supabase verification executed successfully against project `jfjbdenqepaagxfysaar`:
+### Backend composition
 
-- public table inventory
-- migration ledger inventory
-- current token RPC definitions
-- token RPC execute privileges
-- token schema columns/constraints
-- token population/status counts
-- Supabase security advisors
-- Supabase performance advisors
+```text
+server.js
+  ├─ security headers / cache policy / static serving
+  ├─ canonical rate-limit factory
+  ├─ auth middleware
+  ├─ owner middleware
+  ├─ 7 active API route modules
+  └─ error middleware
+```
 
-No secrets, passwords, access tokens, or API keys were printed or persisted in the audit artifact.
+### Frontend composition
 
-## REMAINING ISSUES
+```text
+single public/index.html
+  ├─ login
+  ├─ home
+  ├─ dashboard
+  ├─ setting
+  ├─ owner
+  ├─ app
+  ├─ help
+  ├─ maintenance
+  └─ reset-password
+```
+
+## 4. CODE TRACE / CONNECTION AUDIT
+
+### API routing
+
+Static inventory after cleanup:
+
+- 7 active API route modules
+- 83 active route registrations across route modules
+- 83 unique method/path pairs in the active route source
+- 53 distinct runtime RPC references
+- `server.js` remains the only application composition root
+
+No confirmed duplicate active HTTP method/path pair was found.
+
+### Frontend → backend
+
+Frontend references were normalized against active route templates. No confirmed orphaned active frontend API target was found.
+
+Known endpoints without a direct browser consumer were retained when they are operational/server-to-server/compatibility surfaces, including internal webhooks, Owner claim/status routes, and some Owner moderation endpoints. They were **not** deleted solely because static browser references were absent.
+
+### Authentication
+
+Protected path remains:
+
+```text
+Bearer access token
+  ↓
+Supabase Auth getUser()
+  ↓
+server-side owner/member status checks
+  ↓
+maintenance gate / portal-access gate
+  ↓
+route handler
+  ↓
+RPC / trusted database access
+```
+
+Owner privilege is determined server-side with `isOwner(user.id)` and is not inferred from the URL path.
+
+## 5. DATABASE / SUPABASE AUDIT
+
+### Source inventory
+
+- **26 public base tables** represented by the migration source.
+- Portal token subsystem includes the canonical one-token/one-user contract, separate redemption/access clocks, owner history, publication/distribution, and ecosystem handoff tables.
+- Application RPC calls are represented by migration-defined functions in the source tree.
+- Sensitive mutations are designed around server-side RPC/service-role access.
+
+### Canonical portal-token contract verified in source
+
+```text
+Owner generates token
+  ↓
+24-hour redemption window
+  ↓
+first successful redemption atomically assigns exactly one user
+  ↓
+access lifetime = 15 days / 30 days / permanent
+```
+
+The latest source correction `20260910040000_direct_redeem_owner_tokens_v1.sql` intentionally supersedes only the publication requirement: generation/publication are separate inventory/distribution concerns, while redemption does not require `published_at`.
+
+### Migration metadata issue found and fixed
+
+The migration directory contains **46** SQL migrations, while the existing metadata still contained historical text claiming **45** source migrations. That inconsistency was corrected in:
+
+- `docs/migration/MIGRATION_SYNC_MANIFEST.json`
+- `docs/migration/MIGRATION_PRODUCTION_BASELINE.json`
+
+The production baseline remains explicitly documented as historical metadata, not proof of the current live schema.
+
+## 6. DEAD CODE
+
+### Confirmed dead code
+
+The source already contains the earlier cleanup of the private duplicate `safeNumber()` in `lib/utils/time.js`; the canonical implementation is `lib/utils/numbers.js::safeNumber()`.
+
+No new executable dead function was removed during this audit because the remaining candidates are either exported runtime helpers, browser globals intentionally shared by feature scripts, server-to-server endpoints, or compatibility APIs with uncertain external consumers.
+
+### Decision policy
+
+Static "zero import" was **not** treated as sufficient proof of dead code. Dynamic browser loading, global feature wiring, scheduled workers, server-to-server calls, and compatibility endpoints were checked before making deletion decisions.
+
+## 7. DEAD FILES / BACKUPS
+
+### Confirmed dead/duplicate files removed: 19
+
+All 18 were verified as rollback/backup artifacts located under `public/`, had no active references, and would otherwise be exposed by static serving.
+
+Removed:
+
+- `public/index.html.before-safe-rollback`
+- `public/index.html.token-ui-backup-20260910_091920`
+- `public/index.html.token-final-backup`
+- `public/index.html.token-aurora-backup`
+- `public/css/owner.css.before-safe-rollback`
+- `public/css/owner.css.token-final-backup`
+- `public/css/owner.css.token-ui-backup-20260910_091920`
+- `public/css/owner.css.bullet-state-backup`
+- `public/css/owner.css.token-aurora-backup`
+- `public/css/owner.css.final-token-backup`
+- `public/js/owner/core.js.before-safe-rollback`
+- `public/js/owner/portal-token.js.token-ui-backup-20260910_091920`
+- `public/js/owner/portal-token.js.token-aurora-backup`
+- `public/js/owner/events.js.before-safe-rollback`
+- `public/js/owner/portal-token.js.before-safe-rollback`
+- `public/js/owner/portal-token.js.token-final-backup`
+- `public/js/owner/events.js.token-ui-backup-20260910_091920`
+- `public/js/owner/core.js.token-ui-backup-20260910_091920`
+
+The final cleanup contract test now prevents rollback/backup artifacts from returning to `public/`.
+
+## 8. BROKEN CONNECTIONS
+
+### Confirmed broken route: `/app-intro.html`
+
+```text
+server.js
+  ↓
+GET /app-intro.html
+  ↓
+expected legacy page
+  ↓
+public/app-intro.html
+  ↓
+MISSING
+```
+
+There was no file target, no active frontend consumer, and the single-entry migration contracts already treat `app-intro.html` as obsolete. The dead route registration was removed.
+
+### Other candidate connections
+
+No other confirmed broken active source-to-source dependency was found during static tracing.
+
+## 9. DUPLICATION AUDIT
+
+### Exact file duplication
+
+- **Exact duplicate groups before cleanup:** 6 groups / 12 files.
+- **Exact duplicate groups after cleanup:** **0**.
+
+The duplicate groups were backup copies of active files, plus a redundant final audit-report alias; they were removed instead of being merged into runtime implementations.
+
+### Implementation duplication
+
+The rate-limit subsystem is already consolidated around `api/middleware/rate-limit.middleware.js`; route modules consume limiter instances through `deps` rather than creating independent copies.
+
+The inspected token/auth/provider helpers have a clear canonical runtime source and were not duplicated during this audit.
+
+## 10. ENVIRONMENT / CONFIGURATION
+
+### Required server-side configuration
+
+```text
+SUPABASE_URL
+SUPABASE_PUBLISHABLE_KEY
+SUPABASE_SERVICE_ROLE_KEY
+PROVIDER_BASE_URL
+PROVIDER_API_KEY
+PROVIDER_TOKEN_ENCRYPTION_KEY (required for encrypted provider-token storage paths)
+```
+
+Additional optional/operational variables include provider paths/limits, email verification settings, `CRON_SECRET`, `OWNER_WHATSAPP_URL`, `TOKEN_CENTER_URL`, and `ECOSYSTEM_HANDOFF_SECRET`.
+
+No hardcoded secret value was found in source during the secret-pattern scan.
+
+`.env.example` contains placeholders only; secret values are not included in this archive.
+
+## 11. SECURITY AUDIT
+
+### Confirmed protections in code
+
+- `X-Content-Type-Options: nosniff`
+- `X-Frame-Options: DENY`
+- strict referrer policy
+- restrictive permissions policy
+- HSTS when production is running over HTTPS
+- JSON body limit
+- per-user and endpoint-specific rate limits
+- server-side owner authorization
+- member status enforcement for suspended/banned accounts
+- portal token format validation
+- atomic token redemption via row locking and conditional assignment
+- provider-token encryption at rest
+- provider diagnostic payload sanitization
+- secret comparison via timing-safe comparison
+- server-only service-role usage
+- no provider ID token returned to browser in the activation flow
+
+### Security issues not changed due regression risk
+
+The browser stores its Supabase access/refresh session in `localStorage`. This is a known XSS blast-radius tradeoff. Migrating to an HttpOnly cookie architecture would be a significant authentication redesign and was intentionally not performed under the user's "preserve valid behavior" rule.
+
+## 12. DEPENDENCY AUDIT
+
+Current manifest is internally consistent:
+
+- Node `>=22`
+- `express` `5.2.1`
+- `express-rate-limit` `7.5.1`
+- `@supabase/supabase-js` `2.112.3`
+- `dotenv` `16.6.1`
+- `package-lock.json` matches the manifest versions
+
+A fresh dependency install was attempted in the sandbox but timed out. The partial install was removed so no generated `node_modules` tree enters the final archive.
+
+### Current external package check
+
+As of the web check on 2026-09-10:
+
+- Express `5.2.1` is still the npm `latest` tag. 
+- `@supabase/supabase-js` has newer releases (current npm page showed `2.116.0`), so the project is not at the newest SDK minor. This is treated as a **maintenance opportunity**, not a correctness fix, because upgrading it is unnecessary for the verified cleanup and introduces compatibility surface. citeturn895956search1turn895956search7
+- The currently disclosed `express-rate-limit` CVE-2026-30827 affects versions `8.0.0` through `8.2.1`; the project is pinned to `7.5.1`, so that specific advisory does **not** identify the project's current version as affected. Patched 8.x releases include `8.0.2`, `8.1.1`, `8.2.2`, and `8.3.0`. citeturn509321search0turn509321search2
+
+## 13. TEST / REGRESSION VERIFICATION
+
+### Full project test command
+
+```text
+npm test
+```
+
+**Result: PASS**
+
+All configured test groups completed successfully, including:
+
+- provider contract
+- provider diagnostic contract
+- final magic-link flow
+- quota/idempotency flow
+- browser regression contracts
+- provider delivery webhook
+- signup OTP
+- site URL
+- owner portal access
+- runtime contracts
+- owner UI contracts
+- app-release contracts
+- member status enforcement
+- single-entry SPA contracts
+- portal-token contracts
+- cleanup contracts
+- maintenance refresh contracts
+- owner button visibility
+- canonical rate-limit contracts
+
+### Additional verification
+
+- all `.js` / `.mjs` files passed `node --check`
+- `scripts/verify-runtime.mjs` → **PASS**
+- `scripts/verify-architecture.mjs` → **PASS**
+- exact duplicate scan after cleanup → **0 groups**
+- backup-pattern scan under `public/` → **0 offenders**
+
+## 14. CHANGES MADE
+
+| File | Change | Reason | Risk | Verification |
+|---|---|---|---|---|
+| `server.js` | Removed obsolete `GET /app-intro.html` registration | Route pointed to a non-existent page and conflicted with the single-entry architecture | Low | Cleanup test + full `npm test` |
+| 18 `public/*backup*` files | Removed rollback/backup artifacts | No active refs; publicly servable static files; duplicated historical implementations | Low | Reference scan + duplicate scan + cleanup test |
+| `test/cleanup-contract.test.mjs` | Added regression guards for backup artifacts and `/app-intro.html` | Prevent recurrence of verified cleanup defects | Very low | Full `npm test` |
+| `docs/migration/MIGRATION_SYNC_MANIFEST.json` | Corrected source migration count/history note to 46 | Metadata was stale versus actual directory contents | None | JSON parse + source inventory |
+| `docs/migration/MIGRATION_PRODUCTION_BASELINE.json` | Corrected source migration file count to 46 | Metadata consistency | None | JSON parse + source inventory |
+| `docs/REMOVED_FILES.txt` | Recorded all 18 removed artifacts | Keep cleanup register synchronized | None | Cleanup contract |
+| `docs/reports/FULL_PROJECT_AUDIT_2026-09-10.md` | Rewritten as canonical current audit | Previous report did not match this archive's 251-file baseline | None | Manual consistency review |
+
+## 15. REMAINING ISSUES
 
 ### CONFIRMED ISSUE
 
-- Production migration ledger drift: live schema contains later Token Center/direct-redemption state not represented by migration-history entries.
-- Supabase leaked-password protection is disabled.
-- 13 legacy revoked token rows have no encrypted plaintext recovery field.
+No additional confirmed source-level breakage was found after the cleanup pass.
 
-### POSSIBLE ISSUE
+### POSSIBLE ISSUE / MAINTENANCE
 
-- 21 reported unused indexes may be removable, but this requires workload-aware confirmation rather than static deletion.
-- The `claim_initial_owner()` zero-argument RPC overload appears legacy/unreferenced by the application source, but external callers cannot be ruled out.
+`@supabase/supabase-js` is pinned below the current npm latest. Upgrading should be handled as a separate dependency-maintenance change with a full runtime/regression pass rather than bundled into a stability cleanup. citeturn895956search7
 
 ### REQUIRES EXTERNAL VERIFICATION
 
-- Full end-to-end authenticated browser flow (register → OTP → login → token redemption → portal access) against production.
-- External provider API success/error behavior with real provider credentials.
-- Vercel production environment variable completeness and actual deployment revision.
-- Safe reconciliation of Supabase migration history with the already-present later schema objects.
+1. Fresh `npm ci` / runtime import test in a networked environment.
+2. Real Vercel deployment smoke test (`/`, `/api/health`, auth flow, Owner flow, release endpoints).
+3. Real Supabase verification of migration history versus current live schema.
+4. Real provider send → mailbox → verify → premium activation flow with production secrets.
+5. Browser/device regression on the installed PWA shell.
 
-## CONCLUSION
+## 16. FINAL AUDIT CONCLUSION
 
-At the time of this report the source project is **UNDERSTOOD and locally VERIFIED**. The portal-token source contract is now 12 characters (`JYYR` + 8 uppercase hex) and is covered by source-level regression tests. Live production state remains outside a ZIP-only verification boundary.
-## Follow-up token validation fix (2026-09-10)
+The uploaded source tree is now materially cleaner and more internally consistent without rewriting valid application logic.
 
-Historical baseline finding: the Owner token generator originally returned `JYYR` + 16 uppercase hexadecimal characters (20 characters total), while several validators expected the wrong shape. The current corrective contract is `JYYR` + 8 uppercase hexadecimal characters (12 characters total), with backend and frontend validators aligned to `^JYYR[A-F0-9]{8}$`.
+The highest-confidence cleanup actions were deliberately narrow:
 
-Current implementation uses the single canonical validation contract: `^JYYR[A-F0-9]{8}$`. The Owner input limit is 12 characters. Regression coverage verifies the 4-byte generator and the 12-character validator contract.
+```text
+verified backup artifacts
+        ↓
+remove
+        ↓
+verified orphan legacy route
+        ↓
+remove
+        ↓
+regression guards
+        ↓
+run complete test suite
+        ↓
+static architecture/reference re-audit
+        ↓
+PASS
+```
 
+No claim is made that production is fully verified until the external Supabase/provider/Vercel checks above are run in a real configured environment.

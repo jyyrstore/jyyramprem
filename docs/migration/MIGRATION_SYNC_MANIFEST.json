@@ -55,5 +55,5 @@
   "production_baseline_file": "MIGRATION_PRODUCTION_BASELINE.json",
   "production_migration_count": 79,
   "production_latest_migration": "20260904122452",
-  "note": "Source package inventory contains 45 migrations, including the ecosystem Token Center V1/V2 migrations. Production baseline remains a separate historical ledger and must be verified against live Supabase before deployment."
+  "note": "Source package inventory contains 46 migrations, including the ecosystem Token Center V1/V2 migrations. Production baseline remains a separate historical ledger and must be verified against live Supabase before deployment."
 }

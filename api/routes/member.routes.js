@@ -1,4 +1,4 @@
-import crypto from "node:crypto";
+import * as crypto from "node:crypto";
 import runtime from "../../lib/runtime/app-runtime.js";
 import { PROVIDER_APPLY_PREMIUM_PATH, PROVIDER_SEND_MAGICLINK_PATH, PROVIDER_VERIFY_ACCOUNT_PATH } from "../../lib/config/app.config.js";
 import { decodeJwtPayloadSafe, extractProviderEmail } from "../../lib/provider-contract.js";
@@ -14,7 +14,6 @@ const {
   MAGIC_LINK_DAILY_LIMIT,
   parsePositiveInt,
   isUuid,
-  generateLimiter,
   todayUTC,
   safeNumber,
   callProviderVerifyAccount,
@@ -22,20 +21,21 @@ const {
   callProviderApplyPremium,
   sanitizeProviderResponse,
   publicError,
-  confirmMagicLinkLimiter,
   normalizeIdempotencyKey,
   claimGenerationRequest,
   finalizeGenerationRequest,
   reserveProviderRequest,
   recordProviderRequestResult,
   consumeMagicLinkQuota,
-  resendMagicLinkLimiter
 } = runtime;
 
 export function registerMemberRoutes(app, deps) {
   const {
     ownerBroadcastReadLimiter,
     ownerMemberMutationLimiter,
+    generateLimiter,
+    confirmMagicLinkLimiter,
+    resendMagicLinkLimiter,
     requireAuth,
   } = deps;
 

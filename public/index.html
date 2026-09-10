@@ -2373,21 +2373,29 @@
            Generate membuat token yang langsung bisa dipakai. Sebarkan bersifat opsional dan hanya memengaruhi distribusi ke JYY'R Token.
           </small>
          </div>
-         <div class="status success token-generated" hidden="" id="generatedPortalToken">
-          <button aria-label="Salin token" class="icon-btn token-copy" id="copyGeneratedPortalToken" title="Salin token" type="button">
-           <span id="copyTokenIcon">
-           </span>
-          </button>
+         <div class="token-result-fixed status success token-generated" hidden="" id="generatedPortalToken">
+          
           <div class="token-generated-copy">
-           <strong>
-            Buat Token...
-           </strong>
-           <span id="generatedPortalTokenToken">
-           </span>
-           <span id="generatedPortalTokenCreated">
-           </span>
-           <span id="generatedPortalTokenStatus">
-           </span>
+           <div class="token-generated-main-row">
+            <div class="token-generated-title-row">
+             <strong id="generatedPortalTokenTitle">
+              Buat Token...
+             </strong>
+            </div>
+            <button
+             aria-label="Salin token"
+             class="icon-btn token-copy token-copy-fixed"
+             id="copyGeneratedPortalToken"
+             title="Salin token"
+             type="button"
+            >
+             <span id="copyTokenIcon">
+             </span>
+            </button>
+           </div>
+           <span id="generatedPortalTokenToken"></span>
+           <span id="generatedPortalTokenCreated"></span>
+           <span id="generatedPortalTokenStatus"></span>
           </div>
          </div>
          <div aria-hidden="true" class="status info" hidden="" id="ownerTokenStatus">

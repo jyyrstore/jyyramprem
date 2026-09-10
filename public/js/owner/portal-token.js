@@ -1,3 +1,13 @@
+
+/* JYYR_TOKEN_UI_HELPER */
+function __jyyrHideGeneratedTokenTitle() {
+  const el = document.getElementById("generatedPortalTokenTitle");
+  if (el) {
+    el.hidden = true;
+    el.style.display = "none";
+  }
+}
+
 async function loadPortalTokenStatus(session) {
   const response = await ownerRequest("/api/owner/token/status", session);
   const data = await parseJson(response);
@@ -198,12 +208,25 @@ async function generatePortalToken(session) {
   if (dataForUi.token && dataForUi.tokenId) rememberPortalTokenOnDevice(session, dataForUi.tokenId, dataForUi.token, dataForUi.redemptionExpiresAt);
   if (out) {
     out.hidden = false;
+
+    // "Buat Token..." hanya tampil sebagai state sebelum token berhasil dibuat.
+    // Setelah generate berhasil, title ini sengaja disembunyikan.
+    const titleEl = document.getElementById("generatedPortalTokenTitle");
+    if (titleEl) titleEl.hidden = true;
+
     const tokenEl = document.getElementById("generatedPortalTokenToken");
     const createdEl = document.getElementById("generatedPortalTokenCreated");
     const statusEl = document.getElementById("generatedPortalTokenStatus");
-    if (tokenEl) tokenEl.textContent = dataForUi.token ? `Token terakhir : ${dataForUi.token}` : "Token terakhir : —";
+    if (tokenEl) tokenEl.textContent = dataForUi.token ? `Token Access : ${dataForUi.token}` : "Token Access : —";
+    __jyyrHideGeneratedTokenTitle();
     if (createdEl) createdEl.textContent = `Dibuat ${Number(dataForUi.createdCount || 1)} token · ${broadcastDate(dataForUi.createdAt || new Date().toISOString())}`;
-    if (statusEl) statusEl.textContent = `Token AKTIF · bisa dipakai langsung · Redemption sampai ${broadcastDate(dataForUi.redemptionExpiresAt || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString())}`;
+    if (statusEl) {
+      statusEl.textContent =
+        `Token AKTIF · Redemption sampai ${broadcastDate(
+          dataForUi.redemptionExpiresAt ||
+          new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+        )}`;
+    }
   }
   state.tokenHistoryPage = 0;
   state.tokenStatusNotified = false;

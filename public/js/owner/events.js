@@ -1,3 +1,13 @@
+
+/* JYYR_TOKEN_UI_HELPER */
+function __jyyrHideGeneratedTokenTitle() {
+  const el = document.getElementById("generatedPortalTokenTitle");
+  if (el) {
+    el.hidden = true;
+    el.style.display = "none";
+  }
+}
+
 function bindEvents() {
   setupTabs();
 

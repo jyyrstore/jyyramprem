@@ -1,4 +1,4 @@
-import crypto from "node:crypto";
+import * as crypto from "node:crypto";
 import runtime from "../../lib/runtime/app-runtime.js";
 
 const {
@@ -439,18 +439,22 @@ export function registerPortalTokenRoutes(app, deps) {
           published_by: row.published_by,
           used_email: usedEmailByTokenId.get(row.id) || null,
         };
-        const encrypted = String(row.token_encrypted || "").trim();
-        if (encrypted) {
-          try {
-            safeRow.token = assertCanonicalOwnerToken(decryptPortalToken(encrypted), "History token");
-          } catch (decryptError) {
-            console.error("[OWNER TOKEN HISTORY DECRYPT ERROR]", { code: decryptError?.code || null, tokenId: row.id });
+        // Revoked tokens are no longer usable, so their plaintext is not needed
+        // for history. Avoid decrypting legacy/rekeyed ciphertext on these rows.
+        if (row.status !== "revoked") {
+          const encrypted = String(row.token_encrypted || "").trim();
+          if (encrypted) {
+            try {
+              safeRow.token = assertCanonicalOwnerToken(decryptPortalToken(encrypted), "History token");
+            } catch (decryptError) {
+              console.warn("[OWNER TOKEN HISTORY DECRYPT SKIPPED]", { code: decryptError?.code || null, tokenId: row.id });
+              const remembered = getRecentOwnerPortalToken(req.user.id, row.id);
+              safeRow.token = remembered && isCanonicalPortalToken(remembered) ? remembered : null;
+            }
+          } else {
             const remembered = getRecentOwnerPortalToken(req.user.id, row.id);
             safeRow.token = remembered && isCanonicalPortalToken(remembered) ? remembered : null;
           }
-        } else {
-          const remembered = getRecentOwnerPortalToken(req.user.id, row.id);
-          safeRow.token = remembered && isCanonicalPortalToken(remembered) ? remembered : null;
         }
         // Owner history intentionally does not expose plaintext to the browser
         // when it cannot be recovered. The preview remains available as a safe
