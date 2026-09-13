@@ -1414,6 +1414,9 @@
          </span>
          Logout
         </button>
+        <button aria-controls="deleteAccountModal" aria-haspopup="dialog" class="btn danger account-delete-btn" id="deleteAccountBtn" type="button">
+          Hapus Akun
+        </button>
        </div>
       </section>
       <div class="access-status-modal" hidden="" id="accessStatusModal">
@@ -3144,5 +3147,59 @@ Optimasi WebView" rows="7"></textarea>
   </script>
   <script src="/js/router.js">
   </script>
- </body>
+       <div class="account-delete-modal" hidden id="deleteAccountModal">
+        <div class="account-delete-backdrop" data-delete-account-close></div>
+        <section
+          aria-labelledby="deleteAccountTitle"
+          aria-modal="true"
+          class="account-delete-dialog"
+          role="dialog"
+          tabindex="-1"
+        >
+          <div class="account-delete-head">
+            <div class="account-delete-icon" aria-hidden="true">!</div>
+            <div>
+              <span class="account-delete-kicker">DANGER ZONE</span>
+              <h2 id="deleteAccountTitle">Hapus Akun</h2>
+              <p>Tindakan ini permanen dan tidak dapat dibatalkan.</p>
+            </div>
+          </div>
+
+          <div class="account-delete-warning">
+            <strong>Perhatian</strong>
+            <span>Semua akses akun akan dihentikan setelah penghapusan berhasil.</span>
+          </div>
+
+          <div class="account-delete-fields">
+            <label for="deleteAccountEmail">Masukkan email akun</label>
+            <input
+              autocomplete="email"
+              id="deleteAccountEmail"
+              inputmode="email"
+              placeholder="email akun kamu"
+              type="email"
+            >
+
+            <label for="deleteAccountPhrase">
+              Ketik <strong>HAPUS AKUN</strong>
+            </label>
+            <input
+              autocomplete="off"
+              id="deleteAccountPhrase"
+              placeholder="HAPUS AKUN"
+              type="text"
+            >
+          </div>
+
+          <p aria-live="polite" class="account-delete-status" id="deleteAccountStatus"></p>
+
+          <div class="account-delete-actions">
+            <button class="btn" id="cancelDeleteAccountBtn" type="button">Batal</button>
+            <button class="btn danger" disabled id="confirmDeleteAccountBtn" type="button">
+              Hapus Permanen
+            </button>
+          </div>
+        </section>
+      </div>
+</body>
 </html>

@@ -23,6 +23,7 @@ export function registerAuthRoutes(app, deps) {
     authResendLimiter,
     authVerifyLimiter,
     authGoogleLimiter,
+    requireAuth,
   } = deps;
 
   app.get("/api/auth/google", authGoogleLimiter, async (_req, res) => {
@@ -69,6 +70,63 @@ export function registerAuthRoutes(app, deps) {
     } catch (error) {
       console.error("[AUTH BOOTSTRAP ERROR]", { code: error?.code || null, message: error?.message || "Unknown error" });
       return res.status(Number(error.status) || 500).json({ ok: false, code: error.code || "AUTH_BOOTSTRAP_FAILED", error: "Profil akun tidak dapat disiapkan." });
+    }
+  });
+
+  app.delete("/api/auth/account", requireAuth, async (req, res) => {
+    try {
+      const currentEmail = String(req.user?.email || "").trim().toLowerCase();
+      const confirmationEmail = String(req.body?.confirmationEmail || "").trim().toLowerCase();
+
+      if (!currentEmail) {
+        return res.status(400).json({
+          ok: false,
+          code: "ACCOUNT_EMAIL_UNAVAILABLE",
+          error: "Email akun tidak tersedia.",
+        });
+      }
+
+      if (!confirmationEmail || confirmationEmail !== currentEmail) {
+        return res.status(400).json({
+          ok: false,
+          code: "ACCOUNT_DELETE_CONFIRMATION_REQUIRED",
+          error: "Konfirmasi email akun tidak cocok.",
+        });
+      }
+
+      const userId = String(req.user?.id || "").trim();
+      if (!userId) {
+        return res.status(401).json({
+          ok: false,
+          code: "AUTH_REQUIRED",
+          error: "Session tidak valid.",
+        });
+      }
+
+      const { error } = await supabase.auth.admin.deleteUser(userId, false);
+
+      if (error) {
+        console.error("[AUTH DELETE ACCOUNT ERROR]", error?.message || error);
+        return res.status(500).json({
+          ok: false,
+          code: "ACCOUNT_DELETE_FAILED",
+          error: "Akun tidak dapat dihapus saat ini.",
+        });
+      }
+
+      res.setHeader("Cache-Control", "no-store, max-age=0");
+
+      return res.status(200).json({
+        ok: true,
+        deleted: true,
+      });
+    } catch (error) {
+      console.error("[AUTH DELETE ACCOUNT EXCEPTION]", error?.message || error);
+      return res.status(500).json({
+        ok: false,
+        code: "ACCOUNT_DELETE_FAILED",
+        error: "Akun tidak dapat dihapus saat ini.",
+      });
     }
   });
 

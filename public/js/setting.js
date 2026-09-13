@@ -263,3 +263,124 @@ document.querySelector('#logoutBtn').addEventListener('click',async()=>{await AM
 document.querySelector('#refreshPage').addEventListener('click',()=>location.reload());
 bindAccessStatusModal();
 load().catch(console.error);
+
+
+/* =========================================================
+   SELF ACCOUNT DELETE
+========================================================= */
+
+const deleteAccountModal = document.querySelector("#deleteAccountModal");
+const deleteAccountBtn = document.querySelector("#deleteAccountBtn");
+const cancelDeleteAccountBtn = document.querySelector("#cancelDeleteAccountBtn");
+const confirmDeleteAccountBtn = document.querySelector("#confirmDeleteAccountBtn");
+const deleteAccountEmail = document.querySelector("#deleteAccountEmail");
+const deleteAccountPhrase = document.querySelector("#deleteAccountPhrase");
+const deleteAccountStatus = document.querySelector("#deleteAccountStatus");
+
+let deleteAccountLastFocused = null;
+
+function setDeleteAccountStatus(message = "", type = "") {
+  if (!deleteAccountStatus) return;
+  deleteAccountStatus.textContent = message;
+  deleteAccountStatus.dataset.type = type;
+}
+
+function canConfirmDeleteAccount() {
+  const email = String(deleteAccountEmail?.value || "").trim();
+  const phrase = String(deleteAccountPhrase?.value || "").trim().toUpperCase();
+
+  return email.includes("@") && phrase === "HAPUS AKUN";
+}
+
+function syncDeleteAccountButton() {
+  if (!confirmDeleteAccountBtn) return;
+  confirmDeleteAccountBtn.disabled = !canConfirmDeleteAccount();
+}
+
+function openDeleteAccountModal() {
+  if (!deleteAccountModal) return;
+
+  deleteAccountLastFocused = document.activeElement;
+
+  if (deleteAccountEmail) deleteAccountEmail.value = "";
+  if (deleteAccountPhrase) deleteAccountPhrase.value = "";
+
+  setDeleteAccountStatus("");
+  syncDeleteAccountButton();
+
+  deleteAccountModal.hidden = false;
+  document.body.classList.add("account-delete-modal-open");
+
+  requestAnimationFrame(() => deleteAccountEmail?.focus());
+}
+
+function closeDeleteAccountModal() {
+  if (!deleteAccountModal || deleteAccountModal.hidden) return;
+
+  deleteAccountModal.hidden = true;
+  document.body.classList.remove("account-delete-modal-open");
+  setDeleteAccountStatus("");
+
+  deleteAccountLastFocused?.focus?.();
+}
+
+deleteAccountBtn?.addEventListener("click", openDeleteAccountModal);
+cancelDeleteAccountBtn?.addEventListener("click", closeDeleteAccountModal);
+
+deleteAccountModal?.addEventListener("click", (event) => {
+  if (event.target.matches("[data-delete-account-close]")) {
+    closeDeleteAccountModal();
+  }
+});
+
+deleteAccountEmail?.addEventListener("input", syncDeleteAccountButton);
+deleteAccountPhrase?.addEventListener("input", syncDeleteAccountButton);
+
+document.addEventListener("keydown", (event) => {
+  if (!deleteAccountModal || deleteAccountModal.hidden) return;
+
+  if (event.key === "Escape") {
+    event.preventDefault();
+    closeDeleteAccountModal();
+  }
+});
+
+confirmDeleteAccountBtn?.addEventListener("click", async () => {
+  if (!canConfirmDeleteAccount()) return;
+
+  confirmDeleteAccountBtn.disabled = true;
+  setDeleteAccountStatus("Menghapus akun…");
+
+  try {
+    const confirmationEmail = String(deleteAccountEmail.value || "")
+      .trim()
+      .toLowerCase();
+
+    const result = await AMAuth.deleteAccount(confirmationEmail);
+
+    if (!result?.response?.ok || result?.data?.deleted !== true) {
+      throw new Error(
+        result?.data?.error || "Akun tidak dapat dihapus."
+      );
+    }
+
+    setDeleteAccountStatus(
+      "Akun berhasil dihapus.",
+      "success"
+    );
+
+    await AMAuth.signOut().catch(() => {});
+
+    setTimeout(() => {
+      window.JYYRApp?.navigate("login", { replaceUrl: true });
+    }, 250);
+  } catch (error) {
+    setDeleteAccountStatus(
+      error?.message || "Gagal menghapus akun.",
+      "error"
+    );
+
+    confirmDeleteAccountBtn.disabled = false;
+    syncDeleteAccountButton();
+  }
+});

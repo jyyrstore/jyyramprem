@@ -213,6 +213,34 @@
     } finally { writeSession(null); }
   }
 
+  async function deleteAccount(confirmationEmail) {
+    const session = await getSession();
+
+    if (!session?.access_token) {
+      throw new Error("Login diperlukan.");
+    }
+
+    const response = await fetch("/api/auth/account", {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      credentials: "same-origin",
+      cache: "no-store",
+      body: JSON.stringify({ confirmationEmail }),
+    });
+
+    let data = {};
+    try {
+      data = await response.json();
+    } catch {
+      data = {};
+    }
+
+    return { response, data };
+  }
+
   async function resetPassword(email, redirectTo) {
     return api("/recover", { method: "POST", body: JSON.stringify({ email, redirect_to: redirectTo }) });
   }
@@ -264,5 +292,5 @@
     return user;
   }
 
-  window.AMAuth = { getConfig, getSession, signIn, signInWithGoogle, consumeOAuthErrorFromUrl, signUp, resendSignupCode, verifyOtp, signOut, resetPassword, getUser, bootstrapAccount, getPortalAccess, contactOwnerForPortalToken, getTokenCenterLink, verifyPortalToken };
+  window.AMAuth = { getConfig, getSession, signIn, signInWithGoogle, consumeOAuthErrorFromUrl, signUp, resendSignupCode, verifyOtp, signOut, resetPassword, deleteAccount, getUser, bootstrapAccount, getPortalAccess, contactOwnerForPortalToken, getTokenCenterLink, verifyPortalToken };
 })();
