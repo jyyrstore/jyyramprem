@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -40,14 +41,20 @@ test("Fresh OAuth callback tokens take precedence over a stale stored session", 
   assert.ok(urlOrder >= 0, "getSession must adopt OAuth/recovery URL session before stored session");
 });
 
-test("Login UI exposes Google button only in login mode", () => {
-  assert.match(index, /id="googleSignInBtn"/);
-  assert.match(index, /class="auth-action auth-google"/);
-  assert.match(index, /class="google-mark"/);
+test("Login UI exposes Google button in login and register mode", () => {
+  const auth = readFileSync(
+    new URL("../public/js/auth.js", import.meta.url),
+    "utf8"
+  );
+
   assert.match(auth, /googleSignInBtn/);
-  assert.match(auth, /registerMode \|\| registerOtpStep/);
-  assert.match(auth, /AMAuth\.signInWithGoogle\(\)/);
-  assert.match(css, /#googleSignInBtn/);
+  assert.match(auth, /registerOtpStep/);
+  assert.match(auth, /DAFTAR DENGAN GOOGLE/);
+  assert.match(auth, /LOGIN DENGAN GOOGLE/);
+  assert.match(
+    auth,
+    /classList\.toggle\("hidden", registerOtpStep\)/
+  );
 });
 
 test("OAuth errors are sanitized before being shown", () => {

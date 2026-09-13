@@ -98,6 +98,24 @@
     }
   }
 
+  function isOAuthCallbackUrl() {
+    try {
+      const url = new URL(window.location.href);
+      const hash = new URLSearchParams((url.hash || "").replace(/^#/, ""));
+      const type = hash.get("type") || url.searchParams.get("type") || "";
+      const hasSessionTokens = Boolean(
+        (hash.get("access_token") && hash.get("refresh_token")) ||
+        (url.searchParams.get("access_token") && url.searchParams.get("refresh_token"))
+      );
+
+      // Google OAuth memakai access/refresh token seperti session Supabase.
+      // Recovery tetap ditentukan secara eksklusif oleh type=recovery.
+      return hasSessionTokens && type !== "recovery";
+    } catch {
+      return false;
+    }
+  }
+
   function updateBodyState(name) {
     document.body.dataset.page = name;
     document.body.classList.toggle("auth-page", name === "login" || name === "reset-password");
@@ -278,12 +296,22 @@
   (async () => {
     legacyContextFromUrl();
     const recovery = isRecoveryUrl();
+    const oauthCallback = isOAuthCallbackUrl();
     const session = await window.AMAuth.getSession().catch(() => null);
     const context = sessionStorage.getItem("jyyr:login_username") || sessionStorage.getItem("jyyr:selected_token_id");
+
     if (recovery) {
       await showView("reset-password", { replaceUrl: true });
       return;
     }
+
+    // Fresh Google OAuth wajib melewati Login View agar auth.js
+    // menjalankan Token Gate sebelum user diperbolehkan masuk Home.
+    if (oauthCallback && session?.access_token) {
+      await showView("login", { replaceUrl: true });
+      return;
+    }
+
     if (context && !session) {
       await showView("login", { replaceUrl: true });
       return;
@@ -292,10 +320,12 @@
     const requestedView = readViewFromUrl();
     const requestedName = requestedView || (session?.access_token ? "home" : "login");
     const maintenance = await getMaintenanceState(session);
+
     if (session?.access_token && maintenance.data?.maintenance_enabled === true && maintenance.data?.owner !== true) {
       await showView("maintenance", { replaceUrl: true });
       return;
     }
+
     await showView(requestedName, { replaceUrl: true });
   })();
 })();

@@ -80,7 +80,12 @@ function setMode(next) {
   const registerMode = mode === "register";
 
   $("#registerTab")?.classList.toggle("active", registerMode);
-  $("#googleSignInBtn")?.classList.toggle("hidden", registerMode || registerOtpStep);
+  $("#googleSignInBtn")?.classList.toggle("hidden", registerOtpStep);
+  $("#googleSignInBtn")?.querySelector(".google-label")?.replaceChildren(
+    document.createTextNode(
+      registerMode ? "DAFTAR DENGAN GOOGLE" : "LOGIN DENGAN GOOGLE"
+    )
+  );
 
   $("#modeTitle").textContent = registerMode ? "Daftar" : "Masuk";
 
@@ -148,11 +153,18 @@ $("#registerTab").onclick = () => {
 };
 
 $("#googleSignInBtn")?.addEventListener("click", () => {
-  if (mode !== "login" || registerOtpStep) return;
+  const isRegisterMode = mode === "register";
+  if (registerOtpStep || (mode !== "login" && !isRegisterMode)) return;
+
   const button = $("#googleSignInBtn");
   button.disabled = true;
   button.setAttribute("aria-busy", "true");
-  button.querySelector(".google-label")?.replaceChildren(document.createTextNode("MEMBUKA GOOGLE…"));
+  button.querySelector(".google-label")?.replaceChildren(
+    document.createTextNode(
+      isRegisterMode ? "MEMBUKA GOOGLE UNTUK DAFTAR…" : "MEMBUKA GOOGLE…"
+    )
+  );
+
   AMAuth.signInWithGoogle();
 });
 
