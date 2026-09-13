@@ -8,6 +8,7 @@ const auth = fs.readFileSync(new URL("../public/js/auth.js", import.meta.url), "
 const index = fs.readFileSync(new URL("../public/index.html", import.meta.url), "utf8");
 const css = fs.readFileSync(new URL("../public/css/login.css", import.meta.url), "utf8");
 const routes = fs.readFileSync(new URL("../api/routes/auth.routes.js", import.meta.url), "utf8");
+const runtime = fs.readFileSync(new URL("../lib/runtime/app-runtime.js", import.meta.url), "utf8");
 const clientModule = fs.readFileSync(new URL("../lib/supabase/client.js", import.meta.url), "utf8");
 const limiter = fs.readFileSync(new URL("../api/middleware/rate-limit.middleware.js", import.meta.url), "utf8");
 const router = fs.readFileSync(new URL("../public/js/router.js", import.meta.url), "utf8");
@@ -27,6 +28,17 @@ test("Google OAuth uses the client-only implicit session flow without changing t
   assert.match(clientModule, /export const supabaseOAuth=createClient/);
   assert.match(clientModule, /flowType:\"implicit\"/);
   assert.match(clientModule, /persistSession:false/);
+});
+
+test("Google OAuth callbacks bootstrap the account profile before portal access is checked", () => {
+  assert.match(client, /bootstrapAccount/);
+  assert.match(auth, /AMAuth\.bootstrapAccount\(\)/);
+  assert.match(auth, /bootstrap\?\.response\?\.ok/);
+  assert.match(routes, /app\.post\("\/api\/auth\/bootstrap", deps\.requireAuth/);
+  assert.match(routes, /ensureMemberProfile\(req\.user\)/);
+  assert.match(runtime, /async function ensureMemberProfile\(user\)/);
+  assert.match(runtime, /member_profiles/);
+  assert.match(runtime, /user_metadata/);
 });
 
 test("Frontend starts Google OAuth through the first-party server route", () => {

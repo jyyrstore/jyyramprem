@@ -1,6 +1,6 @@
 # Google Login — Jyy'R Amprem
 
-This project now supports Google OAuth as an additional **login method**. The existing email/password + email-code registration flow remains unchanged. No database migration is required for this feature.
+This project supports Google OAuth for both **login and registration**. The existing email/password + 6-digit email-code registration flow remains intact. No database migration is required for the current Google bootstrap implementation.
 
 ## Runtime flow
 
@@ -11,7 +11,9 @@ Browser
 → Supabase callback
 → redirect to the canonical app URL with the implicit-flow session fragment
 → `public/js/auth-client.js` adopts and clears the access/refresh tokens
-→ existing `continueAfterAuth()` / portal access gate
+→ authenticated `POST /api/auth/bootstrap` idempotently ensures `member_profiles` exists
+→ `continueAfterAuth()` checks portal access
+→ existing user goes to Home; user without access goes directly to Token Gate
 
 The server never receives or stores the browser session tokens from the URL fragment.
 
@@ -67,7 +69,7 @@ No new Google secret environment variable is required by the application server.
 
 ## Existing account behavior
 
-Supabase Auth supports automatic identity linking for a verified matching email, so a Google login can link to an existing account rather than unnecessarily creating a separate identity when the email matches.
+Supabase Auth determines the Google identity/session. After the OAuth callback, the application calls `POST /api/auth/bootstrap`. This operation is idempotent: an existing `member_profiles` row is reused, while a new Google Auth user gets a member profile automatically. No second app-side login step is required.
 
 ## Troubleshooting
 

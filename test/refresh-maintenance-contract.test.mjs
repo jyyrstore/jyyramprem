@@ -68,3 +68,11 @@ test("new account registration actions are blocked during maintenance", () => {
   assert.match(authRoutes, /POST\("\/api\/auth\/resend-verification"/i);
   assert.match(authRoutes, /POST\("\/api\/auth\/verify-email"/i);
 });
+
+
+test("Google/member bootstrap remains outside the portal-token authorization gate", () => {
+  const runtime = fs.readFileSync(new URL("../lib/runtime/app-runtime.js", import.meta.url), "utf8");
+  const authRoutes = fs.readFileSync(new URL("../api/routes/auth.routes.js", import.meta.url), "utf8");
+  assert.match(runtime, /"\/api\/auth\/bootstrap"/);
+  assert.match(authRoutes, /app\.post\("\/api\/auth\/bootstrap", deps\.requireAuth/);
+});

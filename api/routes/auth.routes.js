@@ -11,6 +11,7 @@ const {
   supabaseAuth,
   supabaseOAuth,
   publicUser,
+  ensureMemberProfile,
   findPendingEmailVerification,
   sendSignupVerificationEmail,
   assertMaintenanceOff
@@ -53,6 +54,21 @@ export function registerAuthRoutes(app, deps) {
       target.searchParams.set("auth_error", "google");
       res.setHeader("Cache-Control", "no-store, max-age=0");
       return res.redirect(302, target.toString());
+    }
+  });
+
+  app.post("/api/auth/bootstrap", deps.requireAuth, async (req, res) => {
+    try {
+      const result = await ensureMemberProfile(req.user);
+      return res.json({
+        ok: true,
+        created: result.created,
+        profile: result.profile,
+        user: publicUser(req.user),
+      });
+    } catch (error) {
+      console.error("[AUTH BOOTSTRAP ERROR]", { code: error?.code || null, message: error?.message || "Unknown error" });
+      return res.status(Number(error.status) || 500).json({ ok: false, code: error.code || "AUTH_BOOTSTRAP_FAILED", error: "Profil akun tidak dapat disiapkan." });
     }
   });
 

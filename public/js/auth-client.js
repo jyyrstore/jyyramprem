@@ -229,6 +229,10 @@
     return { response, data };
   }
 
+  async function bootstrapAccount() {
+    return portalRequest("/api/auth/bootstrap", { method: "POST" });
+  }
+
   async function getPortalAccess() {
     return portalRequest("/api/access/status");
   }
@@ -260,5 +264,5 @@
     return user;
   }
 
-  window.AMAuth = { getConfig, getSession, signIn, signInWithGoogle, consumeOAuthErrorFromUrl, signUp, resendSignupCode, verifyOtp, signOut, resetPassword, getUser, getPortalAccess, contactOwnerForPortalToken, getTokenCenterLink, verifyPortalToken };
+  window.AMAuth = { getConfig, getSession, signIn, signInWithGoogle, consumeOAuthErrorFromUrl, signUp, resendSignupCode, verifyOtp, signOut, resetPassword, getUser, bootstrapAccount, getPortalAccess, contactOwnerForPortalToken, getTokenCenterLink, verifyPortalToken };
 })();

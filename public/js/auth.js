@@ -237,8 +237,26 @@ function closePortalTokenGate() {
 }
 
 async function continueAfterAuth() {
+  const session = await AMAuth.getSession();
+  if (!session?.access_token) {
+    closePortalTokenGate();
+    window.JYYRApp?.navigate("login", { replaceUrl: true });
+    throw new Error("Session autentikasi tidak tersedia.");
+  }
+
+  const bootstrap = await AMAuth.bootstrapAccount().catch((error) => ({
+    response: { ok: false, status: 500 },
+    data: { error: error?.message || "Profil akun tidak dapat disiapkan." },
+  }));
+  if (!bootstrap?.response?.ok) {
+    const message = bootstrap?.data?.error || "Akun tidak dapat digunakan saat ini.";
+    setPortalGateStatus(message, "error");
+    throw new Error(message);
+  }
+
   const { response, data } = await AMAuth.getPortalAccess();
   if (response.ok && (data.access === true || data.owner === true)) {
+    closePortalTokenGate();
     window.JYYRApp?.navigate("home");
     return true;
   }
@@ -530,8 +548,8 @@ if (oauthError) {
   if (!session?.access_token) return;
   try {
     await continueAfterAuth();
-  } catch {
-    showPortalTokenGate();
+  } catch (error) {
+    if (error?.message) status(error.message, "error");
   }
 })();
 

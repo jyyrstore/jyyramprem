@@ -37,6 +37,13 @@ test("REGISTER verification requires exactly six digits and verifies an email OT
   assert.match(s, /supabaseAuth\.auth\.verifyOtp\(\{\s*email,\s*token:\s*code,\s*type:\s*"email"/s);
 });
 
+test("REGISTER OTP verification immediately continues to the portal-access gate", () => {
+  const s = section(auth, "await AMAuth.verifyOtp(", "/* -----------------------------------------\n       LOGIN");
+  assert.match(s, /await continueAfterAuth\(\)/);
+  assert.doesNotMatch(s, /navigate\("login"/);
+  assert.match(auth, /showPortalTokenGate\(\)/);
+});
+
 test("REGISTER OTP UI stays hidden until registration step 1 succeeds", () => {
   assert.match(auth, /registerOtpStep = false/);
   assert.match(auth, /registerMode && registerOtpStep/);
