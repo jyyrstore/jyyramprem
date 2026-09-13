@@ -32,6 +32,9 @@ app.post("/api/auth/verify-email", authVerifyLimiter, async (req, res) => {
   if (!/^\d{6}$/.test(code)) return res.status(400)
   supabaseAuth.auth.verifyOtp({ email, token: code, type: "email" })
 })
+app.get("/api/auth/google", authGoogleLimiter, async (_req, res) => {
+  supabaseOAuth.auth.signInWithOAuth({ provider: "google", options: { redirectTo } })
+})
 app.get(
   "/api/config"
 )

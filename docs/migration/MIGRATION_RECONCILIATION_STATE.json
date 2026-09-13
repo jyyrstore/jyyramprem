@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "status": "RECONCILIATION_REQUIRED_BEFORE_PRODUCTION_PUSH",
+  "project_ref": "jfjbdenqepaagxfysaar",
+  "verified_at": "2026-09-13",
+  "production": {
+    "migration_count": 80,
+    "latest_version": "20260904122452",
+    "latest_name": "remove_duplicate_app_release_timestamp_trigger"
+  },
+  "repository": {
+    "migration_file_count": 46
+  },
+  "comparison": {
+    "exact_timestamp_overlap": 8,
+    "production_only_versions": 72,
+    "repository_only_versions": 38,
+    "duplicate_repository_timestamps": 0
+  },
+  "deployment_policy": {
+    "allow_direct_db_push_to_production": false,
+    "allow_history_rewrite": false,
+    "allow_edit_applied_migrations": false,
+    "allow_reconstructed_historical_sql": false,
+    "require_classification_before_production": true
+  },
+  "supabase_auth_leaked_password_protection": {
+    "status": "INTENTIONALLY_DISABLED",
+    "classification": "KNOWN_CONFIGURATION_NOT_CODE_DEFECT"
+  },
+  "notes": [
+    "Production migration history is immutable historical evidence.",
+    "Repository migrations are the forward-maintenance source, not a byte-for-byte historical mirror.",
+    "A missing production timestamp is not proof that the SQL effect is absent from the live schema.",
+    "No migration has been marked applied or repaired by this audit."
+  ]
+}

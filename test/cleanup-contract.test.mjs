@@ -18,6 +18,7 @@ const removedArtifacts = [
   "public/assets/Icon/broadcast-of.png",
   "public/assets/Icon/cari-email.png",
   "public/assets/Icon/suspend-user.png",
+  "public/assets/Foto/app_icon_2.png",
 ];
 
 test("verified obsolete artifacts remain removed", () => {
@@ -60,6 +61,21 @@ test("public tree contains no rollback/backup artifacts", () => {
   const files = walk(path.join(root, "public"));
   const offenders = files.filter((file) => forbidden.test(path.relative(root, file)));
   assert.deepEqual(offenders, []);
+});
+
+test(".env.example remains intentionally unignored", () => {
+  const source = fs.readFileSync(path.join(root, ".gitignore"), "utf8");
+  const wildcardIndex = source.lastIndexOf(".env*");
+  const allowIndex = source.lastIndexOf("!.env.example");
+  assert.equal(wildcardIndex, -1, "broad trailing .env* rule reintroduced");
+  assert.ok(allowIndex >= 0, ".env.example must stay explicitly allowed");
+});
+
+test("API has a terminal sanitized error handler", () => {
+  const source = fs.readFileSync(path.join(root, "api/middleware/error.middleware.js"), "utf8");
+  assert.match(source, /app\.use\(\(err,req,res,next\)=>/);
+  assert.match(source, /status===400\?"Permintaan tidak valid\."/);
+  assert.match(source, /status===413\?"Permintaan terlalu besar\."/);
 });
 
 test("obsolete app-intro route is not registered", () => {

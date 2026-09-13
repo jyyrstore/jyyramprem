@@ -715,6 +715,36 @@ body.auth-page::before {
   order: 10;
 }
 
+#googleSignInBtn {
+  order: 15;
+  gap: 12px;
+  color: #f2edf5 !important;
+  background:
+    linear-gradient(#171619, #171619) padding-box,
+    linear-gradient(135deg, #f2edf5 0%, #bfb6c8 48%, #8d8498 100%) border-box !important;
+}
+
+#googleSignInBtn .google-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 1.9em;
+  height: 1.9em;
+  border-radius: 50%;
+  background: #fff;
+  color: #4285f4;
+  font-family: Arial, sans-serif;
+  font-size: 0.72em;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: none;
+}
+
+#googleSignInBtn:disabled {
+  cursor: wait;
+  opacity: 0.76;
+  transform: none;
+}
+
 
 /* Register */
 

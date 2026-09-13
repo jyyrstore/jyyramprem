@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-09-09",
+  "generated_at": "2026-09-13",
   "project_ref": "jfjbdenqepaagxfysaar",
   "source_zip": "jyyramprem.zip",
   "source_migration_file_count": 46,
-  "production_migration_count": 79,
+  "production_migration_count": 80,
   "production_latest_version": "20260904122452",
   "production_versions": [
     "20260819020746",
@@ -86,5 +86,16 @@
     "20260904122213",
     "20260904122452"
   ],
-  "interpretation": "Production migration history is historically divergent from the supplied source package. The source package contains 45 migration files; the recorded production ledger contains 79 historical versions. This file is a historical baseline, not proof of the current live database state."
+  "interpretation": "Production migration history is historically divergent from the supplied source package. The live ledger contains 80 historical versions; the source package contains 46 migration files. This baseline records production history for comparison only and is not permission to push or rewrite migration history.",
+  "production_latest_name": "remove_duplicate_app_release_timestamp_trigger",
+  "comparison": {
+    "production_count": 80,
+    "repository_count": 46,
+    "exact_timestamp_overlap": 8,
+    "production_only_versions": 72,
+    "repository_only_versions": 38,
+    "duplicate_production_name_groups": 3,
+    "duplicate_repository_timestamps": 0,
+    "known_production_version_not_in_older_baseline": "20260825075556"
+  }
 }

@@ -18,3 +18,4 @@ public/js/owner/portal-token.js.before-safe-rollback
 public/js/owner/portal-token.js.token-final-backup
 public/js/owner/events.js.token-ui-backup-20260910_091920
 public/js/owner/core.js.token-ui-backup-20260910_091920
+public/assets/Foto/app_icon_2.png

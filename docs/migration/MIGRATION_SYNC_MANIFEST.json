@@ -51,9 +51,9 @@
     "20260905010000_jyyr_ecosystem_canonical_hardening_v2.sql",
     "20260910040000_direct_redeem_owner_tokens_v1.sql"
   ],
-  "policy": "Source inventory only. Verify live Supabase migration history before deployment; this file is not proof of production state.",
+  "policy": "Repository inventory only. Production migration history is immutable and separately verified. Do not run supabase db push against production until the reconciliation state is explicitly cleared.",
   "production_baseline_file": "MIGRATION_PRODUCTION_BASELINE.json",
-  "production_migration_count": 79,
+  "production_migration_count": 80,
   "production_latest_migration": "20260904122452",
-  "note": "Source package inventory contains 46 migrations, including the ecosystem Token Center V1/V2 migrations. Production baseline remains a separate historical ledger and must be verified against live Supabase before deployment."
+  "note": "Source package inventory contains 46 migrations. Live production ledger contains 80 historical migrations. The two lineages are intentionally not treated as identical. Reconcile effects against the live schema before any production deployment."
 }
