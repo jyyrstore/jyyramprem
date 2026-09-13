@@ -103,6 +103,34 @@ export function registerAuthRoutes(app, deps) {
         });
       }
 
+      // Never allow the Owner account to be self-deleted.
+      const { data: ownerLock, error: ownerLockError } = await supabase
+        .from("owner_lock")
+        .select("owner_user_id")
+        .eq("id", true)
+        .maybeSingle();
+
+      if (ownerLockError) {
+        console.error(
+          "[AUTH DELETE OWNER CHECK ERROR]",
+          ownerLockError?.message || ownerLockError
+        );
+
+        return res.status(500).json({
+          ok: false,
+          code: "OWNER_PROTECTION_CHECK_FAILED",
+          error: "Proteksi akun Owner tidak dapat diverifikasi.",
+        });
+      }
+
+      if (ownerLock?.owner_user_id === userId) {
+        return res.status(403).json({
+          ok: false,
+          code: "OWNER_ACCOUNT_PROTECTED",
+          error: "Akun Owner tidak dapat dihapus.",
+        });
+      }
+
       const { error } = await supabase.auth.admin.deleteUser(userId, false);
 
       if (error) {

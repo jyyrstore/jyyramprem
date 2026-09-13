@@ -54,6 +54,13 @@ test("self account delete validates confirmation email against authenticated acc
   );
 });
 
+test("self account delete protects the Owner account", () => {
+  assert.match(authRoutes, /OWNER_ACCOUNT_PROTECTED/);
+  assert.match(authRoutes, /owner_lock/);
+  assert.match(authRoutes, /status\(403\)/);
+  assert.match(authRoutes, /ownerLock\??\.owner_user_id\s*===\s*userId/);
+});
+
 test("self account delete uses Supabase server-side admin delete", () => {
   assert.match(
     authRoutes,
