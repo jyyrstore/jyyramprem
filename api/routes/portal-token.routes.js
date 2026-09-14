@@ -77,7 +77,7 @@ export function registerPortalTokenRoutes(app, deps) {
         token_lifetime: tokenLifetime,
       });
     } catch (error) {
-      console.error("[PORTAL ACCESS STATUS ERROR]", error);
+      console.error("[PORTAL ACCESS STATUS ERROR]", { code: error?.code || null, status: error?.status || null, message: error?.message || "Unknown error" });
       return res.status(500).json({ ok: false, access: false, tokenLifetime: null, token_lifetime: null, error: "Gagal memeriksa akses portal." });
     }
   });

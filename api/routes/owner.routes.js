@@ -45,10 +45,7 @@ export function registerOwnerRoutes(app, deps) {
           );
 
         if (error) {
-          console.error(
-            "[OWNER CLAIM ERROR]",
-            error
-          );
+          console.error("[OWNER CLAIM ERROR]", { code: error?.code, status: error?.status, message: error?.message });
 
           return res.status(500).json({
             ok: false,
@@ -74,10 +71,7 @@ export function registerOwnerRoutes(app, deps) {
             "Akun berhasil menjadi Owner.",
         });
       } catch (error) {
-        console.error(
-          "[OWNER CLAIM ERROR]",
-          error
-        );
+        console.error("[OWNER CLAIM ERROR]", { code: error?.code, status: error?.status, message: error?.message });
 
         return res.status(500).json({
           ok: false,
@@ -108,7 +102,7 @@ export function registerOwnerRoutes(app, deps) {
           },
         });
       } catch (error) {
-        console.error("[OWNER STATUS ERROR]", error);
+        console.error("[OWNER STATUS ERROR]", { code: error?.code || null, status: error?.status || null, message: error?.message || "Unknown error" });
 
         return res.status(500).json({
           ok: false,
@@ -140,7 +134,7 @@ export function registerOwnerRoutes(app, deps) {
         if (error) throw error;
         return res.json({ ok: true, owner: true, ...data });
       } catch (error) {
-        console.error("[OWNER MEMBERS LIST ERROR]", error);
+        console.error("[OWNER MEMBERS LIST ERROR]", { code: error?.code || null, status: error?.status || null, message: error?.message || "Unknown error" });
         return res.status(memberErrorStatus(error)).json({ ok: false, error: memberErrorStatus(error) === 500 ? "Gagal membaca member." : error.message });
       }
     }
@@ -158,7 +152,7 @@ export function registerOwnerRoutes(app, deps) {
         if (error) throw error;
         return res.json({ ok: true, owner: true, member: data });
       } catch (error) {
-        console.error("[OWNER MEMBER GET ERROR]", error);
+        console.error("[OWNER MEMBER GET ERROR]", { code: error?.code || null, status: error?.status || null, message: error?.message || "Unknown error" });
         const status = memberErrorStatus(error);
         return res.status(status).json({ ok: false, error: status === 500 ? "Gagal membaca member." : error.message });
       }
@@ -260,7 +254,7 @@ export function registerOwnerRoutes(app, deps) {
       if (error) throw error;
       return res.json({ ok: true, owner: true, ...data });
     } catch (error) {
-      console.error("[OWNER BROADCAST LIST ERROR]", error);
+      console.error("[OWNER BROADCAST LIST ERROR]", { code: error?.code || null, status: error?.status || null, message: error?.message || "Unknown error" });
       const status = broadcastErrorStatus(error);
       return res.status(status).json({ ok: false, error: status === 500 ? "Gagal membaca broadcast." : error.message });
     }
@@ -273,7 +267,7 @@ export function registerOwnerRoutes(app, deps) {
       if (error) throw error;
       return res.json({ ok: true, owner: true, broadcast: data });
     } catch (error) {
-      console.error("[OWNER BROADCAST GET ERROR]", error);
+      console.error("[OWNER BROADCAST GET ERROR]", { code: error?.code || null, status: error?.status || null, message: error?.message || "Unknown error" });
       const status = broadcastErrorStatus(error);
       return res.status(status).json({ ok: false, error: status === 500 ? "Gagal membaca broadcast." : error.message });
     }
@@ -296,7 +290,7 @@ export function registerOwnerRoutes(app, deps) {
       if (error) throw error;
       return res.status(201).json({ ok: true, owner: true, broadcast: data });
     } catch (error) {
-      console.error("[OWNER BROADCAST CREATE ERROR]", error);
+      console.error("[OWNER BROADCAST CREATE ERROR]", { code: error?.code || null, status: error?.status || null, message: error?.message || "Unknown error" });
       const status = broadcastErrorStatus(error);
       return res.status(status).json({ ok: false, error: status === 500 ? "Gagal membuat broadcast." : error.message });
     }
@@ -321,7 +315,7 @@ export function registerOwnerRoutes(app, deps) {
       if (error) throw error;
       return res.json({ ok: true, owner: true, broadcast: data });
     } catch (error) {
-      console.error("[OWNER BROADCAST UPDATE ERROR]", error);
+      console.error("[OWNER BROADCAST UPDATE ERROR]", { code: error?.code || null, status: error?.status || null, message: error?.message || "Unknown error" });
       const status = broadcastErrorStatus(error);
       return res.status(status).json({ ok: false, error: status === 500 ? "Gagal memperbarui broadcast." : error.message });
     }
@@ -334,7 +328,7 @@ export function registerOwnerRoutes(app, deps) {
       if (error) throw error;
       return res.json({ ok: true, owner: true, deleted: data === true });
     } catch (error) {
-      console.error("[OWNER BROADCAST DELETE ERROR]", error);
+      console.error("[OWNER BROADCAST DELETE ERROR]", { code: error?.code || null, status: error?.status || null, message: error?.message || "Unknown error" });
       const status = broadcastErrorStatus(error);
       return res.status(status).json({ ok: false, error: status === 500 ? "Gagal menghapus broadcast." : error.message });
     }
@@ -351,7 +345,7 @@ export function registerOwnerRoutes(app, deps) {
       if (error) throw error;
       return res.json({ ok: true, owner: true, ...data });
     } catch (error) {
-      console.error("[OWNER MESSAGE LIST ERROR]", error);
+      console.error("[OWNER MESSAGE LIST ERROR]", { code: error?.code || null, status: error?.status || null, message: error?.message || "Unknown error" });
       const status = messagingErrorStatus(error);
       return res.status(status).json({ ok: false, error: status === 500 ? "Gagal membaca pesan." : error.message });
     }
@@ -370,7 +364,7 @@ export function registerOwnerRoutes(app, deps) {
       if (error) throw error;
       return res.json({ ok: true, owner: true, ...data });
     } catch (error) {
-      console.error("[OWNER MESSAGE GET ERROR]", error);
+      console.error("[OWNER MESSAGE GET ERROR]", { code: error?.code || null, status: error?.status || null, message: error?.message || "Unknown error" });
       const status = messagingErrorStatus(error);
       return res.status(status).json({ ok: false, error: status === 500 ? "Gagal membaca percakapan." : error.message });
     }
@@ -386,7 +380,7 @@ export function registerOwnerRoutes(app, deps) {
       if (error) throw error;
       return res.status(201).json({ ok: true, owner: true, conversation: data });
     } catch (error) {
-      console.error("[OWNER MESSAGE CREATE CONVERSATION ERROR]", error);
+      console.error("[OWNER MESSAGE CREATE CONVERSATION ERROR]", { code: error?.code || null, status: error?.status || null, message: error?.message || "Unknown error" });
       const status = messagingErrorStatus(error);
       return res.status(status).json({ ok: false, error: status === 500 ? "Gagal membuat percakapan." : error.message });
     }
@@ -403,7 +397,7 @@ export function registerOwnerRoutes(app, deps) {
       if (error) throw error;
       return res.status(201).json({ ok: true, owner: true, message: data });
     } catch (error) {
-      console.error("[OWNER MESSAGE SEND ERROR]", error);
+      console.error("[OWNER MESSAGE SEND ERROR]", { code: error?.code || null, status: error?.status || null, message: error?.message || "Unknown error" });
       const status = messagingErrorStatus(error);
       return res.status(status).json({ ok: false, error: status === 500 ? "Gagal mengirim pesan." : error.message });
     }
@@ -460,7 +454,7 @@ export function registerOwnerRoutes(app, deps) {
           statistics,
         });
       } catch (error) {
-        console.error("[OWNER STATISTICS ERROR]", error);
+        console.error("[OWNER STATISTICS ERROR]", { code: error?.code || null, status: error?.status || null, message: error?.message || "Unknown error" });
         return res.status(500).json({
           ok: false,
           owner: true,
@@ -495,7 +489,7 @@ export function registerOwnerRoutes(app, deps) {
           database: "connected",
         });
       } catch (error) {
-        console.error("[OWNER HEALTH ERROR]", error);
+        console.error("[OWNER HEALTH ERROR]", { code: error?.code || null, status: error?.status || null, message: error?.message || "Unknown error" });
         return res.status(503).json({
           ok: false,
           owner: true,

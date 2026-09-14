@@ -17,6 +17,7 @@ export function registerPublicRoutes(app, deps) {
   const {
     ownerBroadcastReadLimiter,
     portalTokenPublicLimiter,
+    internalSecretLimiter,
   } = deps;
 
 
@@ -139,7 +140,7 @@ export function registerPublicRoutes(app, deps) {
     }
   );
 
-  app.get('/api/maintenance', async(req,res)=>{try{const {data,error}=await db.rpc('public_get_maintenance');if(error)throw error;let owner=false;const authorization=req.headers.authorization||'';if(authorization.startsWith('Bearer ')){const token=authorization.slice(7).trim();if(token){try{const {data:{user}}=await runtime.supabase.auth.getUser(token);if(user)owner=await runtime.isOwner(user.id);}catch{owner=false;}}}res.setHeader('Cache-Control','no-store, max-age=0');return res.json({ok:true,...data,owner});}catch(e){console.error('[MAINTENANCE ERROR]',e);return res.status(500).json({ok:false,error:'Maintenance status unavailable.'});}});
+  app.get('/api/maintenance', async(req,res)=>{try{const {data,error}=await db.rpc('public_get_maintenance');if(error)throw error;let owner=false;const authorization=req.headers.authorization||'';if(authorization.startsWith('Bearer ')){const token=authorization.slice(7).trim();if(token){try{const {data:{user}}=await runtime.supabase.auth.getUser(token);if(user)owner=await runtime.isOwner(user.id);}catch{owner=false;}}}res.setHeader('Cache-Control','no-store, max-age=0');return res.json({ok:true,...data,owner});}catch(e){console.error('[MAINTENANCE ERROR]',{code:e?.code||null,message:e?.message||'Unknown error'});return res.status(500).json({ok:false,error:'Maintenance status unavailable.'});}});
 
   app.get('/api/faq', ownerBroadcastReadLimiter, async (_req, res) => {
     try {
@@ -147,7 +148,7 @@ export function registerPublicRoutes(app, deps) {
       if (error) throw error;
       return res.json({ ok: true, faq: Array.isArray(data?.faq) ? data.faq : Array.isArray(data) ? data : [] });
     } catch (e) {
-      console.error('[PUBLIC FAQ ERROR]', e);
+      console.error('[PUBLIC FAQ ERROR]', { code: e?.code || null, message: e?.message || 'Unknown error' });
       return res.status(500).json({ ok: false, error: 'FAQ belum dapat dimuat.' });
     }
   });
@@ -158,7 +159,7 @@ export function registerPublicRoutes(app, deps) {
       if (error) throw error;
       return res.json({ ok: true, help: Array.isArray(data?.help) ? data.help : Array.isArray(data) ? data : [] });
     } catch (e) {
-      console.error('[PUBLIC HELP ERROR]', e);
+      console.error('[PUBLIC HELP ERROR]', { code: e?.code || null, message: e?.message || 'Unknown error' });
       return res.status(500).json({ ok: false, error: 'Help Center belum dapat dimuat.' });
     }
   });
@@ -192,10 +193,7 @@ export function registerPublicRoutes(app, deps) {
             "connected",
         });
       } catch (error) {
-        console.error(
-          "[HEALTH ERROR]",
-          error
-        );
+        console.error("[HEALTH ERROR]", { code: error?.code, status: error?.status, message: error?.message });
 
         return res
           .status(503)
@@ -209,7 +207,7 @@ export function registerPublicRoutes(app, deps) {
 
   app.get("/api/health", healthHandler);
   app.get("/health", healthHandler);
-  app.post('/api/internal/maintenance/cleanup-idempotency', async (req, res) => {
+  app.post('/api/internal/maintenance/cleanup-idempotency', internalSecretLimiter, async (req, res) => {
     const expected = String(process.env.CRON_SECRET || '').trim();
     const provided = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '').trim();
     if (!expected || !timingSafeSecretEquals(provided, expected)) return res.status(401).json({ ok:false, error:'Unauthorized.' });
@@ -218,7 +216,7 @@ export function registerPublicRoutes(app, deps) {
       if (error) throw error;
       return res.json({ ok:true, removed:Number(data||0) });
     } catch (e) {
-      console.error('[IDEMPOTENCY CLEANUP ERROR]', e);
+      console.error('[IDEMPOTENCY CLEANUP ERROR]', { code: e?.code || null, status: e?.status || null, message: e?.message || 'Unknown error' });
       return res.status(500).json({ ok:false, error:'Cleanup gagal.' });
     }
   });

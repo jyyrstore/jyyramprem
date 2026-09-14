@@ -8,7 +8,7 @@
     "start": "node server.js",
     "verify": "node scripts/verify-runtime.mjs && npm run verify:migrations",
     "verify:migrations": "node scripts/verify-migration-lineage.mjs",
-    "test": "npm run test:provider && npm run test:google-auth && npm run test:account-delete && npm run test:provider-diagnostic && npm run test:flow && npm run test:regression && npm run test:runtime-contract && npm run test:owner-ui && npm run test:app-release && npm run test:member-status && npm run verify && npm run test:single-entry && npm run test:portal-token && npm run test:cleanup && npm run test:refresh-maintenance && npm run test:owner-button && npm run test:rate-limit-canonical",
+    "test": "npm run test:provider && npm run test:google-auth && npm run test:account-delete && npm run test:provider-diagnostic && npm run test:flow && npm run test:regression && npm run test:runtime-contract && npm run test:owner-ui && npm run test:app-release && npm run test:member-status && npm run verify && npm run test:single-entry && npm run test:portal-token && npm run test:cleanup && npm run test:refresh-maintenance && npm run test:owner-button && npm run test:rate-limit-canonical && npm run test:security-headers && npm run test:provider-registration",
     "broadcast:worker": "node scripts/run-due-broadcasts.mjs",
     "test:provider": "node --test test/provider-contract.test.mjs",
     "test:provider-diagnostic": "node --test test/provider-diagnostic.test.mjs",
@@ -24,8 +24,10 @@
     "test:refresh-maintenance": "node --test test/refresh-maintenance-contract.test.mjs",
     "test:owner-button": "node --test test/owner-button-visibility-contract.test.mjs",
     "test:rate-limit-canonical": "node --test test/rate-limit-canonical-contract.test.mjs",
+    "test:security-headers": "node --test test/security-headers-contract.test.mjs",
     "test:google-auth": "node --test test/google-auth-contract.test.mjs",
-    "test:account-delete": "node --test test/account-delete-contract.test.mjs"
+    "test:account-delete": "node --test test/account-delete-contract.test.mjs",
+    "test:provider-registration": "node --test test/provider-route-registration.test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.112.3",

@@ -2619,3 +2619,176 @@ body[data-page="setting"] .access-status-dialog {
     padding: 17px;
   }
 }
+
+
+/* ============================================================
+   ACCOUNT CARD — ACTION + METADATA FINAL ALIGNMENT
+   Home stays inside the Account card, isolated as a 44px icon
+   action in the top-right corner. Destructive actions remain
+   secondary and sit beside Logout.
+============================================================ */
+body[data-page="setting"] .profile-card {
+    position:relative;
+}
+
+body[data-page="setting"] .account-home-btn {
+    position:absolute;
+    top:16px;
+    right:16px;
+    z-index:6;
+    width:44px;
+    height:44px;
+    min-width:44px;
+    min-height:44px;
+    display:grid;
+    place-items:center;
+    border-radius:50%;
+    border:1px solid var(--line);
+    background:#211d29;
+    color:var(--text);
+    text-decoration:none;
+    box-sizing:border-box;
+    transition:transform .18s ease,border-color .2s ease,box-shadow .2s ease,background .2s ease,color .2s ease;
+}
+body[data-page="setting"] .account-home-btn:hover {
+    border-color:var(--line-strong);
+    box-shadow:0 0 22px rgba(157,92,255,.20);
+    transform:translateY(-1px);
+}
+body[data-page="setting"] .account-home-btn:active {
+    transform:scale(.96);
+}
+body[data-page="setting"] .account-home-btn:focus-visible {
+    outline:0;
+    border-color:var(--purple);
+    box-shadow:0 0 0 3px rgba(157,92,255,.18),0 0 22px rgba(157,92,255,.16);
+}
+body[data-page="setting"] .account-home-btn .ui-icon {
+    width:20px;
+    height:20px;
+}
+
+body[data-page="setting"] .profile-card > .profile-actions {
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    align-items:stretch;
+    gap:8px;
+    width:100%;
+    min-width:0;
+}
+body[data-page="setting"] .profile-card > .profile-actions .btn {
+    width:100%;
+    min-width:0;
+    min-height:44px;
+    margin:0;
+    box-sizing:border-box;
+}
+body[data-page="setting"] .profile-card > .profile-actions .account-delete-btn {
+    width:100%;
+    margin-top:0;
+}
+body[data-page="setting"] .profile-card > .profile-actions .ui-icon {
+    width:18px;
+    height:18px;
+    flex:0 0 18px;
+}
+
+body[data-page="setting"] .profile-card > .profile-meta {
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:8px;
+    align-items:stretch;
+}
+body[data-page="setting"] .profile-card > .profile-meta > div {
+    min-width:0;
+    min-height:58px;
+    padding:11px 12px;
+    box-sizing:border-box;
+    display:grid;
+    align-content:center;
+    gap:6px;
+    border:1px solid rgba(255,255,255,.06);
+    border-radius:13px;
+    background:linear-gradient(180deg,rgba(255,255,255,.025),rgba(255,255,255,.008));
+}
+body[data-page="setting"] .profile-card > .profile-meta span {
+    font-size:9px;
+    line-height:1.2;
+    letter-spacing:.08em;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+body[data-page="setting"] .profile-card > .profile-meta strong {
+    min-width:0;
+    font-size:12px;
+    line-height:1.25;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+
+body[data-page="setting"] .account-delete-icon .ui-icon {
+    width:21px;
+    height:21px;
+}
+
+@media (max-width:700px) {
+    body[data-page="setting"] .account-home-btn {
+        top:13px;
+        right:13px;
+    }
+    body[data-page="setting"] .profile-card > .profile-meta > div {
+        min-height:56px;
+        padding:10px 10px;
+    }
+}
+
+@media (max-width:520px) {
+    body[data-page="setting"] .account-home-btn {
+        top:12px;
+        right:12px;
+    }
+    body[data-page="setting"] .profile-card > .profile-meta {
+        gap:6px;
+    }
+    body[data-page="setting"] .profile-card > .profile-meta > div {
+        min-height:55px;
+        padding:9px 8px;
+    }
+    body[data-page="setting"] .profile-card > .profile-meta span {
+        font-size:8px;
+    }
+    body[data-page="setting"] .profile-card > .profile-meta strong {
+        font-size:10px;
+    }
+    body[data-page="setting"] .profile-card > .profile-actions {
+        justify-content:stretch;
+    }
+    body[data-page="setting"] .profile-card > .profile-actions .btn {
+        flex:1 1 0;
+        min-width:0;
+    }
+}
+
+@media (max-width:360px) {
+    body[data-page="setting"] .account-home-btn {
+        top:10px;
+        right:10px;
+    }
+    body[data-page="setting"] .profile-card > .profile-meta > div {
+        padding:8px 6px;
+    }
+    body[data-page="setting"] .profile-card > .profile-meta span {
+        font-size:7.5px;
+    }
+    body[data-page="setting"] .profile-card > .profile-meta strong {
+        font-size:9px;
+    }
+}
+
+/* FINAL ACCOUNT ACTIONS: equal two-column buttons */
+body[data-page="setting"] .profile-card > .profile-actions{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;align-items:stretch!important;justify-content:stretch!important;gap:10px!important;width:100%!important;min-width:0!important;margin:0!important;flex-wrap:nowrap!important}
+body[data-page="setting"] .profile-card > .profile-actions > #logoutBtn,body[data-page="setting"] .profile-card > .profile-actions > #deleteAccountBtn{display:flex!important;align-items:center!important;justify-content:center!important;width:100%!important;min-width:0!important;min-height:44px!important;margin:0!important;box-sizing:border-box!important}
+body[data-page="setting"] .profile-card > .profile-actions > #logoutBtn .ui-icon,body[data-page="setting"] .profile-card > .profile-actions > #deleteAccountBtn .ui-icon{width:18px!important;height:18px!important;flex:0 0 18px!important}
+@media(max-width:430px){body[data-page="setting"] .profile-card > .profile-actions{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}body[data-page="setting"] .profile-card > .profile-actions > #logoutBtn,body[data-page="setting"] .profile-card > .profile-actions > #deleteAccountBtn{min-height:44px!important;padding:8px!important;font-size:9px!important;white-space:nowrap!important}}

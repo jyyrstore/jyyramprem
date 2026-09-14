@@ -115,6 +115,44 @@ test("frontend exposes self account delete API client", () => {
   );
 });
 
+test("settings Account card places Home as a 44px icon action", () => {
+  assert.match(indexHtml, /class=["']account-home-btn["']/);
+  assert.match(indexHtml, /aria-label=["']Home["']/);
+  assert.match(indexHtml, /id=["']homeIcon["']/);
+  const accountCard = indexHtml.match(/<section class=["']card profile-card["'][\s\S]*?<\/section>/)?.[0] || "";
+  assert.doesNotMatch(accountCard, /Kembali/);
+  assert.match(settingJs, /\['homeIcon','home'\]/);
+  assert.match(settingCss, /\.account-home-btn[\s\S]*width:44px[\s\S]*height:44px/);
+  assert.match(settingCss, /\.account-home-btn \.ui-icon[\s\S]*width:20px[\s\S]*height:20px/);
+});
+
+test("settings Account card keeps Logout and Delete beside each other with trash icon", () => {
+  assert.match(indexHtml, /id=["']logoutBtn["']/);
+  assert.match(indexHtml, /id=["']deleteAccountBtn["']/);
+  assert.match(indexHtml, /id=["']deleteAccountIcon["']/);
+  assert.match(settingJs, /\['deleteAccountIcon','trash'\]/);
+  assert.match(settingCss, /\.profile-card > \.profile-actions[\s\S]*display:\s*grid/);
+  assert.match(settingCss, /\.profile-card > \.profile-actions[\s\S]*grid-template-columns:\s*repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(settingCss, /\.profile-card > \.profile-actions \.btn[\s\S]*width:\s*100%/);
+  assert.match(settingCss, /\.profile-card > \.profile-actions \.account-delete-btn[\s\S]*width:\s*100%/);
+});
+
+test("settings Account metadata remains a three-column aligned grid", () => {
+  assert.match(indexHtml, /id=["']profileAccessType["']/);
+  assert.match(indexHtml, /id=["']registeredAt["']/);
+  assert.match(indexHtml, /id=["']lastLogin["']/);
+  assert.match(settingCss, /\.profile-card > \.profile-meta[\s\S]*grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+});
+
+
+test("delete account modal keeps keyboard focus contained and trigger state synchronized", () => {
+  assert.match(settingJs, /event\.key !== "Tab"/);
+  assert.match(settingJs, /event\.shiftKey && document\.activeElement === first/);
+  assert.match(settingJs, /!event\.shiftKey && document\.activeElement === last/);
+  assert.match(settingJs, /deleteAccountBtn\?\.setAttribute\("aria-expanded", "true"\)/);
+  assert.match(settingJs, /deleteAccountBtn\?\.setAttribute\("aria-expanded", "false"\)/);
+});
+
 test("settings UI exposes dangerous account deletion confirmation", () => {
   assert.match(indexHtml, /id=["']deleteAccountBtn["']/);
   assert.match(indexHtml, /id=["']deleteAccountModal["']/);

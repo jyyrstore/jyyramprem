@@ -83,7 +83,7 @@ function setMode(next) {
   $("#googleSignInBtn")?.classList.toggle("hidden", registerOtpStep);
   $("#googleSignInBtn")?.querySelector(".google-label")?.replaceChildren(
     document.createTextNode(
-      registerMode ? "DAFTAR DENGAN GOOGLE" : "LOGIN DENGAN GOOGLE"
+      registerMode ? "Google" : "Google"
     )
   );
 

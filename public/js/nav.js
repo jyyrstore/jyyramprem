@@ -554,10 +554,20 @@
 function setupBrandBanner() {
   const video = q('#brandBanner');
 
-  if (
-    !video ||
-    video.dataset.bannerReady === '1'
-  ) {
+  if (!video) {
+    return;
+  }
+
+  if (video.dataset.bannerReady === '1') {
+    const attempt = video.play();
+
+    if (
+      attempt &&
+      typeof attempt.catch === 'function'
+    ) {
+      attempt.catch(() => {});
+    }
+
     return;
   }
 

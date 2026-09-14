@@ -5,7 +5,6 @@ const {
   normalizeUserEmail,
   AUTH_EMAIL_VERIFICATION_TTL_MINUTES,
   AUTH_EMAIL_RESEND_COOLDOWN_SECONDS,
-  supabase,
   assertEmailVerificationConfig,
   verificationRequestHash,
   supabaseAuth,
@@ -50,7 +49,7 @@ export function registerAuthRoutes(app, deps) {
       res.setHeader("Referrer-Policy", "no-referrer");
       return res.redirect(302, data.url);
     } catch (error) {
-      console.error("[AUTH GOOGLE OAUTH ERROR]", error?.message || error);
+      console.error("[AUTH GOOGLE OAUTH ERROR]", { code: error?.code || null, status: error?.status || null, message: error?.message || "Unknown error" });
       const target = new URL(redirectTo);
       target.searchParams.set("auth_error", "google");
       res.setHeader("Cache-Control", "no-store, max-age=0");
@@ -104,7 +103,7 @@ export function registerAuthRoutes(app, deps) {
       }
 
       // Never allow the Owner account to be self-deleted.
-      const { data: ownerLock, error: ownerLockError } = await supabase
+      const { data: ownerLock, error: ownerLockError } = await db
         .from("owner_lock")
         .select("owner_user_id")
         .eq("id", true)
@@ -134,7 +133,7 @@ export function registerAuthRoutes(app, deps) {
       const { error } = await supabase.auth.admin.deleteUser(userId, false);
 
       if (error) {
-        console.error("[AUTH DELETE ACCOUNT ERROR]", error?.message || error);
+        console.error("[AUTH DELETE ACCOUNT ERROR]", { code: error?.code || null, status: error?.status || null, message: error?.message || "Unknown error" });
         return res.status(500).json({
           ok: false,
           code: "ACCOUNT_DELETE_FAILED",
@@ -149,7 +148,7 @@ export function registerAuthRoutes(app, deps) {
         deleted: true,
       });
     } catch (error) {
-      console.error("[AUTH DELETE ACCOUNT EXCEPTION]", error?.message || error);
+      console.error("[AUTH DELETE ACCOUNT EXCEPTION]", { code: error?.code || null, status: error?.status || null, message: error?.message || "Unknown error" });
       return res.status(500).json({
         ok: false,
         code: "ACCOUNT_DELETE_FAILED",
@@ -245,7 +244,7 @@ export function registerAuthRoutes(app, deps) {
         resendAvailableAt: new Date(Date.now() + AUTH_EMAIL_RESEND_COOLDOWN_SECONDS * 1000).toISOString(),
       });
     } catch (error) {
-      console.error("[AUTH REGISTER ERROR]", error);
+      console.error("[AUTH REGISTER ERROR]", { code: error?.code || null, status: error?.status || null, message: error?.message || "Unknown error" });
       return res.status(Number(error.status) || 500).json({ ok: false, code: error.code || "AUTH_REGISTER_FAILED", error: error.status ? error.message : "Registrasi gagal. Coba lagi." });
     }
   });
@@ -283,7 +282,7 @@ export function registerAuthRoutes(app, deps) {
       }
       return res.json({ ok: true, email, resendAvailableAt: new Date(Date.now() + AUTH_EMAIL_RESEND_COOLDOWN_SECONDS * 1000).toISOString() });
     } catch (error) {
-      console.error("[AUTH RESEND ERROR]", error);
+      console.error("[AUTH RESEND ERROR]", { code: error?.code || null, status: error?.status || null, message: error?.message || "Unknown error" });
       return res.status(Number(error.status) || 500).json({ ok: false, code: error.code || "AUTH_RESEND_FAILED", retryAfter: Number(error.retryAfter || 0), error: error.status ? error.message : "Tidak dapat mengirim code verifikasi." });
     }
   });
@@ -336,7 +335,7 @@ export function registerAuthRoutes(app, deps) {
       // email+password login before the Portal Token gate.
       return res.json({ ok: true, stage: "email_verified", user: publicUser(updated.user), ...otpData });
     } catch (error) {
-      console.error("[AUTH VERIFY ERROR]", error);
+      console.error("[AUTH VERIFY ERROR]", { code: error?.code || null, status: error?.status || null, message: error?.message || "Unknown error" });
       return res.status(Number(error.status) || 500).json({ ok: false, code: error.code || "AUTH_VERIFY_FAILED", error: error.status ? error.message : "Verifikasi email gagal." });
     }
   });

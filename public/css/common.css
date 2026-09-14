@@ -426,7 +426,7 @@ textarea:focus-visible {
 .app-toast-body{display:grid;gap:2px;min-width:0}
 .app-toast-body strong{font-size:11px;font-weight:800;letter-spacing:.01em}
 .app-toast-body span{font-size:10.5px;color:#a8a4ae;line-height:1.35;overflow-wrap:anywhere}
-.app-toast-close{appearance:none;border:0;background:transparent;color:#807b87;width:30px;height:30px;border-radius:9px;display:grid;place-items:center;cursor:pointer;font-size:18px;line-height:1}
+.app-toast-close{appearance:none;border:0;background:transparent;color:#807b87;width:34px;height:34px;border-radius:9px;display:grid;place-items:center;cursor:pointer;font-size:18px;line-height:1}
 .app-toast-close:hover{background:rgba(255,255,255,.06);color:#e8e3ed}
 .app-toast-close img{width:15px;height:15px;object-fit:contain}
 .app-toast-success{border-color:rgba(75,229,138,.22)}
@@ -446,198 +446,69 @@ textarea:focus-visible {
 }
 
 /* JYYR PREMIUM APP LOADING */
-
-/* JYYR PREMIUM APP LOADING */
 #app-loading.app-loading{
   position:fixed;
   inset:0;
-  z-index:99999;
-  display:grid;
-  place-items:center;
-  padding:24px;
-  background:
-    radial-gradient(circle at 50% 35%, rgba(145,82,224,.16), transparent 34%),
-    radial-gradient(circle at 50% 80%, rgba(72,42,120,.12), transparent 40%),
-    linear-gradient(180deg,#0d0913 0%,#07060a 100%);
-  overflow:hidden;
-}
-
-#app-loading.app-loading::before{
-  content:"";
-  position:absolute;
-  inset:-30%;
-  background:
-    radial-gradient(circle,rgba(190,120,255,.045) 0 1px,transparent 1px);
-  background-size:26px 26px;
-  mask-image:radial-gradient(circle at center,#000 10%,transparent 68%);
-  animation:appLoadingDrift 12s linear infinite;
+  z-index:999999;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:20px;
+  width:100vw;
+  height:100vh;
   pointer-events:none;
+  background:rgba(8,6,13,.035);
+  backdrop-filter:blur(18px);
+  -webkit-backdrop-filter:blur(18px);
 }
 
-#app-loading.app-loading::after{
-  content:"";
-  position:absolute;
-  width:420px;
-  height:420px;
-  border-radius:50%;
-  background:radial-gradient(circle,rgba(151,84,255,.11),transparent 68%);
-  filter:blur(10px);
-  animation:appLoadingPulse 2.8s ease-in-out infinite;
-  pointer-events:none;
-}
 
-.app-loading-card{
+.app-loading-spinner{
+  width:64px;
+  height:64px;
   position:relative;
-  z-index:1;
-  width:min(360px,calc(100vw - 40px));
-  padding:30px 24px 24px;
-  border:1px solid rgba(255,255,255,.08);
-  border-radius:26px;
-  background:rgba(18,14,24,.72);
-  backdrop-filter:blur(22px);
-  -webkit-backdrop-filter:blur(22px);
-  box-shadow:
-    0 28px 90px rgba(0,0,0,.62),
-    inset 0 1px 0 rgba(255,255,255,.045);
-  text-align:center;
-}
-
-.app-loading-logo-wrap{
-  position:relative;
-  width:84px;
-  height:84px;
-  margin:0 auto 18px;
-  display:grid;
-  place-items:center;
-}
-
-.app-loading-logo{
-  position:relative;
-  z-index:2;
-  width:56px;
-  height:56px;
-  object-fit:contain;
-  border-radius:18px;
-  filter:drop-shadow(0 8px 22px rgba(151,84,255,.28));
-  animation:appLoadingFloat 2.4s ease-in-out infinite;
-}
-
-.app-loading-ring{
-  position:absolute;
-  inset:4px;
+  top:-80px;
+  border:3px solid rgba(255,255,255,.14);
+  border-top-color:#fff;
   border-radius:50%;
-  border:1px solid rgba(185,126,255,.18);
-  border-top-color:rgba(198,139,255,.95);
-  border-right-color:rgba(198,139,255,.35);
-  animation:appLoadingSpin 1.15s linear infinite;
-}
-
-.app-loading-dot{
-  position:absolute;
-  right:4px;
-  bottom:8px;
-  width:11px;
-  height:11px;
-  border-radius:50%;
-  background:#6dff9c;
-  box-shadow:0 0 0 4px rgba(109,255,156,.08),0 0 18px rgba(109,255,156,.45);
-  animation:appLoadingOnline 1.8s ease-in-out infinite;
-}
-
-.app-loading-title{
-  color:#f3edf8;
-  font-size:20px;
-  line-height:1.2;
-  font-weight:850;
-  letter-spacing:-.025em;
-}
-
-.app-loading-subtitle{
-  margin-top:7px;
-  color:#958c9f;
-  font-size:11px;
-  letter-spacing:.02em;
+  animation:appLoadingSpin .58s linear infinite;
 }
 
 .app-loading-progress{
-  position:relative;
-  width:100%;
-  height:4px;
-  margin:22px 0 16px;
-  border-radius:99px;
+  width:340px;
+  height:6px;
+  position:absolute;
+  top:calc(50% + 300px);
+  transform:none;
   overflow:hidden;
-  background:rgba(255,255,255,.055);
+  border-radius:999px;
+  background:rgba(255,255,255,.12);
 }
 
 .app-loading-progress span{
   display:block;
-  width:38%;
+  width:40%;
   height:100%;
   border-radius:inherit;
-  background:linear-gradient(
-    90deg,
-    transparent,
-    rgba(201,145,255,.95),
-    transparent
-  );
-  animation:appLoadingProgress 1.35s ease-in-out infinite;
-}
-
-.app-loading-status{
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  color:#776f80;
-  font-size:9px;
-  letter-spacing:.08em;
-  text-transform:uppercase;
-}
-
-.app-loading-status-dot{
-  width:6px;
-  height:6px;
-  border-radius:50%;
-  background:#c78cff;
-  box-shadow:0 0 10px rgba(199,140,255,.65);
+  background:#fff;
+  transform:translateX(-120%);
+  animation:appLoadingProgress .72s ease-in-out infinite;
 }
 
 @keyframes appLoadingSpin{
   to{transform:rotate(360deg)}
 }
 
-@keyframes appLoadingFloat{
-  0%,100%{transform:translateY(0) scale(1)}
-  50%{transform:translateY(-3px) scale(1.025)}
-}
-
-@keyframes appLoadingPulse{
-  0%,100%{transform:scale(.88);opacity:.55}
-  50%{transform:scale(1.08);opacity:.85}
-}
-
-@keyframes appLoadingDrift{
-  from{transform:translate3d(0,0,0)}
-  to{transform:translate3d(26px,26px,0)}
-}
-
 @keyframes appLoadingProgress{
-  0%{transform:translateX(-150%)}
-  55%{transform:translateX(250%)}
-  100%{transform:translateX(250%)}
-}
-
-@keyframes appLoadingOnline{
-  0%,100%{opacity:.65;transform:scale(.92)}
-  50%{opacity:1;transform:scale(1.08)}
+  0%{transform:translateX(-120%)}
+  100%{transform:translateX(350%)}
 }
 
 @media(prefers-reduced-motion:reduce){
-  .app-loading-ring,
-  .app-loading-logo,
-  .app-loading-progress span,
-  .app-loading-dot,
-  #app-loading.app-loading::before,
-  #app-loading.app-loading::after{
+  .app-loading-spinner,
+  .app-loading-progress span{
     animation:none!important;
   }
 }
+

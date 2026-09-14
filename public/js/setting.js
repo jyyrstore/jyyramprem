@@ -1,5 +1,5 @@
 const icon=(n)=>window.icon?.(n)||'';
-[['refreshIcon','refresh'],['userAvatarIcon','user'],['homeIcon','home'],['logoutIcon','logout'],['navHome','home'],['navDashboard','dashboard'],['navSetting','settings']].forEach(([id,n])=>{const e=document.querySelector('#'+id);if(e)e.innerHTML=icon(n)});
+[['refreshIcon','refresh'],['userAvatarIcon','user'],['homeIcon','home'],['logoutIcon','logout'],['deleteAccountIcon','trash'],['deleteAccountModalIcon','trash'],['navHome','home'],['navDashboard','dashboard'],['navSetting','settings']].forEach(([id,n])=>{const e=document.querySelector('#'+id);if(e)e.innerHTML=icon(n)});
 
 let accounts=[];
 const HISTORY_PAGE_SIZE=5;
@@ -309,6 +309,7 @@ function openDeleteAccountModal() {
   syncDeleteAccountButton();
 
   deleteAccountModal.hidden = false;
+  deleteAccountBtn?.setAttribute("aria-expanded", "true");
   document.body.classList.add("account-delete-modal-open");
 
   requestAnimationFrame(() => deleteAccountEmail?.focus());
@@ -318,6 +319,7 @@ function closeDeleteAccountModal() {
   if (!deleteAccountModal || deleteAccountModal.hidden) return;
 
   deleteAccountModal.hidden = true;
+  deleteAccountBtn?.setAttribute("aria-expanded", "false");
   document.body.classList.remove("account-delete-modal-open");
   setDeleteAccountStatus("");
 
@@ -342,6 +344,28 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
     event.preventDefault();
     closeDeleteAccountModal();
+    return;
+  }
+
+  if (event.key !== "Tab") return;
+
+  const focusable = [
+    ...deleteAccountModal.querySelectorAll(
+      `button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])`
+    ),
+  ];
+
+  if (!focusable.length) return;
+
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
   }
 });
 

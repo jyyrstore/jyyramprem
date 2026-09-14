@@ -14,6 +14,13 @@
   };
 
   const views = new Map([...document.querySelectorAll(".app-view[data-view]")].map((el) => [el.dataset.view, el]));
+  // CSP blocks inline event handlers; keep the previous resilient image fallback
+  // using one delegated listener for the shared SPA document.
+  document.addEventListener("error", (event) => {
+    const target = event.target;
+    if (target instanceof HTMLImageElement && target.dataset.hideOnError === "true") target.hidden = true;
+  }, true);
+
   const loadedScripts = new Set();
   let activeView = null;
   let activeStyleLinks = [];
@@ -189,8 +196,12 @@
 
     legacyContextFromUrl();
     if (name !== "maintenance" && name !== "login" && name !== "reset-password") {
+      console.time("[JYYR] getSession");
       const session = await window.AMAuth.getSession().catch(() => null);
+      console.timeEnd("[JYYR] getSession");
+      console.time("[JYYR] maintenance");
       const maintenance = await getMaintenanceState(session);
+      console.timeEnd("[JYYR] maintenance");
       if (session?.access_token && maintenance.data?.maintenance_enabled === true && maintenance.data?.owner !== true) {
         return showView("maintenance", { updateUrl: true, replaceUrl: true });
       }
@@ -220,21 +231,27 @@
       next.appendChild(template.content.cloneNode(true));
       next.dataset.materialized = "1";
     }
-    next.hidden = true;
     if (options.section) next.dataset.section = options.section; else delete next.dataset.section;
+    next.hidden = false;
+    next.dataset.booting = "1";
     document.querySelector("#app-root")?.appendChild(next);
     activeView = name;
     updateBodyState(name);
 
     activeStyleLinks.forEach((link) => link.remove());
     activeStyleLinks = [];
+    console.time(`[JYYR] loadCss:${name}`);
     await loadCss(name);
+    console.timeEnd(`[JYYR] loadCss:${name}`);
     if (serial !== navigationSerial) return false;
+    console.time(`[JYYR] scripts:${name}`);
     await loadViewScripts(name);
+    console.timeEnd(`[JYYR] scripts:${name}`);
     window.JYYRUIProtection?.start?.();
     window.JYYRUIProtection?.refresh?.();
     if (serial !== navigationSerial) return false;
     next.hidden = false;
+    delete next.dataset.booting;
     document.getElementById("app-loading")?.remove();
 
     if (options.tokenRequired) window.JYYRAuthView?.showPortalTokenGate?.();

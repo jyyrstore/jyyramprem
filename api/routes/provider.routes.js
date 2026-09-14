@@ -12,6 +12,7 @@ const {
 export function registerProviderRoutes(app, deps) {
   const {
     providerDiagnosticLimiter,
+    internalSecretLimiter,
   } = deps;
 
   app.post(
@@ -53,7 +54,7 @@ export function registerProviderRoutes(app, deps) {
     }
   );
 
-  app.post("/api/internal/provider/magiclink-delivery", (req, res) => {
+  app.post("/api/internal/provider/magiclink-delivery", internalSecretLimiter, (req, res) => {
     if (!PROVIDER_DELIVERY_WEBHOOK_ENABLED) return res.status(404).json({ ok: false, error: "Delivery webhook tidak diaktifkan." });
     const provided = req.get("x-provider-diagnostic-secret") || "";
     if (!timingSafeSecretEquals(provided, PROVIDER_DIAGNOSTIC_SECRET)) return res.status(401).json({ ok: false, error: "Diagnostic authentication failed." });

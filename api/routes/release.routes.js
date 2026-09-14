@@ -32,7 +32,7 @@ export function registerReleaseRoutes(app, deps) {
       if (!data) return res.status(404).json({ ok: false, code: "NO_RELEASE", error: "Belum ada release tersedia." });
       return res.set("Cache-Control", "no-store, max-age=0").json({ ok: true, release: data });
     } catch (error) {
-      console.error("[APP LATEST ERROR]", error);
+      console.error("[APP LATEST ERROR]", { code: error?.code || null, status: error?.status || null, message: error?.message || "Unknown error" });
       return res.status(500).json({ ok: false, error: "Gagal membaca release aplikasi." });
     }
   });
@@ -49,7 +49,7 @@ export function registerReleaseRoutes(app, deps) {
       if (error) throw error;
       return res.set("Cache-Control", "no-store, max-age=0").json({ ok: true, releases: data || [] });
     } catch (error) {
-      console.error("[APP RELEASES ERROR]", error);
+      console.error("[APP RELEASES ERROR]", { code: error?.code || null, status: error?.status || null, message: error?.message || "Unknown error" });
       return res.status(500).json({ ok: false, error: "Gagal membaca riwayat release aplikasi." });
     }
   });
@@ -61,7 +61,7 @@ export function registerReleaseRoutes(app, deps) {
       if (error) throw error;
       return res.json({ ok: true, upload: { path, token: data.token, signedUrl: data.signedUrl, contentType: "application/vnd.android.package-archive" } });
     } catch (error) {
-      console.error("[APP RELEASE SIGN UPLOAD ERROR]", error);
+      console.error("[APP RELEASE SIGN UPLOAD ERROR]", { code: error?.code || null, status: error?.status || null, message: error?.message || "Unknown error" });
       return res.status(500).json({ ok: false, error: "Gagal menyiapkan upload APK." });
     }
   });
@@ -72,7 +72,7 @@ export function registerReleaseRoutes(app, deps) {
       if (error) throw error;
       return res.json({ ok: true, owner: true, releases: data || [] });
     } catch (error) {
-      console.error("[OWNER APP RELEASES ERROR]", error);
+      console.error("[OWNER APP RELEASES ERROR]", { code: error?.code || null, status: error?.status || null, message: error?.message || "Unknown error" });
       return res.status(500).json({ ok: false, error: "Gagal membaca release aplikasi." });
     }
   });
@@ -136,7 +136,7 @@ export function registerReleaseRoutes(app, deps) {
       return res.status(201).json({ ok: true, owner: true, release: data, verified: { package_name: m.packageName, version: m.versionName, version_code: m.versionCode, file_size_bytes: verified.fileSizeBytes, sha256: verified.sha256, min_sdk: m.minSdk, target_sdk: m.targetSdk } });
     } catch (error) {
       await removeStorageObject(incomingPath);
-      console.error("[OWNER APP RELEASE CREATE ERROR]", error);
+      console.error("[OWNER APP RELEASE CREATE ERROR]", { code: error?.code || null, status: error?.status || null, message: error?.message || "Unknown error" });
       const duplicate = /duplicate key|unique constraint/i.test(String(error.message));
       return res.status(duplicate ? 409 : 500).json({ ok: false, error: duplicate ? "Release version atau version code tersebut sudah ada." : "APK gagal diverifikasi atau release gagal dibuat." });
     }
@@ -179,7 +179,7 @@ export function registerReleaseRoutes(app, deps) {
       if (error) throw error;
       return res.json({ ok: true, owner: true, release: data });
     } catch (error) {
-      console.error("[OWNER APP RELEASE UPDATE ERROR]", error);
+      console.error("[OWNER APP RELEASE UPDATE ERROR]", { code: error?.code || null, status: error?.status || null, message: error?.message || "Unknown error" });
       const duplicate = /duplicate key|unique constraint/i.test(String(error.message));
       return res.status(duplicate ? 409 : 500).json({ ok: false, error: duplicate ? "Perubahan release melanggar aturan unik database." : "Gagal memperbarui release aplikasi." });
     }

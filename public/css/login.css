@@ -285,6 +285,7 @@ body.auth-page::before {
 }
 
 .auth-card-inner {
+  position: relative;
   width: 100%;
   min-height: 99.2vw;
 
@@ -292,7 +293,27 @@ body.auth-page::before {
 
   border-radius: 5.6vw;
 
-  background: #454547;
+  
+
+.auth-card-inner::after {
+  content: "";
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(156, 72, 255, .28) 0%, rgba(156, 72, 255, .12) 38%, rgba(156, 72, 255, 0) 72%);
+  filter: blur(10px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.auth-card-inner > * {
+  position: relative;
+  z-index: 1;
+}
+background: #2b2b30;
 }
 
 
@@ -716,24 +737,88 @@ body.auth-page::before {
 }
 
 #googleSignInBtn {
-  order: 15;
-  gap: 12px;
-  color: #f2edf5 !important;
-  background:
-    linear-gradient(#171619, #171619) padding-box,
-    linear-gradient(135deg, #f2edf5 0%, #bfb6c8 48%, #8d8498 100%) border-box !important;
+  order: 30;
+  width: min(240px, calc(100% - 48px)) !important;
+  height: 48px;
+  min-height: 48px;
+  max-height: 48px;
+  margin: 0 auto 3.2vw;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-sizing: border-box;
+  border: 2px solid transparent !important;
+  border-radius: 16px;
+  background: linear-gradient(#fff,#fff) padding-box, conic-gradient(from 0deg,#4285F4,#34A853,#FBBC05,#EA4335,#4285F4) border-box !important;
+  color: #3c4043 !important;
+  font-family: Arial, sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0;
+  text-align: center;
+  text-shadow: none;
+  box-shadow: 0 1px 2px rgba(60,64,67,.12) !important;
+  overflow: hidden;
+  cursor: pointer;
+  transition: background .15s ease, box-shadow .15s ease, border-color .15s ease;
 }
+#googleSignInBtn:hover {
+  background: #f8f9fa !important;
+  border-color: #c7c9cc !important;
+  box-shadow: 0 1px 3px rgba(60,64,67,.18) !important;
+}
+#googleSignInBtn:active {
+  background: #f1f3f4 !important;
+  box-shadow: none !important;
+}
+#googleSignInBtn .google-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 21px;
+  height: 21px;
+  flex: 0 0 21px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 0;
+  line-height: 0;
+}
+#googleSignInBtn .google-mark svg {
+  display: block;
+  width: 21px;
+  height: 21px;
+  flex: 0 0 21px;
+}
+#googleSignInBtn .google-label {
+  display: inline-block;
+  margin: 0;
+  padding: 0;
+  color: #3c4043;
+  font-family: Arial, sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 20px;
+  letter-spacing: 0;
+}
+
 
 #googleSignInBtn .google-mark {
   display: inline-grid;
   place-items: center;
-  width: 1.9em;
-  height: 1.9em;
-  border-radius: 50%;
-  background: #fff;
-  color: #4285f4;
+  width: 20px;
+  height: 20px;
+  border-radius: 0;
+  background: transparent;
+  color:inherit;
   font-family: Arial, sans-serif;
-  font-size: 0.72em;
+  font-size: 18px;
   font-weight: 900;
   line-height: 1;
   text-shadow: none;
@@ -1187,4 +1272,10 @@ body.auth-page #usernameField:not(.hidden) + .auth-email-field {
 .token-close:focus-visible {
   outline: 2px solid rgba(164,92,240,.9);
   outline-offset: 2px;
+}
+
+
+#submitBtn,
+#registerTab {
+  border-radius: 16px;
 }

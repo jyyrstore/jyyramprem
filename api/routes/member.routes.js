@@ -422,10 +422,7 @@ export function registerMemberRoutes(app, deps) {
           .limit(100);
 
         if (error) {
-          console.error(
-            "[ACCOUNTS ERROR]",
-            error
-          );
+          console.error("[ACCOUNTS ERROR]", { code: error?.code, status: error?.status, message: error?.message });
 
           return res
             .status(500)
@@ -500,7 +497,7 @@ export function registerMemberRoutes(app, deps) {
         if (error) {
           console.error(
             "[USAGE ERROR]",
-            error
+            { code: error?.code || null, message: error?.message || "Unknown error" }
           );
 
           return res
