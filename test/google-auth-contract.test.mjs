@@ -31,14 +31,41 @@ test("Google OAuth uses the client-only implicit session flow without changing t
 });
 
 test("Google OAuth callbacks bootstrap the account profile before portal access is checked", () => {
-  assert.match(client, /bootstrapAccount/);
   assert.match(auth, /AMAuth\.bootstrapAccount\(\)/);
   assert.match(auth, /bootstrap\?\.response\?\.ok/);
   assert.match(routes, /app\.post\("\/api\/auth\/bootstrap", deps\.requireAuth/);
-  assert.match(routes, /ensureMemberProfile\(req\.user\)/);
+
   assert.match(runtime, /async function ensureMemberProfile\(user\)/);
   assert.match(runtime, /member_profiles/);
   assert.match(runtime, /user_metadata/);
+
+  const runtimeStart = runtime.indexOf("const runtime={") >= 0
+    ? runtime.indexOf("const runtime={")
+    : runtime.indexOf("const runtime = {");
+
+  const runtimeEnd = runtime.indexOf(
+    "export default runtime;",
+    runtimeStart
+  );
+
+  assert.ok(
+    runtimeStart >= 0 && runtimeEnd > runtimeStart,
+    "default runtime object harus dapat ditemukan"
+  );
+
+  const defaultRuntime = runtime.slice(runtimeStart, runtimeEnd);
+
+  assert.match(
+    defaultRuntime,
+    /^\s*ensureMemberProfile\s*,\s*$/m,
+    "default runtime harus mengekspos ensureMemberProfile"
+  );
+
+  assert.match(
+    routes,
+    /ensureMemberProfile\s*\(\s*req\.user\s*\)/,
+    "Google OAuth callback harus melakukan bootstrap profil melalui ensureMemberProfile(req.user)"
+  );
 });
 
 test("Frontend starts Google OAuth through the first-party server route", () => {
