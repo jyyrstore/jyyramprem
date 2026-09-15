@@ -1,6 +1,7 @@
 (function () {
   const STORAGE_KEY = "am_account_portal_session";
   let configPromise;
+  let authenticated = false;
 
   async function getConfig() {
     if (!configPromise) {
@@ -129,11 +130,13 @@
     // OAuth/recovery redirects must take precedence over any stale stored session.
     // Otherwise a previous session can mask the fresh tokens returned by Google.
     let session = adoptRecoverySessionFromUrl() || readSession();
-    if (!session?.access_token) return null;
+    if (!session?.access_token) { authenticated = false; window.__JYYR_AUTHENTICATED__ = false; return null; }
     const expiresAt = Number(session.expires_at || 0);
     if (expiresAt && expiresAt <= Math.floor(Date.now() / 1000) + 30) {
-      try { session = await refreshSession(session); } catch { writeSession(null); return null; }
+      try { session = await refreshSession(session); } catch { writeSession(null); authenticated = false; window.__JYYR_AUTHENTICATED__ = false; return null; }
     }
+    authenticated = true;
+    window.__JYYR_AUTHENTICATED__ = true;
     return session;
   }
 
@@ -141,6 +144,8 @@
     const data = await api("/token?grant_type=password", { method: "POST", body: JSON.stringify({ email, password }) });
     const session = normalizeSession(data);
     writeSession(session);
+    authenticated = Boolean(session?.access_token);
+    window.__JYYR_AUTHENTICATED__ = authenticated;
     return { session, user: session?.user || null };
   }
 
@@ -210,7 +215,7 @@
           headers: { apikey: config.supabasePublishableKey, Authorization: `Bearer ${session.access_token}` },
         });
       }
-    } finally { writeSession(null); }
+    } finally { writeSession(null); authenticated = false; window.__JYYR_AUTHENTICATED__ = false; }
   }
 
   async function deleteAccount(confirmationEmail) {
@@ -277,20 +282,83 @@
     return portalRequest("/api/access/verify", { method: "POST", body: JSON.stringify({ token }) });
   }
 
-  async function getUser() {
-    const session = await getSession();
-    if (!session?.access_token) return null;
+  async function fetchSupabaseUser(accessToken) {
     const config = await getConfig();
     const response = await fetch(`${config.supabaseUrl}/auth/v1/user`, {
-      headers: { apikey: config.supabasePublishableKey, Authorization: `Bearer ${session.access_token}` },
+      headers: { apikey: config.supabasePublishableKey, Authorization: `Bearer ${accessToken}` },
       cache: "no-store",
     });
-    if (!response.ok) { writeSession(null); return null; }
-    const user = await response.json();
-    session.user = user;
-    writeSession(session);
-    return user;
+    const data = await response.json().catch(() => null);
+    if (!response.ok || !data?.id) {
+      const error = new Error(data?.message || data?.error_description || "Sesi Supabase tidak valid.");
+      error.status = response.status;
+      error.code = data?.code || "invalid_session";
+      throw error;
+    }
+    return data;
   }
 
-  window.AMAuth = { getConfig, getSession, signIn, signInWithGoogle, consumeOAuthErrorFromUrl, signUp, resendSignupCode, verifyOtp, signOut, resetPassword, deleteAccount, getUser, bootstrapAccount, getPortalAccess, contactOwnerForPortalToken, getTokenCenterLink, verifyPortalToken };
+  async function adoptNativeOAuthSession(candidate) {
+    let session = normalizeSession(candidate);
+    if (!session?.access_token || !session?.refresh_token) {
+      throw Object.assign(new Error("Credential OAuth tidak lengkap."), { code: "invalid_oauth_credential" });
+    }
+
+    try {
+      session.user = await fetchSupabaseUser(session.access_token);
+    } catch (firstError) {
+      if (!session.refresh_token) {
+        writeSession(null);
+        authenticated = false;
+        throw firstError;
+      }
+      try {
+        const refreshed = await refreshSession(session);
+        if (!refreshed?.access_token) throw firstError;
+        session = refreshed;
+        session.user = await fetchSupabaseUser(session.access_token);
+      } catch (refreshError) {
+        writeSession(null);
+        authenticated = false;
+        throw refreshError;
+      }
+    }
+
+    writeSession(session);
+    authenticated = true;
+    window.__JYYR_AUTHENTICATED__ = true;
+    window.dispatchEvent(new CustomEvent("jyyr:native-authenticated"));
+    return session;
+  }
+
+  function handleNativeOAuthError(code, state) {
+    authenticated = false;
+    window.__JYYR_AUTHENTICATED__ = false;
+    window.__JYYR_NATIVE_OAUTH_ERROR__ = { code: String(code || "google_oauth_failed"), state: state || null };
+    window.dispatchEvent(new CustomEvent("jyyr:native-oauth-error"));
+  }
+
+  async function getUser() {
+    const session = await getSession();
+    if (!session?.access_token) { authenticated = false; return null; }
+    try {
+      const user = await fetchSupabaseUser(session.access_token);
+      session.user = user;
+      writeSession(session);
+      authenticated = true;
+      window.__JYYR_AUTHENTICATED__ = true;
+      return user;
+    } catch {
+      writeSession(null);
+      authenticated = false;
+      window.__JYYR_AUTHENTICATED__ = false;
+      return null;
+    }
+  }
+
+  function getAuthState() {
+    return { authenticated, session: readSession() };
+  }
+
+  window.AMAuth = { getConfig, getSession, signIn, signInWithGoogle, consumeOAuthErrorFromUrl, signUp, resendSignupCode, verifyOtp, signOut, resetPassword, deleteAccount, getUser, adoptNativeOAuthSession, handleNativeOAuthError, getAuthState, bootstrapAccount, getPortalAccess, contactOwnerForPortalToken, getTokenCenterLink, verifyPortalToken };
 })();

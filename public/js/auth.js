@@ -244,6 +244,16 @@ async function continueAfterAuth() {
     throw new Error("Session autentikasi tidak tersedia.");
   }
 
+  // Token Gate must never run on the basis of token presence alone. Confirm that
+  // Supabase still accepts the access token and establish an authenticated state
+  // before the account bootstrap/access check starts.
+  const user = await AMAuth.getUser().catch(() => null);
+  if (!user?.id || AMAuth.getAuthState?.().authenticated !== true) {
+    closePortalTokenGate();
+    window.JYYRApp?.navigate("login", { replaceUrl: true });
+    throw new Error("Session Supabase tidak tervalidasi.");
+  }
+
   const bootstrap = await AMAuth.bootstrapAccount().catch((error) => ({
     response: { ok: false, status: 500 },
     data: { error: error?.message || "Profil akun tidak dapat disiapkan." },
@@ -659,5 +669,16 @@ document.fonts?.ready.then(() => {
 });
 
 window.addEventListener("resize", applyLoginBrandGradient);
+
+window.addEventListener("jyyr:native-oauth-error", () => {
+  const error = window.__JYYR_NATIVE_OAUTH_ERROR__;
+  status(error?.code === "access_denied" ? "Login Google dibatalkan." : "Login Google gagal. Coba lagi.", error?.code === "access_denied" ? "warning" : "error");
+});
+
+window.addEventListener("jyyr:native-authenticated", () => {
+  continueAfterAuth().catch((error) => {
+    if (error?.message) status(error.message, "error");
+  });
+});
 
 window.JYYRAuthView = { setMode, showPortalTokenGate, closePortalTokenGate, continueAfterAuth };

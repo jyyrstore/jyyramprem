@@ -12,6 +12,8 @@ const runtime = fs.readFileSync(new URL("../lib/runtime/app-runtime.js", import.
 const clientModule = fs.readFileSync(new URL("../lib/supabase/client.js", import.meta.url), "utf8");
 const limiter = fs.readFileSync(new URL("../api/middleware/rate-limit.middleware.js", import.meta.url), "utf8");
 const router = fs.readFileSync(new URL("../public/js/router.js", import.meta.url), "utf8");
+const manifest = fs.readFileSync(new URL("../../JyyR-Amprem-Android/app/src/main/AndroidManifest.xml", import.meta.url), "utf8");
+const mainActivity = fs.readFileSync(new URL("../../JyyR-Amprem-Android/app/src/main/java/com/jyystore/jyyramprem/MainActivity.java", import.meta.url), "utf8");
 
 test("Google OAuth has a dedicated rate-limited server redirect route", () => {
   assert.match(routes, /app\.get\("\/api\/auth\/google",\s*authGoogleLimiter/);
@@ -78,6 +80,8 @@ test("Frontend starts Google OAuth through the first-party server route", () => 
   assert.match(client, /window\.location\.assign\("\/api\/auth\/google"\)/);
   assert.match(client, /consumeOAuthErrorFromUrl/);
   assert.match(client, /window\.history\.replaceState/);
+  assert.match(mainActivity, /isGoogleOAuthStartUrl/);
+  assert.doesNotMatch(mainActivity, /isGoogleOAuthAuthorizeUrl/);
 });
 
 test("Fresh OAuth callback tokens take precedence over a stale stored session", () => {
@@ -114,6 +118,44 @@ test("Google OAuth does not introduce browser-side client secrets", () => {
   assert.doesNotMatch(auth, /GOOGLE_CLIENT_SECRET|GOOGLE_SECRET|client_secret/i);
 });
 
+
+
+
+test("Android native callback contract is exact and never falls back to a full browser", () => {
+  assert.match(manifest, /android:launchMode="singleTask"/);
+  assert.match(manifest, /android:scheme="jyyramprem"/);
+  assert.match(manifest, /android:host="auth"/);
+  assert.match(manifest, /android:path="\/callback"/);
+  assert.match(mainActivity, /onNewIntent\(Intent intent\)/);
+  assert.match(mainActivity, /jyyramprem\:\/\/auth\/callback/);
+  assert.match(mainActivity, /CustomTabsIntent/);
+  assert.match(mainActivity, /nativeOAuthSessionResult\(boolean success, String code\)/);
+  assert.match(mainActivity, /clearQuery\(\)/);
+  assert.match(mainActivity, /\"client\"\.equalsIgnoreCase\(name\)/);
+  assert.doesNotMatch(mainActivity, /startActivity\(new Intent\(Intent\.ACTION_VIEW, oauthUri\)\)/);
+  assert.match(mainActivity, /Custom Tab tidak tersedia/);
+});
+
+test("Native callback validates the Supabase session before Token Gate", () => {
+  assert.match(client, /function adoptNativeOAuthSession\(candidate\)/);
+  assert.match(client, /fetchSupabaseUser\(session\.access_token\)/);
+  assert.match(client, /authenticated = true/);
+  assert.match(client, /window\.__JYYR_AUTHENTICATED__ = true/);
+  assert.match(auth, /const user = await AMAuth\.getUser\(\)\.catch/);
+  assert.match(auth, /AMAuth\.getAuthState\?\.\(\)\.authenticated !== true/);
+  assert.match(auth, /await AMAuth\.bootstrapAccount\(\)/);
+  assert.match(auth, /await AMAuth\.getPortalAccess\(\)/);
+});
+
+test("Native callback keeps credentials in memory until adoption succeeds", () => {
+  assert.match(mainActivity, /pendingAuthCallbackUri = uri/);
+  assert.match(mainActivity, /callbackUri\.getQueryParameter\("access_token"\)/);
+  assert.match(mainActivity, /getFragmentParameter\(callbackUri, "access_token"\)/);
+  assert.match(mainActivity, /callbackUri\.getQueryParameter\("refresh_token"\)/);
+  assert.match(mainActivity, /callbackUri\.getQueryParameter\("error_description"\)/);
+  assert.match(mainActivity, /callbackUri\.getQueryParameter\("state"\)/);
+  assert.match(mainActivity, /pendingAuthCallbackUri = null/);
+});
 
 test("Google OAuth tokens never trigger the password-reset view", () => {
   assert.match(router, /const type = hash\.get\("type"\) \|\| url\.searchParams\.get\("type"\)/);
