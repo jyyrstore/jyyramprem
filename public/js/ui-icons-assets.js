@@ -72,7 +72,6 @@
 
     category:     "menu.png",
 
-    arrowRight:   "link.png",
     arrowDown:    "Tanda-Panah-Bawah.png",
     arrowUp:      "Tanda-Panah-Bawah.png",
     back:         "Tanda-Panah-Bawah.png",
@@ -101,18 +100,15 @@
 
     /* ---------- Files / Actions ---------- */
 
-    file:         "salin.png",
     copy:         "salin.png",
 
     edit:         "edit-profil.png",
 
-    plus:         "link.png",
 
     photo:        "Profil-user.png",
     photoPlus:    "edit-profil.png",
     photoCancel:  "cancel.png",
 
-    trash:        "cancel.png",
 
 
     /* ---------- Finance / Wallet ---------- */
@@ -138,7 +134,6 @@
     brandShopee:  "Channel-Saluran.png",
 
     broadcast:    "broadcast-on.png",
-    message:      "Channel-Saluran.png",
 
 
     /* ---------- Help / Information ---------- */
@@ -169,10 +164,10 @@
   ) {
 
     /*
-      Jika nama icon tidak ditemukan,
-      gunakan category sebagai fallback.
+      Gunakan registry SVG untuk icon semantic yang tidak punya
+      asset PNG canonical; category hanya menjadi fallback terakhir.
     */
-
+    if (!map[name] && window.JYYR_ICONS?.[name]) return window.JYYR_ICONS[name];
     const file = map[name] || map.category;
 
 
