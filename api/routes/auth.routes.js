@@ -25,18 +25,29 @@ export function registerAuthRoutes(app, deps) {
     requireAuth,
   } = deps;
 
-  app.get("/api/auth/google", authGoogleLimiter, async (_req, res) => {
-    const configuredUrl = String(process.env.APP_URL || "https://www.jyyramprem.my.id").trim();
-    let redirectTo;
-    try {
-      const parsed = new URL(configuredUrl);
-      if (!["https:", "http:"].includes(parsed.protocol) || parsed.username || parsed.password) throw new Error("Invalid APP_URL");
-      parsed.pathname = parsed.pathname.replace(/\/+$/, "") + "/";
-      parsed.search = "";
-      parsed.hash = "";
-      redirectTo = parsed.toString();
-    } catch {
-      redirectTo = "https://www.jyyramprem.my.id/";
+  app.get("/api/auth/google", authGoogleLimiter, async (req, res) => {
+    const ANDROID_OAUTH_REDIRECT_URI = "jyyramprem://auth/callback";
+    const requestedClient = String(req.query?.client || "").trim().toLowerCase();
+    const isAndroidClient = requestedClient === "android";
+
+    // The native Android flow uses a fixed deep-link URI. It is deliberately
+    // hard-coded here so the browser cannot supply an arbitrary redirect URL
+    // and turn this endpoint into an open redirect. Web login continues to use
+    // the canonical APP_URL.
+    let redirectTo = ANDROID_OAUTH_REDIRECT_URI;
+
+    if (!isAndroidClient) {
+      const configuredUrl = String(process.env.APP_URL || "https://www.jyyramprem.my.id").trim();
+      try {
+        const parsed = new URL(configuredUrl);
+        if (!["https:", "http:"].includes(parsed.protocol) || parsed.username || parsed.password) throw new Error("Invalid APP_URL");
+        parsed.pathname = parsed.pathname.replace(/\/+$/, "") + "/";
+        parsed.search = "";
+        parsed.hash = "";
+        redirectTo = parsed.toString();
+      } catch {
+        redirectTo = "https://www.jyyramprem.my.id/";
+      }
     }
 
     try {
@@ -49,7 +60,12 @@ export function registerAuthRoutes(app, deps) {
       res.setHeader("Referrer-Policy", "no-referrer");
       return res.redirect(302, data.url);
     } catch (error) {
-      console.error("[AUTH GOOGLE OAUTH ERROR]", { code: error?.code || null, status: error?.status || null, message: error?.message || "Unknown error" });
+      console.error("[AUTH GOOGLE OAUTH ERROR]", {
+        client: isAndroidClient ? "android" : "web",
+        code: error?.code || null,
+        status: error?.status || null,
+        message: error?.message || "Unknown error"
+      });
       const target = new URL(redirectTo);
       target.searchParams.set("auth_error", "google");
       res.setHeader("Cache-Control", "no-store, max-age=0");

@@ -32,7 +32,10 @@ app.post("/api/auth/verify-email", authVerifyLimiter, async (req, res) => {
   if (!/^\d{6}$/.test(code)) return res.status(400)
   supabaseAuth.auth.verifyOtp({ email, token: code, type: "email" })
 })
-app.get("/api/auth/google", authGoogleLimiter, async (_req, res) => {
+app.get("/api/auth/google", authGoogleLimiter, async (req, res) => {
+  const requestedClient = String(req.query?.client || "").trim().toLowerCase();
+  const isAndroidClient = requestedClient === "android";
+  const redirectTo = isAndroidClient ? "jyyramprem://auth/callback" : "https://www.jyyramprem.my.id/";
   supabaseOAuth.auth.signInWithOAuth({ provider: "google", options: { redirectTo } })
 })
 app.get(

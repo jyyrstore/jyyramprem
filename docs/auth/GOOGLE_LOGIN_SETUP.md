@@ -17,6 +17,45 @@ Browser
 
 The server never receives or stores the browser session tokens from the URL fragment.
 
+
+## Android APK native callback
+
+The Android APK starts Google login through the same first-party route with the fixed client marker:
+
+```text
+GET /api/auth/google?client=android
+```
+
+For this exact `client=android` request, the server sets Supabase OAuth `redirectTo` to the fixed native deep link:
+
+```text
+jyyramprem://auth/callback
+```
+
+The server does **not** accept a browser-provided `redirectTo` value. This prevents the OAuth endpoint from becoming an open redirect. A normal web request without `client=android` continues to use the canonical `APP_URL`.
+
+The Android flow is therefore:
+
+```text
+APK
+↓
+GET /api/auth/google?client=android
+↓
+Custom Tab
+↓
+Google authentication
+↓
+Supabase
+↓
+jyyramprem://auth/callback
+↓
+MainActivity receives the deep link
+↓
+back to APK
+```
+
+The native deep-link URI must also be present in Supabase **Authentication → URL Configuration → Redirect URLs**. It is not a Google Cloud redirect URI; the Google provider callback remains the Supabase Auth callback URI documented above.
+
 ## Supabase configuration
 
 In the Supabase project, enable **Authentication → Providers → Google** and enter the Google OAuth Client ID and Client Secret. These provider credentials belong in Supabase Auth configuration; do not put them in this repository, browser JavaScript, or `NEXT_PUBLIC_*` variables.

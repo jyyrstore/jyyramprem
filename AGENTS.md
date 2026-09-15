@@ -7,7 +7,7 @@ Google Login is an additive Supabase Auth provider. It does **not** require a da
 - Keep email/password registration and six-digit email verification unchanged.
 - Google login must enter through the first-party `GET /api/auth/google` redirect route.
 - The browser must not receive or store the Google Client Secret.
-- Do not accept a caller-supplied OAuth `redirectTo`; use the canonical `APP_URL` only.
+- Do not accept a caller-supplied OAuth `redirectTo`. Browser requests use the canonical `APP_URL`; the native Android request is selected only by the fixed `client=android` marker and always redirects to `jyyramprem://auth/callback`.
 - Supabase/Google provider credentials are configured outside the repository in Google Auth Platform and Supabase Auth Provider settings.
 - Do not add a migration solely to enable Google OAuth.
 

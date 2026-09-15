@@ -18,6 +18,11 @@ test("Google OAuth has a dedicated rate-limited server redirect route", () => {
   assert.match(routes, /supabaseOAuth\.auth\.signInWithOAuth\(/);
   assert.match(routes, /provider:\s*"google"/);
   assert.match(routes, /redirectTo/);
+  assert.match(routes, /req\.query\?\.client/);
+  assert.match(routes, /requestedClient === "android"/);
+  assert.match(routes, /jyyramprem:\/\/auth\/callback/);
+  assert.match(routes, /isAndroidClient \? "android" : "web"/);
+  assert.match(routes, /new URL\(redirectTo\)/);
   assert.match(routes, /Cache-Control.*no-store/);
   assert.match(routes, /Referrer-Policy.*no-referrer/);
   assert.match(limiter, /authGoogleLimiter/);

@@ -65,3 +65,7 @@ The canonical portal access contract is `1 TOKEN = 1 USER`: a newly generated Ow
 ## Migration note
 
 `supabase/migrations/` is the canonical migration set included in this package. The repository preserves the migration files available in this snapshot; historical production migration history must not be inferred from older audit reports.
+
+
+### Android native Google OAuth callback
+The Google OAuth route supports a fixed `client=android` mode that redirects Supabase to `jyyramprem://auth/callback` for the native APK flow while preserving the canonical web redirect for normal browser requests.
