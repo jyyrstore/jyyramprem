@@ -180,12 +180,14 @@ document.addEventListener('contextmenu', (event) => {
             Download
           </a>
 
-          <a
+          <button
             class="action-button center"
-            href="/app" data-jyyr-view="app"
+            type="button"
+            id="shareAppButton"
+            aria-label="Bagikan Jyy'R Amprem"
           >
-            App Center
-          </a>
+            Bagikan
+          </button>
 
         </div>
 
@@ -391,6 +393,40 @@ document.addEventListener('contextmenu', (event) => {
       'Informasi Aplikasi'
     );
 
+
+    /* =========================================================
+       SHARE APP
+       ========================================================= */
+
+    document.addEventListener('click', async (event) => {
+      const button = event.target?.closest?.('#shareAppButton');
+      if (!button) return;
+
+      const shareUrl = `${window.location.origin}/app`;
+
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: "Jyy'R Amprem",
+            text: "Download Jyy'R Amprem di sini:",
+            url: shareUrl
+          });
+        } catch (error) {
+          if (error?.name !== 'AbortError') {
+            console.error('[APP SHARE]', error);
+          }
+        }
+        return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        alert('Link App berhasil disalin.');
+      } catch (error) {
+        console.error('[APP SHARE COPY]', error);
+        window.prompt('Salin link App:', shareUrl);
+      }
+    });
 
     /* =========================================================
        LOAD RELEASE DATA

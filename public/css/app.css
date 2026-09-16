@@ -5,7 +5,7 @@
     }
 
     :root {
-      --bg: #1b1a1f;
+      --bg: #191827;
       --panel: #1a191e;
       --text: #efedf2;
       --muted: #c9c6cc;
@@ -28,7 +28,7 @@
     html {
       margin: 0;
       padding: 0;
-      background: var(--bg);
+      background: #191827;
       scroll-behavior: smooth;
     }
 
@@ -36,15 +36,7 @@
       margin: 0;
       min-width: 320px;
       min-height: 100vh;
-      background:
-        linear-gradient(
-          150deg,
-          rgba(255, 255, 255, 0.012),
-          transparent 22%,
-          rgba(0, 0, 0, 0.028) 58%,
-          transparent 100%
-        ),
-        var(--bg);
+      background: #191827;
       color: var(--text);
       font-family: Roboto, Arial, sans-serif;
       -webkit-font-smoothing: antialiased;
@@ -63,7 +55,7 @@
       width: 100%;
       max-width: 689px;
       margin: 0 auto;
-      background: var(--bg);
+      background: #191827;
       overflow-x: hidden;
       container-type: inline-size;
     }
@@ -76,13 +68,7 @@
 
     .release-top {
       padding: 6.24cqw 5.08cqw 5.37cqw;
-      background:
-        linear-gradient(
-          165deg,
-          #1d1c21 0%,
-          #19181d 56%,
-          #1c1b20 100%
-        );
+      background: #191827;
     }
 
     .app-summary {
@@ -100,7 +86,7 @@
       border-radius: 2.47cqw;
       border: 0.29cqw solid rgba(90, 62, 255, 0.72);
       box-shadow: 0 0 0 0.15cqw rgba(0, 0, 0, 0.18);
-      background: #11131f;
+      background: #191827;
     }
 
     .app-copy {
@@ -224,7 +210,7 @@
 
     .section {
       border-top: 1.45cqw solid var(--divider);
-      background: #1a191e;
+      background: #191827;
     }
 
     .section-header {
@@ -235,7 +221,7 @@
       justify-content: space-between;
       gap: 2.61cqw;
       border-bottom: 0.73cqw solid var(--divider);
-      background: linear-gradient(165deg, #1c1b20, #19181d);
+      background: #191827;
     }
 
     .section-heading {
@@ -306,7 +292,7 @@
     }
 
     .section-body {
-      background: linear-gradient(158deg, #1b1a1f, #19181e);
+      background: #191827;
     }
 
     .section-body[hidden] {
@@ -481,9 +467,9 @@
 
     .history-card {
       padding: 2.32cqw 2.61cqw;
-      border: 0.15cqw solid rgba(255, 255, 255, 0.06);
+      border: 0.15cqw solid rgba(120, 120, 130, 0.22);
       border-radius: 2.47cqw;
-      background: #202025;
+      background: #17171F;
     }
 
     .history-card .history-row {
