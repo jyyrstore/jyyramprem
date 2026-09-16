@@ -1,4 +1,4 @@
-.maintenance-shell{min-height:100vh;display:grid;place-items:center;padding:24px;box-sizing:border-box;background:radial-gradient(circle at top,rgba(125,85,180,.16),transparent 45%)}
+.maintenance-shell{min-height:100vh;display:grid;place-items:center;padding:24px;box-sizing:border-box;background:#191827}
 .maintenance-card{width:min(100%,520px);padding:28px;border:1px solid var(--line);border-radius:22px;background:linear-gradient(145deg,rgba(45,41,54,.98),rgba(25,22,32,.98));box-shadow:var(--shadow);text-align:center}
 .maintenance-icon{width:56px;height:56px;margin:0 auto 12px;border-radius:50%;display:grid;place-items:center;font-size:26px;background:rgba(255,184,77,.14);border:1px solid rgba(255,184,77,.3)}
 .maintenance-card h1{margin:8px 0;font-size:26px}.maintenance-card p{margin:0 0 16px;color:var(--muted);line-height:1.6}.maintenance-card .status{margin-bottom:14px;text-align:left}

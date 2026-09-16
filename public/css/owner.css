@@ -49,9 +49,7 @@ body[data-page="owner"] .topbar .avatar{display:grid;place-items:center}
    Existing HTML / IDs / JS / API contracts remain untouched.
    ============================================================ */
 body[data-page="owner"] {
-  background:
-    radial-gradient(circle at 50% -10%, rgba(139,82,210,.13), transparent 34%),
-    linear-gradient(180deg,#0e0d12 0%,#121016 48%,#0d0c11 100%);
+  background: #191827;
 }
 
 body[data-page="owner"] .topbar {
@@ -371,10 +369,7 @@ body[data-page="owner"] {
   --owner-cyan: #66dcff;
   --owner-line: rgba(255,255,255,.075);
   --owner-glow: rgba(167,89,255,.16);
-  background:
-    radial-gradient(900px 420px at 50% -160px, rgba(121,58,189,.20), transparent 65%),
-    radial-gradient(700px 320px at 100% 18%, rgba(67,36,118,.10), transparent 72%),
-    linear-gradient(180deg,#0d0b10 0%,#09080c 54%,#060609 100%);
+  background: #191827;
 }
 
 body[data-page="owner"] .app-shell {

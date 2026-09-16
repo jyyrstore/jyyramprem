@@ -63,13 +63,7 @@ body.auth-page {
 
   color: #fff;
 
-  background:
-    linear-gradient(
-      135deg,
-      #0b0918 0%,
-      #0d0b18 47%,
-      #141211 100%
-    ) !important;
+  background: #191827 !important;
 }
 
 body.auth-page::before {

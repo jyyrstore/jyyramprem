@@ -171,7 +171,7 @@ body[data-page="setting"] .app-shell > .card {
     overflow: hidden;
     border-radius: 20px;
     border-color: rgba(255,255,255,.075);
-    background: radial-gradient(circle at 92% 0%, rgba(157,92,255,.085), transparent 34%), linear-gradient(180deg, #19171e 0%, #15141a 100%);
+    background:var(--card);
     box-shadow: inset 0 1px 0 rgba(255,255,255,.025), 0 18px 44px rgba(0,0,0,.28);
 }
 body[data-page="setting"] .app-shell > .card::before {
@@ -197,7 +197,7 @@ body[data-page="setting"] .access-status-modal + .card {
 }
 
 body[data-page="setting"] .profile-card {
-    background: radial-gradient(circle at 50% -12%, rgba(185,108,255,.14), transparent 38%), linear-gradient(180deg, #1b1821 0%, #15141a 100%);
+    background:var(--card);
 }
 body[data-page="setting"] .profile-card .avatar-large {
     background: radial-gradient(circle at 35% 28%, rgba(208,143,255,.22), transparent 42%), #211b2b;

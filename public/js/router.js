@@ -3,7 +3,7 @@
 
   const VIEW_META = {
     login: { css: ["/css/login.css?v=20260827-wordmark-v6"], scripts: ["/js/icons.js", "/js/notifications.js", "/js/auth.js?v=20260827-wordmark-v6"], title: "Jyy'r Amprem • Login", auth: false },
-    home: { css: ["/css/home.css"], scripts: ["/js/icons.js", "/js/ui-icons-assets.js", "/js/nav.js", "/js/notifications.js", "/js/home.js"], title: "Jyy'R Amprem • Home", auth: true },
+    home: { css: ["/css/home.css?v=20260917-iconfix"], scripts: ["/js/icons.js", "/js/ui-icons-assets.js", "/js/nav.js", "/js/notifications.js", "/js/home.js"], title: "Jyy'R Amprem • Home", auth: true },
     dashboard: { css: ["/css/dashboard.css"], scripts: ["/js/icons.js", "/js/ui-icons-assets.js", "/js/nav.js", "/js/notifications.js", "/js/dashboard.js"], title: "Jyy'R Amprem • Dashboard", auth: true },
     setting: { css: ["/css/setting.css"], scripts: ["/js/icons.js", "/js/ui-icons-assets.js", "/js/nav.js", "/js/notifications.js", "/js/setting.js?v=20260904-token-v4"], title: "Jyy'R Amprem • Account", auth: true },
     owner: { css: ["/css/owner.css"], scripts: ["/js/icons.js", "/js/ui-icons-assets.js", "/js/nav.js", "/js/notifications.js", "/js/apk-metadata.js", "/js/owner/core.js?v=20260910-token-contract-v2", "/js/owner/members.js", "/js/owner/portal-token.js?v=20260910-token-contract-v2", "/js/owner/dashboard.js", "/js/owner/broadcasts.js", "/js/owner/messaging.js", "/js/owner/content.js", "/js/owner/events.js", "/js/owner/releases.js", "/js/owner.js?v=20260910-token-contract-v2"], title: "Jyy'R Amprem • Owner", auth: true },

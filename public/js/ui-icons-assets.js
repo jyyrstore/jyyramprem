@@ -136,6 +136,36 @@
     broadcast:    "broadcast-on.png",
 
 
+    /* ---------- Home — Premium Benefits ---------- */
+
+    homeNoWatermark:  "scurity.png",
+    homeUnlimited:    "Refresh.png",
+    homeHighRes:      "grafik.png",
+    homeAdFree:       "lock-of.png",
+    homeEffects:      "gif.png",
+    homeAssets:       "diamond.png",
+    homeTransitions:  "Tanda-Panah-Bawah.png",
+    homeColor:        "grafik.png",
+    homeFaster:       "Icon-jam.png",
+
+
+    /* ---------- Home — Semantic Sections ---------- */
+
+    homeSteps:         "Verifikasi.png",
+homeIntroMail:     "e-mail.png",
+    homeVerify:        "ceklis-2.png",
+    homeGuide:         "Verifikasi.png",
+    homeAccess:        "link.png",
+    homeFaq:           "FAQ.png",
+    homeReport:        "Peringatan.png",
+    homeDonate:        "Donasi.png",
+    homeTerms:         "Dukungan.png",
+    homePrivacy:       "lock-of.png",
+    homeDisclaimer:    "Peringatan.png",
+    homeDmca:          "scurity.png",
+    homeInfoTitle:    "Situs.png",
+
+
     /* ---------- Help / Information ---------- */
 
     help:         "FAQ.png"
