@@ -1,4 +1,4 @@
-const CACHE_NAME='jyy-r-amprem-app-v4';
+const CACHE_NAME='jyy-r-amprem-app-v6-native-oauth';
 const APP_SHELL=[
   '/',
   '/manifest.webmanifest',

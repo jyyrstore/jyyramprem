@@ -351,21 +351,16 @@
      * Backend health check.
      */
     async function healthCheck() {
+      const controller = new AbortController();
+      const timer = window.setTimeout(() => controller.abort(), 5000);
       try {
-        const response = await fetch(
-          '/api/health',
-          {
-            cache: 'no-store'
-          }
-        );
-
-        const data = await response.json();
-
-        applyBackendState(
-          response.ok && data.ok
-        );
+        const response = await fetch('/api/health', { cache: 'no-store', signal: controller.signal });
+        const data = await response.json().catch(() => ({}));
+        applyBackendState(response.ok && data.ok === true);
       } catch {
         applyBackendState(false);
+      } finally {
+        window.clearTimeout(timer);
       }
     }
 
@@ -491,9 +486,9 @@
     );
 
     /*
-     * Wait for service worker.
+     * Service worker registration is background infrastructure.
+     * It must never block first render or the global boot loader.
      */
-    await appShellReady;
 
     /*
      * Initial Download App label.

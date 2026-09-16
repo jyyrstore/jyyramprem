@@ -454,38 +454,39 @@ textarea:focus-visible {
   flex-direction:column;
   align-items:center;
   justify-content:center;
-  gap:20px;
-  width:100vw;
-  height:100vh;
+  gap:18px;
+  width:100%;
+  min-height:100%;
   pointer-events:none;
-  background:rgba(8,6,13,.035);
-  backdrop-filter:blur(18px);
-  -webkit-backdrop-filter:blur(18px);
+  background:rgba(8,6,13,.045);
+  backdrop-filter:blur(16px) saturate(1.02);
+  -webkit-backdrop-filter:blur(16px) saturate(1.02);
+  transition:opacity .16s ease,visibility .16s ease;
 }
-
-
+#app-loading.app-loading.is-complete{opacity:0;visibility:hidden;}
 .app-loading-spinner{
-  width:64px;
-  height:64px;
-  position:relative;
-  top:-80px;
+  width:48px;
+  height:48px;
+  flex:0 0 48px;
   border:3px solid rgba(255,255,255,.14);
   border-top-color:#fff;
   border-radius:50%;
   animation:appLoadingSpin .58s linear infinite;
 }
 
+/* JYYR: hide global refresh loading bar, keep spinner/overlay */
+#app-loading.app-loading .app-loading-progress{
+  display:none !important;
+}
+
 .app-loading-progress{
-  width:340px;
-  height:6px;
-  position:absolute;
-  top:calc(50% + 300px);
-  transform:none;
+  width:min(220px,calc(100vw - 48px));
+  height:4px;
+  flex:0 0 4px;
   overflow:hidden;
   border-radius:999px;
   background:rgba(255,255,255,.12);
 }
-
 .app-loading-progress span{
   display:block;
   width:40%;
@@ -495,20 +496,8 @@ textarea:focus-visible {
   transform:translateX(-120%);
   animation:appLoadingProgress .72s ease-in-out infinite;
 }
-
-@keyframes appLoadingSpin{
-  to{transform:rotate(360deg)}
-}
-
-@keyframes appLoadingProgress{
-  0%{transform:translateX(-120%)}
-  100%{transform:translateX(350%)}
-}
-
+@keyframes appLoadingSpin{to{transform:rotate(360deg)}}
+@keyframes appLoadingProgress{0%{transform:translateX(-120%)}100%{transform:translateX(350%)}}
 @media(prefers-reduced-motion:reduce){
-  .app-loading-spinner,
-  .app-loading-progress span{
-    animation:none!important;
-  }
+  .app-loading-spinner,.app-loading-progress span{animation:none!important;}
 }
-

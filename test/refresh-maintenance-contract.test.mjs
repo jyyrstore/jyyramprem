@@ -76,3 +76,25 @@ test("Google/member bootstrap remains outside the portal-token authorization gat
   assert.match(runtime, /"\/api\/auth\/bootstrap"/);
   assert.match(authRoutes, /app\.post\("\/api\/auth\/bootstrap", deps\.requireAuth/);
 });
+
+
+test("refresh boot loader cannot remain stuck and preserves the page background", () => {
+  const common = fs.readFileSync(new URL("../public/css/common.css", import.meta.url), "utf8");
+  const icons = fs.readFileSync(new URL("../public/js/ui-icons-assets.js", import.meta.url), "utf8");
+  const nav = fs.readFileSync(new URL("../public/js/nav.js", import.meta.url), "utf8");
+  assert.match(router, /REQUEST_TIMEOUT_MS\s*=\s*7000/);
+  assert.match(router, /BOOT_TIMEOUT_MS\s*=\s*12000/);
+  assert.match(router, /withTimeout\(/);
+  assert.match(router, /completeBootLoader\(\)/);
+  assert.match(router, /finally[\s\S]*completeBootLoader\(\)/);
+  assert.match(router, /AbortController/);
+  assert.match(nav, /const controller = new AbortController/);
+  const initBlock = nav.match(/async function init\([\s\S]*?\n\s*return user;/)?.[0] || nav;
+  assert.doesNotMatch(initBlock, /await appShellReady;/);
+  assert.match(common, /#app-loading\.app-loading[\s\S]*background:\s*rgba\(/);
+  assert.match(common, /backdrop-filter:\s*blur\(/);
+  assert.match(common, /-webkit-backdrop-filter:\s*blur\(/);
+  assert.doesNotMatch(index, /html,body\{[^}]*background:transparent/);
+  assert.match(index, /html\s*\{\s*background:var\(--bg\);\s*\}/);
+  assert.match(icons, /width=\"20\"[\s\S]*height=\"20\"/);
+});

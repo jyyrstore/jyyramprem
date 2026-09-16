@@ -9,7 +9,7 @@
     "latest_name": "remove_duplicate_app_release_timestamp_trigger"
   },
   "repository": {
-    "migration_file_count": 46
+    "migration_file_count": 47
   },
   "comparison": {
     "exact_timestamp_overlap": 8,

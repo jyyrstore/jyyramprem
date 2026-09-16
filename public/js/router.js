@@ -26,6 +26,38 @@
   let activeStyleLinks = [];
   let navigationSerial = 0;
 
+  const REQUEST_TIMEOUT_MS = 7000;
+  const BOOT_TIMEOUT_MS = 12000;
+
+  function withTimeout(promise, timeoutMs, label) {
+    const timeout = Number(timeoutMs) > 0 ? Number(timeoutMs) : REQUEST_TIMEOUT_MS;
+    return Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        window.setTimeout(() => reject(new Error(`${label} timeout`)), timeout);
+      }),
+    ]);
+  }
+
+  function completeBootLoader() {
+    const loader = document.getElementById("app-loading");
+    if (!loader) return;
+    loader.setAttribute("aria-busy", "false");
+    loader.classList.add("is-complete");
+    window.setTimeout(() => loader.remove(), 180);
+  }
+
+  function showBootFallback() {
+    const target = activeView && views.get(activeView);
+    if (target?.isConnected && !target.hidden && target.dataset.booting !== "1") return Promise.resolve(true);
+    if (target?.isConnected) { target.hidden = true; target.remove(); }
+    activeView = null;
+    return showView("login", { replaceUrl: true, updateUrl: true }).catch((error) => {
+      console.error("[JYYR ROUTER] Boot fallback failed", error);
+      return false;
+    });
+  }
+
   const ROUTES = {
     home: "/",
     dashboard: "/dashboard",
@@ -132,7 +164,7 @@
   async function loadCss(name) {
     for (const href of VIEW_META[name].css) {
       if (document.querySelector(`link[data-jyyr-view-style="${CSS.escape(href)}"]`)) continue;
-      await new Promise((resolve) => {
+      await withTimeout(new Promise((resolve) => {
         const link = document.createElement("link");
         link.rel = "stylesheet";
         link.href = href;
@@ -141,14 +173,14 @@
         link.onerror = resolve;
         document.head.appendChild(link);
         activeStyleLinks.push(link);
-      });
+      }), REQUEST_TIMEOUT_MS + 1000, `view css ${name}`);
     }
   }
 
   async function loadScript(src) {
     const key = src.split("?")[0];
     if (loadedScripts.has(key)) return;
-    await new Promise((resolve) => {
+    await withTimeout(new Promise((resolve) => {
       const script = document.createElement("script");
       script.src = src;
       script.async = false;
@@ -167,7 +199,7 @@
       };
       document.body.appendChild(script);
       loadedScripts.add(key);
-    });
+    }), REQUEST_TIMEOUT_MS + 1000, `script ${src}`);
   }
 
   async function loadViewScripts(name) {
@@ -175,7 +207,7 @@
     // nav.js is intentionally loaded once but needs an explicit boot because this SPA inserts views after DOMContentLoaded.
     if (VIEW_META[name].scripts.some((src) => src.split("?")[0] === "/js/nav.js")) {
       window.JYYR?.renderShared?.();
-      await window.JYYR?.init?.();
+      await withTimeout(window.JYYR?.init?.(), REQUEST_TIMEOUT_MS + 2000, `view init ${name}`);
     }
   }
 
@@ -197,10 +229,10 @@
     legacyContextFromUrl();
     if (name !== "maintenance" && name !== "login" && name !== "reset-password") {
       console.time("[JYYR] getSession");
-      const session = await window.AMAuth.getSession().catch(() => null);
+      const session = await withTimeout(window.AMAuth.getSession(), REQUEST_TIMEOUT_MS, "view session").catch(() => null);
       console.timeEnd("[JYYR] getSession");
       console.time("[JYYR] maintenance");
-      const maintenance = await getMaintenanceState(session);
+      const maintenance = await withTimeout(getMaintenanceState(session), REQUEST_TIMEOUT_MS + 1000, "view maintenance");
       console.timeEnd("[JYYR] maintenance");
       if (session?.access_token && maintenance.data?.maintenance_enabled === true && maintenance.data?.owner !== true) {
         return showView("maintenance", { updateUrl: true, replaceUrl: true });
@@ -232,7 +264,7 @@
       next.dataset.materialized = "1";
     }
     if (options.section) next.dataset.section = options.section; else delete next.dataset.section;
-    next.hidden = false;
+    next.hidden = true;
     next.dataset.booting = "1";
     document.querySelector("#app-root")?.appendChild(next);
     activeView = name;
@@ -241,18 +273,18 @@
     activeStyleLinks.forEach((link) => link.remove());
     activeStyleLinks = [];
     console.time(`[JYYR] loadCss:${name}`);
-    await loadCss(name);
+    await withTimeout(loadCss(name), REQUEST_TIMEOUT_MS + 1000, `view css ${name}`);
     console.timeEnd(`[JYYR] loadCss:${name}`);
     if (serial !== navigationSerial) return false;
     console.time(`[JYYR] scripts:${name}`);
-    await loadViewScripts(name);
+    await withTimeout(loadViewScripts(name), REQUEST_TIMEOUT_MS + 2000, `view scripts ${name}`);
     console.timeEnd(`[JYYR] scripts:${name}`);
     window.JYYRUIProtection?.start?.();
     window.JYYRUIProtection?.refresh?.();
     if (serial !== navigationSerial) return false;
     next.hidden = false;
     delete next.dataset.booting;
-    document.getElementById("app-loading")?.remove();
+    completeBootLoader();
 
     if (options.tokenRequired) window.JYYRAuthView?.showPortalTokenGate?.();
     if (options.focus) requestAnimationFrame(() => document.getElementById(options.focus)?.scrollIntoView({ behavior: "smooth", block: "start" }));
@@ -291,14 +323,18 @@
   window.JYYRApp = { showView, navigate, get activeView() { return activeView; }, getViewElement: (name) => views.get(normalizeView(name)) || null };
 
   async function getMaintenanceState(session) {
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     try {
       const headers = { Accept: "application/json" };
       if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
-      const response = await fetch("/api/maintenance", { headers, cache: "no-store" });
+      const response = await fetch("/api/maintenance", { headers, cache: "no-store", signal: controller.signal });
       const data = await response.json().catch(() => ({}));
       return { response, data };
     } catch {
       return { response: null, data: null };
+    } finally {
+      window.clearTimeout(timer);
     }
   }
 
@@ -311,38 +347,53 @@
   });
 
   (async () => {
+    const bootDeadline = window.setTimeout(async () => {
+      if (activeView) return;
+      console.warn("[JYYR ROUTER] Boot watchdog fired");
+      await showBootFallback();
+      completeBootLoader();
+    }, BOOT_TIMEOUT_MS);
+
+    try {
     legacyContextFromUrl();
     const recovery = isRecoveryUrl();
     const oauthCallback = isOAuthCallbackUrl();
-    const session = await window.AMAuth.getSession().catch(() => null);
+    const session = await withTimeout(window.AMAuth.getSession(), REQUEST_TIMEOUT_MS, "startup session").catch(() => null);
     const context = sessionStorage.getItem("jyyr:login_username") || sessionStorage.getItem("jyyr:selected_token_id");
 
     if (recovery) {
-      await showView("reset-password", { replaceUrl: true });
+      await withTimeout(showView("reset-password", { replaceUrl: true }), BOOT_TIMEOUT_MS, "recovery view");
       return;
     }
 
     // Fresh Google OAuth wajib melewati Login View agar auth.js
     // menjalankan Token Gate sebelum user diperbolehkan masuk Home.
     if (oauthCallback && session?.access_token) {
-      await showView("login", { replaceUrl: true });
+      await withTimeout(showView("login", { replaceUrl: true }), BOOT_TIMEOUT_MS, "oauth view");
       return;
     }
 
     if (context && !session) {
-      await showView("login", { replaceUrl: true });
+      await withTimeout(showView("login", { replaceUrl: true }), BOOT_TIMEOUT_MS, "context login view");
       return;
     }
 
     const requestedView = readViewFromUrl();
     const requestedName = requestedView || (session?.access_token ? "home" : "login");
-    const maintenance = await getMaintenanceState(session);
+    const maintenance = await withTimeout(getMaintenanceState(session), REQUEST_TIMEOUT_MS + 1000, "startup maintenance");
 
     if (session?.access_token && maintenance.data?.maintenance_enabled === true && maintenance.data?.owner !== true) {
-      await showView("maintenance", { replaceUrl: true });
+      await withTimeout(showView("maintenance", { replaceUrl: true }), BOOT_TIMEOUT_MS, "maintenance view");
       return;
     }
 
-    await showView(requestedName, { replaceUrl: true });
+    await withTimeout(showView(requestedName, { replaceUrl: true }), BOOT_TIMEOUT_MS, `${requestedName} view`);
+    } catch (error) {
+      console.error("[JYYR ROUTER] Startup failed", error);
+      await showBootFallback();
+    } finally {
+      window.clearTimeout(bootDeadline);
+      completeBootLoader();
+    }
   })();
 })();

@@ -115,7 +115,7 @@ test('legacy page URLs redirect to clean canonical routes while the SPA remains 
 test('PWA identity and navigation fallback use the canonical root', () => {
   assert.equal(manifest.start_url, '/');
   assert.equal(manifest.id, '/');
-  assert.match(serviceWorker, /const CACHE_NAME=['"]jyy-r-amprem-app-v4['"]/);
+  assert.match(serviceWorker, /const CACHE_NAME=['"]jyy-r-amprem-app-v6-native-oauth['"]/);
   assert.match(serviceWorker, /caches\.match\(['"]\/["']\)/);
   assert.match(serviceWorker, /\/index\.html|\/\'/);
 });

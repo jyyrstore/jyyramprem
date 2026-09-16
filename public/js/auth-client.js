@@ -2,10 +2,18 @@
   const STORAGE_KEY = "am_account_portal_session";
   let configPromise;
   let authenticated = false;
+  const REQUEST_TIMEOUT_MS = 8000;
+
+  async function fetchWithTimeout(resource, options = {}, timeoutMs = REQUEST_TIMEOUT_MS) {
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+    try { return await fetch(resource, { ...options, signal: controller.signal }); }
+    finally { window.clearTimeout(timer); }
+  }
 
   async function getConfig() {
     if (!configPromise) {
-      configPromise = fetch("/api/config", { headers: { Accept: "application/json" }, cache: "no-store" })
+      configPromise = fetchWithTimeout("/api/config", { headers: { Accept: "application/json" }, cache: "no-store" })
         .then(async (r) => {
           const data = await r.json().catch(() => ({}));
           if (!r.ok || !data.ok || !data.supabaseUrl || !data.supabasePublishableKey) {
@@ -46,7 +54,7 @@
     const headers = new Headers(options.headers || {});
     headers.set("apikey", config.supabasePublishableKey);
     headers.set("Content-Type", "application/json");
-    const response = await fetch(`${config.supabaseUrl}/auth/v1${path}`, { ...options, headers });
+    const response = await fetchWithTimeout(`${config.supabaseUrl}/auth/v1${path}`, { ...options, headers });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
       const error = new Error(data.msg || data.message || data.error_description || data.error || "Autentikasi gagal.");
@@ -123,8 +131,19 @@
   }
 
   function signInWithGoogle() {
-    window.location.assign("/api/auth/google");
+  const nativeApp =
+    window.__JYYR_NATIVE_APP__ === true ||
+    window.AndroidApp?.isNativeApp?.() === true;
+
+  if (nativeApp) {
+    window.location.assign(
+      "https://www.jyyramprem.my.id/api/auth/google?client=android"
+    );
+    return;
   }
+
+  window.location.assign("/api/auth/google");
+}
 
   async function getSession() {
     // OAuth/recovery redirects must take precedence over any stale stored session.
@@ -284,7 +303,7 @@
 
   async function fetchSupabaseUser(accessToken) {
     const config = await getConfig();
-    const response = await fetch(`${config.supabaseUrl}/auth/v1/user`, {
+    const response = await fetchWithTimeout(`${config.supabaseUrl}/auth/v1/user`, {
       headers: { apikey: config.supabasePublishableKey, Authorization: `Bearer ${accessToken}` },
       cache: "no-store",
     });
