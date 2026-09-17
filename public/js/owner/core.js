@@ -178,7 +178,7 @@ async function copyGeneratedPortalToken() {
 }
 
 function ownerRequest(path, session, options = {}) {
-  return fetch(path, {
+  return window.JYYRNet.fetchWithTimeout(path, {
     ...options,
     headers: {
       Accept: "application/json",

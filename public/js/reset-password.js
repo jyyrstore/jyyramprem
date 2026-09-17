@@ -36,7 +36,7 @@ const status = (text, type = "info") => {
       const stopLoading = window.JYYRNotify?.buttonLoading(button, "Menyimpan…");
       try {
         const cfg = await AMAuth.getConfig();
-        const response = await fetch(`${cfg.supabaseUrl}/auth/v1/user`, {
+        const response = await window.JYYRNet.fetchWithTimeout(`${cfg.supabaseUrl}/auth/v1/user`, {
           method: "PUT",
           headers: {
             apikey: cfg.supabasePublishableKey,

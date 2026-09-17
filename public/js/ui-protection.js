@@ -27,7 +27,7 @@
     try {
       const session = await window.AMAuth?.getSession?.().catch(() => null);
       if (!session?.access_token) return;
-      const response = await fetch("/api/maintenance", {
+      const response = await window.JYYRNet.fetchWithTimeout("/api/maintenance", {
         headers: { Authorization: `Bearer ${session.access_token}`, Accept: "application/json" },
         cache: "no-store",
       });

@@ -127,7 +127,7 @@ async function loadQuota() {
     const h =
       await authHeaders();
 
-    const r = await fetch(
+    const r = await window.JYYRNet.fetchWithTimeout(
       "/api/usage",
       {
         headers: h,
@@ -361,7 +361,7 @@ async function verifyAndApplyMagicLink(accountId, rawLink, { automatic = false }
 
   try {
     const h = await authHeaders();
-    const verifyResponse = await fetch(`/api/accounts/${encodeURIComponent(accountId)}/verify-email`, {
+    const verifyResponse = await window.JYYRNet.fetchWithTimeout(`/api/accounts/${encodeURIComponent(accountId)}/verify-email`, {
       method: "POST",
       headers: h,
       body: JSON.stringify({ rawLink }),
@@ -384,7 +384,7 @@ async function verifyAndApplyMagicLink(accountId, rawLink, { automatic = false }
     const applyBtn = $("#applyPremiumBtn");
     const stopApplyLoading = window.JYYRNotify?.buttonLoading(applyBtn, "Mengaktifkan Premium…");
 
-    const applyResponse = await fetch(`/api/accounts/${encodeURIComponent(accountId)}/apply-premium`, {
+    const applyResponse = await window.JYYRNet.fetchWithTimeout(`/api/accounts/${encodeURIComponent(accountId)}/apply-premium`, {
       method: "POST",
       headers: h,
       body: JSON.stringify({}),
@@ -434,10 +434,13 @@ async function pollMagicLinkDelivery(accountIdentifier) {
   const started = Date.now();
   const maxWait = 5 * 60 * 1000;
   const run = async () => {
-    if (!accountIdentifier || Date.now() - started > maxWait) return;
+    if (!accountIdentifier || Date.now() - started > maxWait || document.body?.dataset?.page !== "home") {
+      magicLinkPollTimer = null;
+      return;
+    }
     try {
       const h = await authHeaders();
-      const r = await fetch(`/api/accounts/${encodeURIComponent(accountIdentifier)}/magiclink-status`, { headers: h, cache: "no-store" });
+      const r = await window.JYYRNet.fetchWithTimeout(`/api/accounts/${encodeURIComponent(accountIdentifier)}/magiclink-status`, { headers: h, cache: "no-store" });
       const d = await r.json().catch(() => ({}));
       if (r.ok && d.ok) {
         const note = $("#deliveryStatusNote");
@@ -487,7 +490,7 @@ $("#generateBtn")?.addEventListener("click", async () => {
     const idempotencyKey = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     h["Idempotency-Key"] = idempotencyKey;
 
-    const r = await fetch("/api/generate", {
+    const r = await window.JYYRNet.fetchWithTimeout("/api/generate", {
       method: "POST",
       headers: h,
       body: JSON.stringify({ email }),
@@ -551,7 +554,7 @@ document.addEventListener("click", async (event) => {
     const stopResendLoading = window.JYYRNotify?.buttonLoading(resendBtn, "Mengirim ulang…");
     try {
       const h = await authHeaders();
-      const r = await fetch(`/api/accounts/${encodeURIComponent(accountId)}/send-magiclink`, { method: "POST", headers: h, body: JSON.stringify({}) });
+      const r = await window.JYYRNet.fetchWithTimeout(`/api/accounts/${encodeURIComponent(accountId)}/send-magiclink`, { method: "POST", headers: h, body: JSON.stringify({}) });
       const d = await r.json().catch(() => ({}));
       if (!r.ok || !d.ok) throw new Error(d.error || d.message || "Gagal mengirim ulang magic link.");
       setFlowBadge("Provider Accepted", "blue");
@@ -604,7 +607,7 @@ document.addEventListener("click", async (event) => {
 
   try {
     const h = await authHeaders();
-    const r = await fetch(`/api/accounts/${encodeURIComponent(accountId)}/apply-premium`, {
+    const r = await window.JYYRNet.fetchWithTimeout(`/api/accounts/${encodeURIComponent(accountId)}/apply-premium`, {
       method: "POST",
       headers: h,
       body: JSON.stringify({}),

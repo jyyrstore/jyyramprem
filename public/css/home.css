@@ -1362,6 +1362,8 @@ a:focus-visible,
 .verification-modal-open{overflow:hidden}
 #result.result-card{
   position:fixed;
+  overflow:hidden;
+  isolation:isolate;
   z-index:80;
   left:50%;
   top:50%;
@@ -1535,10 +1537,10 @@ a:focus-visible,
 #result.result-card::after{
   content:"";
   position:absolute;
-  width:150px;
-  height:150px;
-  right:-72px;
-  bottom:-84px;
+  width:128px;
+  height:128px;
+  right:8px;
+  bottom:8px;
   border-radius:50%;
   border:1px solid rgba(95,225,255,.10);
   box-shadow:0 0 0 18px rgba(185,108,255,.025),0 0 55px rgba(95,225,255,.045);

@@ -10,6 +10,7 @@ const APP_SHELL=[
   '/js/nav.js',
   '/js/ui-icons-assets.js',
   '/js/icons.js',
+  '/js/net.js',
   '/js/auth-client.js'
 ];
 

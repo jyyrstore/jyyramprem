@@ -351,16 +351,12 @@
      * Backend health check.
      */
     async function healthCheck() {
-      const controller = new AbortController();
-      const timer = window.setTimeout(() => controller.abort(), 5000);
       try {
-        const response = await fetch('/api/health', { cache: 'no-store', signal: controller.signal });
+        const response = await window.JYYRNet.fetchWithTimeout('/api/health', { cache: 'no-store' }, 5000);
         const data = await response.json().catch(() => ({}));
         applyBackendState(response.ok && data.ok === true);
       } catch {
         applyBackendState(false);
-      } finally {
-        window.clearTimeout(timer);
       }
     }
 

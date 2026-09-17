@@ -71,13 +71,14 @@ async function publishAppRelease() {
 
   // Supabase signed upload uses the APK itself as the request body.
   // Never wrap the APK in multipart/FormData: that would change the stored bytes.
-  const uploadResponse = await fetch(signData.upload.signedUrl, {
+  const uploadTimeoutMs = Math.max(30000, Math.min(120000, Number(file.size || 0) * 2));
+  const uploadResponse = await window.JYYRNet.fetchWithTimeout(signData.upload.signedUrl, {
     method: "PUT",
     headers: {
       "Content-Type": "application/vnd.android.package-archive",
     },
     body: file
-  });
+  }, uploadTimeoutMs);
   if (!uploadResponse.ok) {
     const detail = await uploadResponse.text().catch(() => "");
     throw new Error(detail ? `Upload APK gagal: ${detail.slice(0, 220)}` : `Upload APK gagal (HTTP ${uploadResponse.status}).`);

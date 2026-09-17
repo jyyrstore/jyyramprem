@@ -438,14 +438,14 @@ document.addEventListener('contextmenu', (event) => {
           latestRes,
           historyRes
         ] = await Promise.all([
-          fetch(
+          window.JYYRNet.fetchWithTimeout(
             '/api/app/latest',
             {
               cache: 'no-store'
             }
           ),
 
-          fetch(
+          window.JYYRNet.fetchWithTimeout(
             '/api/app/releases?limit=20',
             {
               cache: 'no-store'

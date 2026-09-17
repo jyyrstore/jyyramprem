@@ -1,4 +1,4 @@
-const fetchWithTimeout=async(url,options={},timeoutMs=8000)=>{const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),timeoutMs);try{return await fetch(url,{...options,signal:controller.signal})}finally{clearTimeout(timer)}};
+
 const icon=(n)=>window.icon?.(n)||'';
 [['refreshIcon','refresh'],['userAvatarIcon','user'],['homeIcon','home'],['logoutIcon','logout'],['deleteAccountIcon','trash'],['deleteAccountModalIcon','trash'],['navHome','home'],['navDashboard','dashboard'],['navSetting','settings']].forEach(([id,n])=>{const e=document.querySelector('#'+id);if(e)e.innerHTML=icon(n)});
 
@@ -229,7 +229,7 @@ async function load(){
   const gate=await AMAuth.getPortalAccess().catch(()=>null);
   if(!gate?.response?.ok||(gate.data?.access!==true&&gate.data?.owner!==true)){await AMAuth.signOut().catch(()=>{});window.JYYRApp?.navigate("login", { tokenRequired: true });return}
   const h={Authorization:`Bearer ${s.access_token}`,Accept:'application/json'};
-  const [u,a]=await Promise.all([fetchWithTimeout('/api/usage',{headers:h,cache:'no-store'}),fetchWithTimeout('/api/accounts',{headers:h,cache:'no-store'})]);
+  const [u,a]=await Promise.all([window.JYYRNet.fetchWithTimeout('/api/usage',{headers:h,cache:'no-store'}),window.JYYRNet.fetchWithTimeout('/api/accounts',{headers:h,cache:'no-store'})]);
   const ud=await u.json(),ad=await a.json();
   const usage=ud.usage||{};
   accounts=ad.accounts||[];

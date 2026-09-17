@@ -9,7 +9,17 @@ if (!base || !token) {
   process.exit(1);
 }
 
-const res = await fetch(`${base.replace(/\/$/, "")}/api/owner/broadcasts?status=scheduled`, {
+async function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+const res = await fetchWithTimeout(`${base.replace(/\/$/, "")}/api/owner/broadcasts?status=scheduled`, {
   headers: { Authorization: `Bearer ${token}` }
 });
 if (!res.ok) throw new Error(`list scheduled broadcasts failed: ${res.status}`);
@@ -19,7 +29,7 @@ const items = Array.isArray(payload.items) ? payload.items : [];
 const now = Date.now();
 for (const item of items) {
   if (!item.scheduled_at || Date.parse(item.scheduled_at) > now) continue;
-  const r = await fetch(`${base.replace(/\/$/, "")}/api/owner/broadcasts/${item.id}/execute`, {
+  const r = await fetchWithTimeout(`${base.replace(/\/$/, "")}/api/owner/broadcasts/${item.id}/execute`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` }
   });

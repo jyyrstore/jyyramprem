@@ -3,13 +3,14 @@
   let configPromise;
   let authenticated = false;
   const REQUEST_TIMEOUT_MS = 8000;
+  let refreshPromise = null;
 
-  async function fetchWithTimeout(resource, options = {}, timeoutMs = REQUEST_TIMEOUT_MS) {
+  const fetchWithTimeout = window.JYYRNet?.fetchWithTimeout || (async function (resource, options = {}, timeoutMs = REQUEST_TIMEOUT_MS) {
     const controller = new AbortController();
     const timer = window.setTimeout(() => controller.abort(), timeoutMs);
     try { return await fetch(resource, { ...options, signal: controller.signal }); }
     finally { window.clearTimeout(timer); }
-  }
+  });
 
   async function getConfig() {
     if (!configPromise) {
@@ -67,13 +68,21 @@
 
   async function refreshSession(session) {
     if (!session?.refresh_token) return null;
-    const data = await api("/token?grant_type=refresh_token", {
-      method: "POST",
-      body: JSON.stringify({ refresh_token: session.refresh_token }),
+    if (refreshPromise) return refreshPromise;
+
+    refreshPromise = (async () => {
+      const data = await api("/token?grant_type=refresh_token", {
+        method: "POST",
+        body: JSON.stringify({ refresh_token: session.refresh_token }),
+      });
+      const next = normalizeSession(data);
+      writeSession(next);
+      return next;
+    })().finally(() => {
+      refreshPromise = null;
     });
-    const next = normalizeSession(data);
-    writeSession(next);
-    return next;
+
+    return refreshPromise;
   }
 
   function adoptRecoverySessionFromUrl() {
@@ -169,7 +178,7 @@
   }
 
   async function signUp(email, password, dataOptions = {}) {
-    const response = await fetch("/api/auth/register", {
+    const response = await fetchWithTimeout("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify({ email, password, data: dataOptions }),
@@ -186,7 +195,7 @@
   }
 
   async function resendSignupCode(email) {
-    const response = await fetch("/api/auth/resend-verification", {
+    const response = await fetchWithTimeout("/api/auth/resend-verification", {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify({ email }),
@@ -203,7 +212,7 @@
   }
 
   async function verifyOtp(email, token, password) {
-    const response = await fetch("/api/auth/verify-email", {
+    const response = await fetchWithTimeout("/api/auth/verify-email", {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify({ email, code: token, ...(password ? { password } : {}) }),
@@ -229,7 +238,7 @@
     try {
       if (session?.access_token) {
         const config = await getConfig();
-        await fetch(`${config.supabaseUrl}/auth/v1/logout`, {
+        await fetchWithTimeout(`${config.supabaseUrl}/auth/v1/logout`, {
           method: "POST",
           headers: { apikey: config.supabasePublishableKey, Authorization: `Bearer ${session.access_token}` },
         });
@@ -244,7 +253,7 @@
       throw new Error("Login diperlukan.");
     }
 
-    const response = await fetch("/api/auth/account", {
+    const response = await fetchWithTimeout("/api/auth/account", {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
@@ -276,7 +285,7 @@
     headers.set("Authorization", `Bearer ${session.access_token}`);
     headers.set("Accept", "application/json");
     if (options.body !== undefined && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
-    const response = await fetch(path, { ...options, headers, cache: "no-store" });
+    const response = await fetchWithTimeout(path, { ...options, headers, cache: "no-store" });
     const data = await response.json().catch(() => ({}));
     return { response, data };
   }

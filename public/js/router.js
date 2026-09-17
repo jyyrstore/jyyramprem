@@ -22,6 +22,7 @@
   }, true);
 
   const loadedScripts = new Set();
+  const scriptPromises = new Map();
   let activeView = null;
   let activeStyleLinks = [];
   let navigationSerial = 0;
@@ -31,12 +32,13 @@
 
   function withTimeout(promise, timeoutMs, label) {
     const timeout = Number(timeoutMs) > 0 ? Number(timeoutMs) : REQUEST_TIMEOUT_MS;
-    return Promise.race([
-      promise,
-      new Promise((_, reject) => {
-        window.setTimeout(() => reject(new Error(`${label} timeout`)), timeout);
-      }),
-    ]);
+    return new Promise((resolve, reject) => {
+      const timer = window.setTimeout(() => reject(new Error(`${label} timeout`)), timeout);
+      Promise.resolve(promise).then(
+        (value) => { window.clearTimeout(timer); resolve(value); },
+        (error) => { window.clearTimeout(timer); reject(error); },
+      );
+    });
   }
 
   function completeBootLoader() {
@@ -162,44 +164,61 @@
   }
 
   async function loadCss(name) {
+    const links = [];
     for (const href of VIEW_META[name].css) {
       if (document.querySelector(`link[data-jyyr-view-style="${CSS.escape(href)}"]`)) continue;
-      await withTimeout(new Promise((resolve) => {
-        const link = document.createElement("link");
-        link.rel = "stylesheet";
-        link.href = href;
-        link.dataset.jyyrViewStyle = href;
-        link.onload = resolve;
-        link.onerror = resolve;
-        document.head.appendChild(link);
-        activeStyleLinks.push(link);
-      }), REQUEST_TIMEOUT_MS + 1000, `view css ${name}`);
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = href;
+      link.dataset.jyyrViewStyle = href;
+      links.push(link);
+      document.head.appendChild(link);
+      try {
+        await withTimeout(new Promise((resolve, reject) => {
+          link.addEventListener("load", resolve, { once: true });
+          link.addEventListener("error", () => reject(new Error(`Stylesheet load failed: ${href}`)), { once: true });
+        }), REQUEST_TIMEOUT_MS + 1000, `view css ${name}`);
+      } catch {
+        // A failed page stylesheet must never trap the SPA boot loader.
+        link.remove();
+      }
     }
+    return links.filter((link) => link.isConnected);
   }
 
-  async function loadScript(src) {
+  function loadScript(src) {
     const key = src.split("?")[0];
-    if (loadedScripts.has(key)) return;
-    await withTimeout(new Promise((resolve) => {
+    if (loadedScripts.has(key)) return Promise.resolve();
+    const existing = scriptPromises.get(key);
+    if (existing) return existing;
+
+    const promise = (async () => {
       const script = document.createElement("script");
       script.src = src;
       script.async = false;
-      // Page-specific scripts must be module-scoped because all views now share
-      // one Document. Owner feature modules intentionally remain classic scripts
-      // because they share an existing lexical runtime between modules.
       const baseSrc = key;
-      if (!baseSrc.startsWith("/js/owner/") && baseSrc !== "/js/owner.js" && baseSrc !== "/js/nav.js" && baseSrc !== "/js/ui-protection.js" && baseSrc !== "/js/icons.js" && baseSrc !== "/js/ui-icons-assets.js" && baseSrc !== "/js/notifications.js" && baseSrc !== "/js/auth-client.js") {
+      if (!baseSrc.startsWith("/js/owner/") && baseSrc !== "/js/owner.js" && baseSrc !== "/js/nav.js" && baseSrc !== "/js/ui-protection.js" && baseSrc !== "/js/icons.js" && baseSrc !== "/js/ui-icons-assets.js" && baseSrc !== "/js/notifications.js" && baseSrc !== "/js/auth-client.js" && baseSrc !== "/js/net.js") {
         script.type = "module";
       }
       script.dataset.jyyrLoadedScript = key;
-      script.onload = resolve;
-      script.onerror = (event) => {
-        console.error("[JYYR ROUTER] Script load failed", src, event);
-        resolve();
-      };
       document.body.appendChild(script);
-      loadedScripts.add(key);
-    }), REQUEST_TIMEOUT_MS + 1000, `script ${src}`);
+      try {
+        await withTimeout(new Promise((resolve, reject) => {
+          script.addEventListener("load", resolve, { once: true });
+          script.addEventListener("error", () => reject(new Error(`Script load failed: ${src}`)), { once: true });
+        }), REQUEST_TIMEOUT_MS + 1000, `script ${src}`);
+        loadedScripts.add(key);
+      } catch (error) {
+        script.remove();
+        console.error("[JYYR ROUTER] Script load failed", src, { code: error?.code || null, message: error?.message || "Unknown error" });
+        throw error;
+      } finally {
+        scriptPromises.delete(key);
+      }
+    })();
+
+    scriptPromises.set(key, promise);
+    return promise;
   }
 
   async function loadViewScripts(name) {
@@ -235,9 +254,11 @@
       const maintenance = await withTimeout(getMaintenanceState(session), REQUEST_TIMEOUT_MS + 1000, "view maintenance");
       console.timeEnd("[JYYR] maintenance");
       if (session?.access_token && maintenance.data?.maintenance_enabled === true && maintenance.data?.owner !== true) {
+        if (serial !== navigationSerial) return false;
         return showView("maintenance", { updateUrl: true, replaceUrl: true });
       }
     }
+    if (serial !== navigationSerial) return false;
     if (options.updateUrl) {
       syncViewUrl(name, { replace: options.replaceUrl === true, section: options.section || null });
     }
@@ -273,9 +294,13 @@
     activeStyleLinks.forEach((link) => link.remove());
     activeStyleLinks = [];
     console.time(`[JYYR] loadCss:${name}`);
-    await withTimeout(loadCss(name), REQUEST_TIMEOUT_MS + 1000, `view css ${name}`);
+    const nextStyleLinks = await loadCss(name);
     console.timeEnd(`[JYYR] loadCss:${name}`);
-    if (serial !== navigationSerial) return false;
+    if (serial !== navigationSerial) {
+      nextStyleLinks.forEach((link) => link.remove());
+      return false;
+    }
+    activeStyleLinks = nextStyleLinks;
     console.time(`[JYYR] scripts:${name}`);
     await withTimeout(loadViewScripts(name), REQUEST_TIMEOUT_MS + 2000, `view scripts ${name}`);
     console.timeEnd(`[JYYR] scripts:${name}`);
@@ -293,8 +318,24 @@
   }
 
   function navigate(viewName, options = {}) {
-    return showView(viewName, { updateUrl: true, ...options }).catch((error) => {
-      console.error("[JYYR ROUTER] Navigation failed", { viewName, error });
+    return showView(viewName, { updateUrl: true, ...options }).catch(async (error) => {
+      console.error("[JYYR ROUTER] Navigation failed", {
+        viewName,
+        code: error?.code || null,
+        message: error?.message || "Unknown error",
+      });
+      const failedView = normalizeView(viewName);
+      const target = failedView ? views.get(failedView) : null;
+      if (target?.dataset?.booting === "1") {
+        target.hidden = true;
+        target.remove();
+        if (activeView === failedView) activeView = null;
+        completeBootLoader();
+        await showBootFallback();
+        completeBootLoader();
+      } else {
+        completeBootLoader();
+      }
       return false;
     });
   }
@@ -314,27 +355,19 @@
     });
   }, true);
 
-  const protectionScript = document.createElement("script");
-  protectionScript.src = "/js/ui-protection.js";
-  protectionScript.async = false;
-  document.body.appendChild(protectionScript);
-  loadedScripts.add("/js/ui-protection.js");
+  void loadScript("/js/ui-protection.js").catch(() => {});
 
   window.JYYRApp = { showView, navigate, get activeView() { return activeView; }, getViewElement: (name) => views.get(normalizeView(name)) || null };
 
   async function getMaintenanceState(session) {
-    const controller = new AbortController();
-    const timer = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     try {
       const headers = { Accept: "application/json" };
       if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
-      const response = await fetch("/api/maintenance", { headers, cache: "no-store", signal: controller.signal });
+      const response = await window.JYYRNet.fetchWithTimeout("/api/maintenance", { headers, cache: "no-store" }, REQUEST_TIMEOUT_MS);
       const data = await response.json().catch(() => ({}));
       return { response, data };
     } catch {
       return { response: null, data: null };
-    } finally {
-      window.clearTimeout(timer);
     }
   }
 
