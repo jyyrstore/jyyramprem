@@ -2,19 +2,19 @@
   "schema_version": 1,
   "status": "RECONCILIATION_REQUIRED_BEFORE_PRODUCTION_PUSH",
   "project_ref": "jfjbdenqepaagxfysaar",
-  "verified_at": "2026-09-13",
+  "verified_at": "2026-09-18",
   "production": {
-    "migration_count": 80,
-    "latest_version": "20260904122452",
-    "latest_name": "remove_duplicate_app_release_timestamp_trigger"
+    "migration_count": 81,
+    "latest_version": "20260917224004",
+    "latest_name": "harden_public_table_grants"
   },
   "repository": {
-    "migration_file_count": 47
+    "migration_file_count": 48
   },
   "comparison": {
-    "exact_timestamp_overlap": 8,
+    "exact_timestamp_overlap": 9,
     "production_only_versions": 72,
-    "repository_only_versions": 38,
+    "repository_only_versions": 39,
     "duplicate_repository_timestamps": 0
   },
   "deployment_policy": {
@@ -29,9 +29,9 @@
     "classification": "KNOWN_CONFIGURATION_NOT_CODE_DEFECT"
   },
   "notes": [
-    "Production migration history is immutable historical evidence.",
-    "Repository migrations are the forward-maintenance source, not a byte-for-byte historical mirror.",
-    "A missing production timestamp is not proof that the SQL effect is absent from the live schema.",
-    "No migration has been marked applied or repaired by this audit."
+    "Production migration history remains immutable historical evidence.",
+    "Repository migrations are the forward-maintenance source; this audit added one focused forward migration and applied it to the identified production project.",
+    "The 20260917224004 hardening migration removes unnecessary anon/authenticated table privileges while preserving public release SELECT.",
+    "No historical migration was edited, deleted, renamed, or rewritten."
   ]
 }

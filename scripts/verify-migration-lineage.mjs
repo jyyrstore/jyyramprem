@@ -34,11 +34,11 @@ if (files.length !== state.repository.migration_file_count) {
   fail(`repository migration count drift: files=${files.length}, state=${state.repository.migration_file_count}`);
 }
 
-if (state.production.migration_count !== 80) {
-  fail(`production baseline state must remain 80 until re-verified; found ${state.production.migration_count}`);
+if (state.production.migration_count !== 81) {
+  fail(`production baseline state must remain 81 after the verified hardening migration; found ${state.production.migration_count}`);
 }
 
-if (state.production.latest_version !== '20260904122452') {
+if (state.production.latest_version !== '20260917224004') {
   fail(`unexpected production latest version: ${state.production.latest_version}`);
 }
 

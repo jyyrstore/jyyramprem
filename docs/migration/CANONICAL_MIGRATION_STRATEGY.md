@@ -3,7 +3,7 @@
 **Status:** ACTIVE
 **Project:** Jyy'R Amprem
 **Supabase project ref:** `jfjbdenqepaagxfysaar`
-**Verified:** 2026-09-13
+**Verified:** 2026-09-18
 
 ## 1. Canonical source of truth
 
@@ -14,14 +14,24 @@ There are two different truths and they must never be conflated:
 
 The repository is **not** a byte-for-byte historical copy of the production migration ledger. This is intentional and must be documented, not silently normalized.
 
+## 2.1 Forward hardening applied 2026-09-18
+
+The live project was verified before and after a focused privilege-hardening migration. The migration `20260917224004_harden_public_table_grants`:
+
+- removed all direct `anon`/`authenticated` privileges from `public.am_email_verifications`;
+- removed direct INSERT/UPDATE/DELETE/TRUNCATE/REFERENCES/TRIGGER privileges from `public.app_releases`;
+- retained SELECT for `anon`/`authenticated` on published releases, enforced by RLS.
+
+The migration was applied through the connected Supabase project and its migration ledger now contains version `20260917224004`.
+
 ## 2. Current verified state
 
-- Production migration ledger: **80 versions**.
-- Latest production version: **`20260904122452_remove_duplicate_app_release_timestamp_trigger`**.
-- Repository migration files: **46**.
-- Exact timestamp overlap: **8**.
+- Production migration ledger: **81 versions**.
+- Latest production version: **`20260917224004_harden_public_table_grants`**.
+- Repository migration files: **48**.
+- Exact timestamp overlap: **9**.
 - Production-only historical versions: **72**.
-- Repository-only versions: **38**.
+- Repository-only versions: **39**.
 - Production contains repeated migration names from iterative repairs. Those are historical records and must not be deleted or renamed.
 
 The repository also contains canonical/reconstructed migrations whose SQL represents the current runtime contract but whose timestamps are not present in the production ledger. Those files are **not safe to replay blindly** against production.

@@ -268,7 +268,11 @@ export function registerMemberRoutes(app, deps) {
               p_claim_token: activationClaimToken,
             });
           } catch (releaseError) {
-            console.error("[PREMIUM ACTIVATION CLAIM RELEASE ERROR]", releaseError);
+            console.error("[PREMIUM ACTIVATION CLAIM RELEASE ERROR]", {
+              code: releaseError?.code || null,
+              status: releaseError?.status || null,
+              message: releaseError?.message || "Unknown error",
+            });
           }
         };
 
