@@ -12,8 +12,11 @@ const runtime = fs.readFileSync(new URL("../lib/runtime/app-runtime.js", import.
 const clientModule = fs.readFileSync(new URL("../lib/supabase/client.js", import.meta.url), "utf8");
 const limiter = fs.readFileSync(new URL("../api/middleware/rate-limit.middleware.js", import.meta.url), "utf8");
 const router = fs.readFileSync(new URL("../public/js/router.js", import.meta.url), "utf8");
-const manifest = fs.readFileSync(new URL("../../JyyR-Amprem-Android/app/src/main/AndroidManifest.xml", import.meta.url), "utf8");
-const mainActivity = fs.readFileSync(new URL("../../JyyR-Amprem-Android/app/src/main/java/com/jyystore/jyyramprem/MainActivity.java", import.meta.url), "utf8");
+const androidManifestUrl = new URL("../../JyyR-Amprem-Android/app/src/main/AndroidManifest.xml", import.meta.url);
+const androidMainActivityUrl = new URL("../../JyyR-Amprem-Android/app/src/main/java/com/jyystore/jyyramprem/MainActivity.java", import.meta.url);
+const androidProjectAvailable = fs.existsSync(androidManifestUrl) && fs.existsSync(androidMainActivityUrl);
+const manifest = androidProjectAvailable ? fs.readFileSync(androidManifestUrl, "utf8") : "";
+const mainActivity = androidProjectAvailable ? fs.readFileSync(androidMainActivityUrl, "utf8") : "";
 
 test("Google OAuth has a dedicated rate-limited server redirect route", () => {
   assert.match(routes, /app\.get\("\/api\/auth\/google",\s*authGoogleLimiter/);
@@ -80,6 +83,11 @@ test("Frontend starts Google OAuth through the first-party server route", () => 
   assert.match(client, /window\.location\.assign\("\/api\/auth\/google"\)/);
   assert.match(client, /consumeOAuthErrorFromUrl/);
   assert.match(client, /window\.history\.replaceState/);
+});
+
+test("Native OAuth start-route marker remains explicit when the Android project is available", {
+  skip: !androidProjectAvailable ? "Android project is not included in this repository archive." : false,
+}, () => {
   assert.match(mainActivity, /isGoogleOAuthStartUrl/);
   assert.doesNotMatch(mainActivity, /isGoogleOAuthAuthorizeUrl/);
 });
@@ -121,7 +129,9 @@ test("Google OAuth does not introduce browser-side client secrets", () => {
 
 
 
-test("Android native callback contract is exact and never falls back to a full browser", () => {
+test("Android native callback contract is exact and never falls back to a full browser", {
+  skip: !androidProjectAvailable ? "Android project is not included in this repository archive." : false,
+}, () => {
   assert.match(manifest, /android:launchMode="singleTask"/);
   assert.match(manifest, /android:scheme="jyyramprem"/);
   assert.match(manifest, /android:host="auth"/);
@@ -136,7 +146,9 @@ test("Android native callback contract is exact and never falls back to a full b
   assert.match(mainActivity, /Custom Tab tidak tersedia/);
 });
 
-test("Native callback validates the Supabase session before Token Gate", () => {
+test("Native callback validates the Supabase session before Token Gate", {
+  skip: !androidProjectAvailable ? "Android project is not included in this repository archive." : false,
+}, () => {
   assert.match(client, /function adoptNativeOAuthSession\(candidate\)/);
   assert.match(client, /fetchSupabaseUser\(session\.access_token\)/);
   assert.match(client, /authenticated = true/);
@@ -147,7 +159,9 @@ test("Native callback validates the Supabase session before Token Gate", () => {
   assert.match(auth, /await AMAuth\.getPortalAccess\(\)/);
 });
 
-test("Native callback keeps credentials in memory until adoption succeeds", () => {
+test("Native callback keeps credentials in memory until adoption succeeds", {
+  skip: !androidProjectAvailable ? "Android project is not included in this repository archive." : false,
+}, () => {
   assert.match(mainActivity, /pendingAuthCallbackUri = uri/);
   assert.match(mainActivity, /callbackUri\.getQueryParameter\("access_token"\)/);
   assert.match(mainActivity, /getFragmentParameter\(callbackUri, "access_token"\)/);

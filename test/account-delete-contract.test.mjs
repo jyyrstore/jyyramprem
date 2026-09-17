@@ -86,7 +86,7 @@ test("frontend exposes self account delete API client", () => {
 
   assert.match(
     authClient,
-    /fetch\(["']\/api\/auth\/account["']/
+    /fetchWithTimeout\(["']\/api\/auth\/account["']/
   );
 
   assert.match(

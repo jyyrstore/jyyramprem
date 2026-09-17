@@ -8,7 +8,7 @@
     "start": "node server.js",
     "verify": "node scripts/verify-runtime.mjs && npm run verify:migrations",
     "verify:migrations": "node scripts/verify-migration-lineage.mjs",
-    "test": "npm run test:provider && npm run test:google-auth && npm run test:account-delete && npm run test:provider-diagnostic && npm run test:flow && npm run test:regression && npm run test:runtime-contract && npm run test:owner-ui && npm run test:app-release && npm run test:member-status && npm run verify && npm run test:single-entry && npm run test:portal-token && npm run test:cleanup && npm run test:refresh-maintenance && npm run test:owner-button && npm run test:rate-limit-canonical && npm run test:security-headers && npm run test:provider-registration",
+    "test": "npm run test:provider && npm run test:google-auth && npm run test:account-delete && npm run test:provider-diagnostic && npm run test:flow && npm run test:regression && npm run test:runtime-contract && npm run test:owner-ui && npm run test:app-release && npm run test:member-status && npm run verify && npm run test:single-entry && npm run test:portal-token && npm run test:cleanup && npm run test:refresh-maintenance && npm run test:owner-button && npm run test:rate-limit-canonical && npm run test:security-headers && npm run test:provider-registration && npm run test:frontend-stability",
     "broadcast:worker": "node scripts/run-due-broadcasts.mjs",
     "test:provider": "node --test test/provider-contract.test.mjs",
     "test:provider-diagnostic": "node --test test/provider-diagnostic.test.mjs",
@@ -27,7 +27,10 @@
     "test:security-headers": "node --test test/security-headers-contract.test.mjs",
     "test:google-auth": "node --test test/google-auth-contract.test.mjs",
     "test:account-delete": "node --test test/account-delete-contract.test.mjs",
-    "test:provider-registration": "node --test test/provider-route-registration.test.mjs"
+    "test:provider-registration": "node --test test/provider-route-registration.test.mjs",
+    "test:frontend-stability": "node --test test/frontend-stability-contract.test.mjs",
+    "verify:local:static": "node scripts/verify-local-static.mjs",
+    "verify:local": "bash ./verify-local.sh"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.112.3",

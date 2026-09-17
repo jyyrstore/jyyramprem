@@ -57,7 +57,7 @@ test("owner maintenance toggle invalidates the server cache", () => {
 
 test("active authenticated tabs are redirected into maintenance mode", () => {
   assert.match(router, /maintenance\.data\?\.maintenance_enabled === true/);
-  assert.match(uiProtection, /fetch\("\/api\/maintenance"/);
+  assert.match(uiProtection, /JYYRNet\.fetchWithTimeout\("\/api\/maintenance"/);
   assert.match(uiProtection, /navigate\("maintenance"/);
   assert.match(uiProtection, /setInterval\(enforceMaintenanceMode, 15000\)/);
 });
@@ -87,8 +87,8 @@ test("refresh boot loader cannot remain stuck and preserves the page background"
   assert.match(router, /withTimeout\(/);
   assert.match(router, /completeBootLoader\(\)/);
   assert.match(router, /finally[\s\S]*completeBootLoader\(\)/);
-  assert.match(router, /AbortController/);
-  assert.match(nav, /const controller = new AbortController/);
+  assert.match(router, /JYYRNet\.fetchWithTimeout\("\/api\/maintenance"/);
+  assert.match(nav, /JYYRNet\.fetchWithTimeout\('\/api\/health'/);
   const initBlock = nav.match(/async function init\([\s\S]*?\n\s*return user;/)?.[0] || nav;
   assert.doesNotMatch(initBlock, /await appShellReady;/);
   assert.match(common, /#app-loading\.app-loading[\s\S]*background:\s*rgba\(/);
