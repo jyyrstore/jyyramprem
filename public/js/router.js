@@ -172,12 +172,24 @@
       link.href = href;
       link.dataset.jyyrViewStyle = href;
       links.push(link);
+
+      const loadPromise = new Promise((resolve, reject) => {
+        link.addEventListener("load", resolve, { once: true });
+        link.addEventListener(
+          "error",
+          () => reject(new Error(`Stylesheet load failed: ${href}`)),
+          { once: true }
+        );
+      });
+
       document.head.appendChild(link);
+
       try {
-        await withTimeout(new Promise((resolve, reject) => {
-          link.addEventListener("load", resolve, { once: true });
-          link.addEventListener("error", () => reject(new Error(`Stylesheet load failed: ${href}`)), { once: true });
-        }), REQUEST_TIMEOUT_MS + 1000, `view css ${name}`);
+        await withTimeout(
+          loadPromise,
+          REQUEST_TIMEOUT_MS + 1000,
+          `view css ${name}`
+        );
       } catch {
         // A failed page stylesheet must never trap the SPA boot loader.
         link.remove();
@@ -201,12 +213,24 @@
         script.type = "module";
       }
       script.dataset.jyyrLoadedScript = key;
+
+      const loadPromise = new Promise((resolve, reject) => {
+        script.addEventListener("load", resolve, { once: true });
+        script.addEventListener(
+          "error",
+          () => reject(new Error(`Script load failed: ${src}`)),
+          { once: true }
+        );
+      });
+
       document.body.appendChild(script);
+
       try {
-        await withTimeout(new Promise((resolve, reject) => {
-          script.addEventListener("load", resolve, { once: true });
-          script.addEventListener("error", () => reject(new Error(`Script load failed: ${src}`)), { once: true });
-        }), REQUEST_TIMEOUT_MS + 1000, `script ${src}`);
+        await withTimeout(
+          loadPromise,
+          REQUEST_TIMEOUT_MS + 1000,
+          `script ${src}`
+        );
         loadedScripts.add(key);
       } catch (error) {
         script.remove();
@@ -247,15 +271,28 @@
 
     legacyContextFromUrl();
     if (name !== "maintenance" && name !== "login" && name !== "reset-password") {
-      console.time("[JYYR] getSession");
-      const session = await withTimeout(window.AMAuth.getSession(), REQUEST_TIMEOUT_MS, "view session").catch(() => null);
-      console.timeEnd("[JYYR] getSession");
+      const hasInitialSession =
+        Object.prototype.hasOwnProperty.call(options, "initialSession");
+
+      const session = hasInitialSession
+        ? options.initialSession
+        : await withTimeout(
+            window.AMAuth.getSession(),
+            REQUEST_TIMEOUT_MS,
+            "view session"
+          ).catch(() => null);
+
+      window.JYYRSession = session;
       console.time("[JYYR] maintenance");
       const maintenance = await withTimeout(getMaintenanceState(session), REQUEST_TIMEOUT_MS + 1000, "view maintenance");
       console.timeEnd("[JYYR] maintenance");
       if (session?.access_token && maintenance.data?.maintenance_enabled === true && maintenance.data?.owner !== true) {
         if (serial !== navigationSerial) return false;
-        return showView("maintenance", { updateUrl: true, replaceUrl: true });
+        return showView("maintenance", {
+          updateUrl: true,
+          replaceUrl: true,
+          initialSession: session,
+        });
       }
     }
     if (serial !== navigationSerial) return false;
@@ -302,7 +339,7 @@
     }
     activeStyleLinks = nextStyleLinks;
     console.time(`[JYYR] scripts:${name}`);
-    await withTimeout(loadViewScripts(name), REQUEST_TIMEOUT_MS + 2000, `view scripts ${name}`);
+    await loadViewScripts(name);
     console.timeEnd(`[JYYR] scripts:${name}`);
     window.JYYRUIProtection?.start?.();
     window.JYYRUIProtection?.refresh?.();
@@ -412,15 +449,17 @@
     }
 
     const requestedView = readViewFromUrl();
-    const requestedName = requestedView || (session?.access_token ? "home" : "login");
-    const maintenance = await withTimeout(getMaintenanceState(session), REQUEST_TIMEOUT_MS + 1000, "startup maintenance");
+    const requestedName =
+      requestedView ||
+      (session?.access_token ? "home" : "login");
 
-    if (session?.access_token && maintenance.data?.maintenance_enabled === true && maintenance.data?.owner !== true) {
-      await withTimeout(showView("maintenance", { replaceUrl: true }), BOOT_TIMEOUT_MS, "maintenance view");
-      return;
-    }
-
-    await withTimeout(showView(requestedName, { replaceUrl: true }), BOOT_TIMEOUT_MS, `${requestedName} view`);
+    await showView(
+      requestedName,
+      {
+        replaceUrl: true,
+        initialSession: session,
+      }
+    );
     } catch (error) {
       console.error("[JYYR ROUTER] Startup failed", error);
       await showBootFallback();

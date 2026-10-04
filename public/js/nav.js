@@ -257,16 +257,19 @@
     const page = document.body.dataset.page || '';
     if (document.body.dataset.jyyrNavInitializedFor === page) return null;
     document.body.dataset.jyyrNavInitializedFor = page;
-    const s = await session();
+    const hasKnownSession =
+      Object.prototype.hasOwnProperty.call(window, "JYYRSession");
+
+    const s = hasKnownSession
+      ? window.JYYRSession
+      : await session();
 
     if (!s) {
       window.JYYRApp?.navigate("login");
       return null;
     }
 
-    const user =
-      s.user ||
-      await window.AMAuth.getUser();
+    let user = s.user || null;
 
     /*
      * User information.
@@ -289,75 +292,123 @@
       avatar.src = LOGO;
     }
 
-    /*
-     * Backend status elements.
-     */
-    const backend = q('#backendPill');
-    const backendIcon = q('#backendIcon');
-    const backendLabel = q('#backendLabel');
-    const popupState = q('#popupBackendState');
-    const health = q('#healthStatus');
+    if (!user) {
+      void window.AMAuth.getUser()
+        .then((resolvedUser) => {
+          if (!resolvedUser) return;
 
-    function applyBackendState(online) {
-      const label = online
-        ? 'Online'
-        : 'Offline';
+          user = resolvedUser;
 
-      if (backendIcon) {
-        backendIcon.src = online
-          ? '/assets/Icon/Backend-Online.png'
-          : '/assets/Icon/Backend-ofline.png';
-      }
+          document
+            .querySelectorAll('[data-user-name]')
+            .forEach((element) => {
+              element.textContent = userName(resolvedUser);
+            });
 
-      if (backendLabel) {
-        backendLabel.textContent = label;
-      }
-
-      if (backend) {
-        backend.classList.toggle('online', online);
-        backend.classList.toggle('offline', !online);
-
-        backend.title = online
-          ? 'Backend aktif'
-          : 'Backend offline';
-
-        backend.setAttribute(
-          'aria-label',
-          label
-        );
-      }
-
-      if (popupState) {
-        popupState.classList.toggle(
-          'offline',
-          !online
-        );
-
-        popupState.innerHTML =
-          `<span class="state-dot"></span> ${label}`;
-      }
-
-      if (health) {
-        health.textContent = online
-          ? 'Online'
-          : 'Offline';
-
-        health.className =
-          `badge ${online ? 'green' : 'red'}`;
-      }
+          document
+            .querySelectorAll('[data-user-email]')
+            .forEach((element) => {
+              element.textContent = resolvedUser.email || '-';
+            });
+        })
+        .catch(() => {});
     }
-
     /*
-     * Backend health check.
+     * Singleton backend health monitor.
+     * It never blocks page rendering and never overlaps requests.
      */
-    async function healthCheck() {
-      try {
-        const response = await window.JYYRNet.fetchWithTimeout('/api/health', { cache: 'no-store' }, 5000);
-        const data = await response.json().catch(() => ({}));
-        applyBackendState(response.ok && data.ok === true);
-      } catch {
-        applyBackendState(false);
+    if (!window.JYYRBackendHealth) {
+      let backendHealthRunning = false;
+      let backendHealthTimer = null;
+
+      const AUTHENTICATED_NAV_PAGES = new Set([
+        "home",
+        "dashboard",
+        "setting",
+        "owner",
+      ]);
+
+      function applyBackendState(online) {
+        const backend = q("#backendPill");
+        const backendIcon = q("#backendIcon");
+        const backendLabel = q("#backendLabel");
+        const popupState = q("#popupBackendState");
+        const health = q("#healthStatus");
+
+        const label = online ? "Online" : "Offline";
+
+        if (backendIcon) {
+          backendIcon.src = online
+            ? "/assets/Icon/Backend-Online.png"
+            : "/assets/Icon/Backend-ofline.png";
+        }
+
+        if (backendLabel) {
+          backendLabel.textContent = label;
+        }
+
+        if (backend) {
+          backend.classList.toggle("online", online);
+          backend.classList.toggle("offline", !online);
+          backend.title = online
+            ? "Backend aktif"
+            : "Backend offline";
+          backend.setAttribute("aria-label", label);
+        }
+
+        if (popupState) {
+          popupState.classList.toggle("offline", !online);
+          popupState.innerHTML =
+            `<span class="state-dot"></span> ${label}`;
+        }
+
+        if (health) {
+          health.textContent = label;
+          health.className = `badge ${online ? "green" : "red"}`;
+        }
       }
+
+      async function healthCheck() {
+        const page = document.body.dataset.page || "";
+
+        if (
+          backendHealthRunning ||
+          !AUTHENTICATED_NAV_PAGES.has(page)
+        ) {
+          return;
+        }
+
+        backendHealthRunning = true;
+
+        try {
+          const response = await window.JYYRNet.fetchWithTimeout(
+            "/api/health",
+            { cache: "no-store" },
+            5000
+          );
+
+          const data = await response.json().catch(() => ({}));
+          applyBackendState(response.ok && data.ok === true);
+        } catch {
+          applyBackendState(false);
+        } finally {
+          backendHealthRunning = false;
+        }
+      }
+
+      function ensureHealthMonitor() {
+        if (backendHealthTimer !== null) return;
+
+        void healthCheck();
+
+        backendHealthTimer = window.setInterval(() => {
+          void healthCheck();
+        }, 30000);
+      }
+
+      window.JYYRBackendHealth = {
+        ensure: ensureHealthMonitor,
+      };
     }
 
     /*
@@ -447,6 +498,7 @@
       'click',
       async () => {
         await window.AMAuth.signOut();
+        window.JYYRSession = null;
         window.JYYRApp?.navigate("login");
       }
     );
@@ -496,17 +548,9 @@
     );
 
     /*
-     * Initial backend check.
+     * Backend monitoring runs entirely in the background.
      */
-    await healthCheck();
-
-    /*
-     * Check backend every 30 seconds.
-     */
-    setInterval(
-      healthCheck,
-      30000
-    );
+    window.JYYRBackendHealth?.ensure?.();
 
     return user;
   }

@@ -110,3 +110,38 @@ test("stylesheet load errors remove the broken link instead of leaving a failed 
   assert.match(router, /Stylesheet load failed/);
   assert.match(router, /link\.remove\(\)/);
 });
+
+
+test("router load listeners are registered before DOM insertion", () => {
+  const cssAppend = router.indexOf("document.head.appendChild(link);");
+  const cssLoad = router.indexOf('link.addEventListener("load"');
+  const scriptAppend = router.indexOf("document.body.appendChild(script);");
+  const scriptLoad = router.indexOf('script.addEventListener("load"');
+
+  assert.ok(cssAppend >= 0);
+  assert.ok(cssLoad >= 0 && cssLoad < cssAppend);
+
+  assert.ok(scriptAppend >= 0);
+  assert.ok(scriptLoad >= 0 && scriptLoad < scriptAppend);
+});
+
+test("router boot reuses initial session and removes nested view-script timeout", () => {
+  assert.match(router, /initialSession/);
+  assert.match(router, /window\.JYYRSession\s*=\s*session/);
+  assert.match(router, /await showView\(\s*requestedName/);
+  assert.doesNotMatch(router, /withTimeout\(loadViewScripts\(name\)/);
+});
+
+test("nav reuses router session and health monitoring is singleton background work", () => {
+  assert.match(nav, /JYYRSession/);
+  assert.match(nav, /let backendHealthRunning = false/);
+  assert.match(nav, /let backendHealthTimer = null/);
+  assert.match(
+    nav,
+    /if \(\s*backendHealthRunning\s*\|\|/
+  );
+  assert.match(nav, /if \(backendHealthTimer !== null\) return/);
+  assert.match(nav, /void healthCheck\(\)/);
+  assert.doesNotMatch(nav, /await healthCheck\(\)/);
+  assert.doesNotMatch(nav, /setInterval\(\s*healthCheck/);
+});

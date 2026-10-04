@@ -88,7 +88,10 @@ test("refresh boot loader cannot remain stuck and preserves the page background"
   assert.match(router, /completeBootLoader\(\)/);
   assert.match(router, /finally[\s\S]*completeBootLoader\(\)/);
   assert.match(router, /JYYRNet\.fetchWithTimeout\("\/api\/maintenance"/);
-  assert.match(nav, /JYYRNet\.fetchWithTimeout\('\/api\/health'/);
+  assert.match(
+    nav,
+    /JYYRNet\.fetchWithTimeout\([\s\S]*?["']\/api\/health["']/
+  );
   const initBlock = nav.match(/async function init\([\s\S]*?\n\s*return user;/)?.[0] || nav;
   assert.doesNotMatch(initBlock, /await appShellReady;/);
   assert.match(common, /#app-loading\.app-loading[\s\S]*background:\s*rgba\(/);
