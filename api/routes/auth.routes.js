@@ -2,6 +2,7 @@ import runtime from "../../lib/runtime/app-runtime.js";
 
 const {
   db,
+  supabase,
   normalizeUserEmail,
   AUTH_EMAIL_VERIFICATION_TTL_MINUTES,
   AUTH_EMAIL_RESEND_COOLDOWN_SECONDS,

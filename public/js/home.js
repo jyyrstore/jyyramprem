@@ -611,7 +611,7 @@ document.addEventListener("click", async (event) => {
       method: "POST",
       headers: h,
       body: JSON.stringify({}),
-    });
+    }, 35000);
     const d = await r.json().catch(() => ({}));
     if (!r.ok || !d.ok || d.premiumApplied !== true) throw new Error(d.error || d.message || "Aktivasi Premium belum berhasil.");
 
