@@ -9,12 +9,12 @@
     "latest_name": "harden_public_table_grants"
   },
   "repository": {
-    "migration_file_count": 48
+    "migration_file_count": 49
   },
   "comparison": {
     "exact_timestamp_overlap": 9,
     "production_only_versions": 72,
-    "repository_only_versions": 39,
+    "repository_only_versions": 40,
     "duplicate_repository_timestamps": 0
   },
   "deployment_policy": {

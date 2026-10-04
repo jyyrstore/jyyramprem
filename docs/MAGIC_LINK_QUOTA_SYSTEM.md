@@ -16,7 +16,7 @@ The `POST /api/v1/send-magiclink` acceptance and STEP 2 verification do **not** 
 - If the daily limit is already reached, the portal does not return the magic link.
 - If quota storage is unavailable, the portal fails closed and does not return the magic link.
 - The `auto-activate.magicLink` value is never used for quota delivery or returned to the frontend.
-- Provider request safety budget remains independent from user quota.
+- Provider request safety budget remains independent from user quota and is limited to 15 requests/hour/API-key fingerprint.
 
 ## Data model
 

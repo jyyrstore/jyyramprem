@@ -100,6 +100,29 @@ test("Final provider quota migration restores transaction-level serialization", 
   assert.match(migration, /cleanup_am_generation_idempotency/);
 });
 
+test("Provider quota is hourly and isolated by API-key fingerprint", () => {
+  const config = fs.readFileSync(path.join(root, "lib/config/app.config.js"), "utf8");
+  const runtime = fs.readFileSync(path.join(root, "lib/runtime/app-runtime.js"), "utf8");
+  const member = fs.readFileSync(path.join(root, "api/routes/member.routes.js"), "utf8");
+  const migration = fs.readFileSync(
+    path.join(root, "supabase/migrations/20261004080000_provider_hourly_quota_v1.sql"),
+    "utf8",
+  );
+
+  assert.match(config, /PROVIDER_HOURLY_REQUEST_LIMIT/);
+  assert.doesNotMatch(config, /PROVIDER_DAILY_REQUEST_LIMIT/);
+  assert.match(runtime, /providerQuotaWindowStart/);
+  assert.match(runtime, /providerQuotaKeyId/);
+  assert.match(runtime, /reserve_provider_api_request_hourly/);
+  assert.match(runtime, /record_provider_api_result_hourly/);
+  assert.match(member, /PROVIDER_HOURLY_LIMIT_REACHED/);
+  assert.match(member, /providerQuotaWindow/);
+  assert.match(migration, /am_provider_api_hourly_usage/);
+  assert.match(migration, /p_key_id/);
+  assert.match(migration, /p_hourly_limit/);
+  assert.match(migration, /pg_advisory_xact_lock/);
+});
+
 
 
 test("portal token runtime has one canonical single-user redemption contract", () => {

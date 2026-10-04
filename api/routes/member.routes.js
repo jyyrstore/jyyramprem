@@ -26,6 +26,7 @@ const {
   finalizeGenerationRequest,
   reserveProviderRequest,
   recordProviderRequestResult,
+  providerQuotaWindowStart,
   consumeMagicLinkQuota,
 } = runtime;
 
@@ -98,10 +99,18 @@ export function registerMemberRoutes(app, deps) {
 
         const providerKey = env("PROVIDER_API_KEY");
         const providerBase = envHttpUrl("PROVIDER_BASE_URL");
-        const today = todayUTC();
-        const verifyQuota = await reserveProviderRequest(today, PROVIDER_VERIFY_ACCOUNT_PATH);
+        const providerQuotaWindow = providerQuotaWindowStart();
+        const verifyQuota = await reserveProviderRequest(
+          providerQuotaWindow,
+          PROVIDER_VERIFY_ACCOUNT_PATH,
+          providerKey
+        );
         if (!verifyQuota?.allowed) {
-          return res.status(429).json({ ok: false, error: "Batas harian request provider tercapai." });
+          return res.status(429).json({
+            ok: false,
+            code: "PROVIDER_HOURLY_LIMIT_REACHED",
+            error: "Batas request provider per jam tercapai."
+          });
         }
 
         const result = await callProviderVerifyAccount({
@@ -110,7 +119,7 @@ export function registerMemberRoutes(app, deps) {
           email: email.value,
           rawLink: normalizedLink.value,
         });
-        await recordProviderRequestResult(today, PROVIDER_VERIFY_ACCOUNT_PATH, result.attempted && result.status !== null ? result.ok : false);
+        await recordProviderRequestResult(providerQuotaWindow, PROVIDER_VERIFY_ACCOUNT_PATH, result.attempted && result.status !== null ? result.ok : false, providerKey);
 
         if (!result.ok) {
           return res.status(result.status && result.status >= 400 ? result.status : 502).json({
@@ -277,16 +286,26 @@ export function registerMemberRoutes(app, deps) {
         };
 
         const providerKey = env("PROVIDER_API_KEY");
-        const providerBase = env("PROVIDER_BASE_URL");
-        const today = todayUTC();
-        const premiumQuota = await reserveProviderRequest(today, PROVIDER_APPLY_PREMIUM_PATH);
+        const providerBase = envHttpUrl("PROVIDER_BASE_URL");
+        const providerQuotaWindow = providerQuotaWindowStart();
+        const premiumQuota = await reserveProviderRequest(
+          providerQuotaWindow,
+          PROVIDER_APPLY_PREMIUM_PATH,
+          providerKey
+        );
         if (!premiumQuota?.allowed) {
           await releaseActivationClaim();
-          return res.status(429).json({ ok: false, verified: true, premiumApplied: false, error: "Batas harian request provider tercapai sebelum apply-premium." });
+          return res.status(429).json({
+            ok: false,
+            code: "PROVIDER_HOURLY_LIMIT_REACHED",
+            verified: true,
+            premiumApplied: false,
+            error: "Batas request provider per jam tercapai sebelum apply-premium."
+          });
         }
 
         const premium = await callProviderApplyPremium({ providerBase, providerKey, email: email.value, idToken });
-        await recordProviderRequestResult(today, PROVIDER_APPLY_PREMIUM_PATH, premium.attempted && premium.status !== null ? premium.ok : false);
+        await recordProviderRequestResult(providerQuotaWindow, PROVIDER_APPLY_PREMIUM_PATH, premium.attempted && premium.status !== null ? premium.ok : false, providerKey);
 
         if (!premium.ok) {
           await releaseActivationClaim();
@@ -596,12 +615,22 @@ export function registerMemberRoutes(app, deps) {
       if (!emailInput.valid) return res.status(409).json({ ok: false, error: "Email account tidak valid." });
       const providerKey = env("PROVIDER_API_KEY");
       const providerBase = envHttpUrl("PROVIDER_BASE_URL");
-      const today = todayUTC();
-      const quota = await reserveProviderRequest(today, PROVIDER_SEND_MAGICLINK_PATH);
-      if (!quota?.allowed) return res.status(429).json({ ok: false, error: "Batas harian request provider tercapai." });
+      const providerQuotaWindow = providerQuotaWindowStart();
+      const quota = await reserveProviderRequest(
+        providerQuotaWindow,
+        PROVIDER_SEND_MAGICLINK_PATH,
+        providerKey
+      );
+      if (!quota?.allowed) {
+        return res.status(429).json({
+          ok: false,
+          code: "PROVIDER_HOURLY_LIMIT_REACHED",
+          error: "Batas request provider per jam tercapai."
+        });
+      }
 
       const send = await callProviderSendMagicLink({ providerBase, providerKey, email: emailInput.value });
-      await recordProviderRequestResult(today, PROVIDER_SEND_MAGICLINK_PATH, send.attempted && send.status !== null ? send.ok : false);
+      await recordProviderRequestResult(providerQuotaWindow, PROVIDER_SEND_MAGICLINK_PATH, send.attempted && send.status !== null ? send.ok : false, providerKey);
       if (!send.ok) {
         await db.from("am_generated_accounts").update({
           magic_link_delivery_status: "delivery_failed",
@@ -659,7 +688,6 @@ export function registerMemberRoutes(app, deps) {
       const idempotencyKey = normalizeIdempotencyKey(req.get("Idempotency-Key"));
       const idempotencyEnabled = Boolean(idempotencyKey);
       let idempotencyFinalized = false;
-      const today = todayUTC();
 
       try {
         if (req.get("Idempotency-Key") && !idempotencyKey) {
@@ -679,6 +707,7 @@ export function registerMemberRoutes(app, deps) {
 
         const providerKey = env("PROVIDER_API_KEY");
         const providerBase = env("PROVIDER_BASE_URL");
+        const providerQuotaWindow = providerQuotaWindowStart();
 
         if (idempotencyKey) {
           const claim = await claimGenerationRequest(req.user.id, idempotencyKey);
@@ -724,9 +753,20 @@ export function registerMemberRoutes(app, deps) {
           if (existingUpdateError) throw existingUpdateError;
         }
 
-        const quota = await reserveProviderRequest(today, PROVIDER_SEND_MAGICLINK_PATH);
+        const quota = await reserveProviderRequest(
+          providerQuotaWindow,
+          PROVIDER_SEND_MAGICLINK_PATH,
+          providerKey
+        );
         if (!quota?.allowed) {
-          const body = { ok: false, error: "Batas harian request provider tercapai.", accountId, email: emailInput.value, step: "request_magiclink" };
+          const body = {
+            ok: false,
+            code: "PROVIDER_HOURLY_LIMIT_REACHED",
+            error: "Batas request provider per jam tercapai.",
+            accountId,
+            email: emailInput.value,
+            step: "request_magiclink"
+          };
           await db.from("am_generated_accounts").update({ status: "failed", provider_message: body.error }).eq("id", accountId).eq("user_id", req.user.id);
           if (idempotencyEnabled) {
             await finalizeGenerationRequest(req.user.id, idempotencyKey, "failed", 429, body);
@@ -736,7 +776,7 @@ export function registerMemberRoutes(app, deps) {
         }
 
         const send = await callProviderSendMagicLink({ providerBase, providerKey, email: emailInput.value });
-        await recordProviderRequestResult(today, PROVIDER_SEND_MAGICLINK_PATH, send.attempted && send.status !== null ? send.ok : false);
+        await recordProviderRequestResult(providerQuotaWindow, PROVIDER_SEND_MAGICLINK_PATH, send.attempted && send.status !== null ? send.ok : false, providerKey);
 
         if (!send.ok) {
           await db.from("am_generated_accounts").update({
