@@ -1,5 +1,10 @@
 import express from "express";import path from "node:path";import {fileURLToPath} from "node:url";import {PORT,PUBLIC_DIR} from "./lib/config/app.config.js";const __dirname=path.dirname(fileURLToPath(import.meta.url));import {securityHeaders,cachePolicy,staticHeaders} from "./lib/config/security.config.js";import runtime from "./lib/runtime/app-runtime.js";import {createRateLimiters} from "./api/middleware/rate-limit.middleware.js";import {createRequireAuth} from "./api/middleware/auth.middleware.js";import {createRequireOwner} from "./api/middleware/owner.middleware.js";import {registerErrorMiddleware} from "./api/middleware/error.middleware.js";import {registerAuthRoutes} from "./api/routes/auth.routes.js";import {registerPortalTokenRoutes} from "./api/routes/portal-token.routes.js";import {registerMemberRoutes} from "./api/routes/member.routes.js";import {registerOwnerRoutes} from "./api/routes/owner.routes.js";import {registerProviderRoutes} from "./api/routes/provider.routes.js";import {registerReleaseRoutes} from "./api/routes/release.routes.js";import {registerPublicRoutes} from "./api/routes/public.routes.js";
 const app=express();if(process.env.VERCEL)app.set("trust proxy",1);app.disable("x-powered-by");app.use(securityHeaders);app.use(express.json({limit:"32kb"}));app.use(cachePolicy);app.use(express.static(PUBLIC_DIR,{index:false,setHeaders:staticHeaders}));
+app.get("/favicon.ico",(req,res)=>{
+  res.setHeader("Cache-Control","public,max-age=31536000,immutable");
+  return res.sendFile("assets/Icon/jyyr-amprem-icon-192.png",{root:PUBLIC_DIR});
+});
+
 const deps={...runtime,...createRateLimiters()};const requireAuth=createRequireAuth(deps);const requireOwner=createRequireOwner(deps);Object.assign(deps,{requireAuth,requireOwner});registerAuthRoutes(app,deps);registerPortalTokenRoutes(app,deps);registerMemberRoutes(app,deps);registerOwnerRoutes(app,deps);registerProviderRoutes(app,deps);registerReleaseRoutes(app,deps);registerPublicRoutes(app,deps);registerErrorMiddleware(app);
 const START_URL =
   process.env.APP_URL || "https://www.jyyramprem.my.id";

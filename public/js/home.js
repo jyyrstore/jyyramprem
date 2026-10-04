@@ -365,7 +365,7 @@ async function verifyAndApplyMagicLink(accountId, rawLink, { automatic = false }
       method: "POST",
       headers: h,
       body: JSON.stringify({ rawLink }),
-    });
+    }, 35000);
     const verifyData = await verifyResponse.json().catch(() => ({}));
     if (!verifyResponse.ok || !verifyData.ok || verifyData.verified !== true) {
       throw new Error(verifyData.error || verifyData.message || "Magic link belum terverifikasi.");
@@ -388,7 +388,7 @@ async function verifyAndApplyMagicLink(accountId, rawLink, { automatic = false }
       method: "POST",
       headers: h,
       body: JSON.stringify({}),
-    });
+    }, 35000);
     const applyData = await applyResponse.json().catch(() => ({}));
     if (!applyResponse.ok || !applyData.ok || applyData.premiumApplied !== true) {
       // Verification succeeded; do not hide that state when Premium activation needs a retry.
@@ -494,7 +494,7 @@ $("#generateBtn")?.addEventListener("click", async () => {
       method: "POST",
       headers: h,
       body: JSON.stringify({ email }),
-    });
+    }, 35000);
 
     const d = await r.json().catch(() => ({}));
     if (!r.ok || !d.ok) throw new Error(d.error || "Gagal mengirim magic link.");
@@ -554,7 +554,7 @@ document.addEventListener("click", async (event) => {
     const stopResendLoading = window.JYYRNotify?.buttonLoading(resendBtn, "Mengirim ulang…");
     try {
       const h = await authHeaders();
-      const r = await window.JYYRNet.fetchWithTimeout(`/api/accounts/${encodeURIComponent(accountId)}/send-magiclink`, { method: "POST", headers: h, body: JSON.stringify({}) });
+      const r = await window.JYYRNet.fetchWithTimeout(`/api/accounts/${encodeURIComponent(accountId)}/send-magiclink`, { method: "POST", headers: h, body: JSON.stringify({}) }, 35000);
       const d = await r.json().catch(() => ({}));
       if (!r.ok || !d.ok) throw new Error(d.error || d.message || "Gagal mengirim ulang magic link.");
       setFlowBadge("Provider Accepted", "blue");
